@@ -1,0 +1,19 @@
+{
+  "name": "Relève — Préparation opérationnelle SMUR",
+  "short_name": "Relève",
+  "description": "Retour d'intervention, réarmement et contrôles opérationnels Urgences / SMUR.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f6fb",
+  "theme_color": "#073f8c",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
