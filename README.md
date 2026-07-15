@@ -7,7 +7,7 @@ Prototype PWA mobile centré sur l'état de préparation opérationnelle, et non
 Servir le dossier avec n'importe quel serveur HTTP statique, par exemple :
 
 ```powershell
-python -m http.server 4173
+.\serve.ps1
 ```
 
 Puis ouvrir `http://localhost:4173`.
