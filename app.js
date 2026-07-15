@@ -1,5 +1,6 @@
 const STORAGE_KEY = "releve-smur-operational-v1";
 const SCHEMA_VERSION = 1;
+const APP_RELEASE = Object.freeze({ version: "0.2.0", date: "15/07/2026" });
 
 const REFERENCE = Object.freeze({
   id: "ref-smur-2026-07-v3",
@@ -350,6 +351,21 @@ function materialIconClass(materialId) {
   return "";
 }
 
+function priorityCard({ tone = "", route, iconName, title, description, indicator = null }) {
+  const indicatorMarkup = indicator
+    ? `<span class="priority-card__indicator"><span class="priority-card__number">${indicator.value}</span><span class="priority-card__suffix">${indicator.suffix}</span></span>`
+    : `<span class="priority-card__indicator priority-card__indicator--empty" aria-hidden="true"></span>`;
+
+  return `<button class="priority-card ${tone}" data-action="navigate" data-route="${route}">
+    <span class="priority-card__icon">${icon(iconName)}</span>
+    <span class="priority-card__content">
+      <strong>${title}</strong>
+      <small>${description}</small>
+    </span>
+    ${indicatorMarkup}
+  </button>`;
+}
+
 function homeView() {
   const progress = auditProgress();
   const current = currentAuditItem();
@@ -363,6 +379,7 @@ function homeView() {
       <p class="eyebrow">Centre opérationnel</p>
       <h1>Bonjour Guillaume.</h1>
       <p>Voici ce qui nécessite votre attention maintenant.</p>
+      <span class="release-stamp">Version ${APP_RELEASE.version} · ${APP_RELEASE.date}</span>
     </section>
 
     ${state.audit.status === "in_progress" && current ? `<button class="resume-card" data-action="navigate" data-route="control/item">
@@ -378,29 +395,10 @@ function homeView() {
     <section class="section">
       <div class="section-head"><h2>Actions prioritaires</h2></div>
       <div class="priority-grid">
-        <button class="priority-card" data-action="navigate" data-route="return">
-          <span class="priority-icon">${icon("bag")}</span>
-          <strong>Retour SMUR</strong>
-          <small>Déclarer ce qui a été ouvert ou utilisé</small>
-        </button>
-        <button class="priority-card orange" data-action="navigate" data-route="actions">
-          <span class="priority-icon">${icon("clipboard")}</span>
-          <strong>Actions à traiter</strong>
-          <small>Ce qu'il reste à faire maintenant</small>
-          <span class="priority-value">${actions.length}<span>ouverte${actions.length > 1 ? "s" : ""}</span></span>
-        </button>
-        <button class="priority-card green" data-action="navigate" data-route="control">
-          <span class="priority-icon">${icon("shield")}</span>
-          <strong>Contrôle Juillet / Août</strong>
-          <small>Reprise atomique · ${progress.complete} / ${progress.total} éléments</small>
-          <span class="priority-value">${progress.percent}<span>%</span></span>
-        </button>
-        <button class="priority-card red" data-action="navigate" data-route="expiries">
-          <span class="priority-icon">${icon("calendar")}</span>
-          <strong>Péremptions</strong>
-          <small>Actions à anticiper sans bloquer le départ</small>
-          <span class="priority-value">4<span>à prévoir</span></span>
-        </button>
+        ${priorityCard({ route: "return", iconName: "bag", title: "Retour SMUR", description: "Déclarer ce qui a été ouvert ou utilisé" })}
+        ${priorityCard({ tone: "orange", route: "actions", iconName: "clipboard", title: "Actions à traiter", description: "Ce qu'il reste à faire maintenant", indicator: { value: actions.length, suffix: `ouverte${actions.length > 1 ? "s" : ""}` } })}
+        ${priorityCard({ tone: "green", route: "control", iconName: "shield", title: "Contrôle Juillet / Août", description: "Reprise atomique, élément par élément", indicator: { value: progress.percent, suffix: "%" } })}
+        ${priorityCard({ tone: "red", route: "expiries", iconName: "calendar", title: "Péremptions", description: "Actions à anticiper sans bloquer le départ", indicator: { value: 4, suffix: "à prévoir" } })}
       </div>
     </section>
 
@@ -692,7 +690,7 @@ function profileView() {
   return mainShell(`
     <header class="page-header"><div><p class="eyebrow">Traçabilité légère</p><h1 class="page-title">Profil & appareil</h1></div></header>
     <div class="card profile-card"><div class="avatar">GP</div><div class="profile-copy"><strong>${escapeHtml(state.user.name)}</strong><small>${escapeHtml(state.user.role)} · utilisateur mémorisé sur cet appareil</small></div></div>
-    <section class="section"><div class="section-head"><h2>Configuration active</h2></div><div class="card settings-list"><div class="setting-row">${icon("wifi", 18)}<strong>Fonctionnement hors ligne</strong><span>Actif</span></div><div class="setting-row">${icon("shield", 18)}<strong>Référentiel</strong><span>v${REFERENCE.version}</span></div><div class="setting-row">${icon("clock", 18)}<strong>Dernière sauvegarde</strong><span>${formatTime(state.lastSavedAt)}</span></div></div></section>
+    <section class="section"><div class="section-head"><h2>Configuration active</h2></div><div class="card settings-list"><div class="setting-row">${icon("wifi", 18)}<strong>Fonctionnement hors ligne</strong><span>Actif</span></div><div class="setting-row">${icon("shield", 18)}<strong>Référentiel</strong><span>v${REFERENCE.version}</span></div><div class="setting-row">${icon("package", 18)}<strong>Version application</strong><span>${APP_RELEASE.version} · ${APP_RELEASE.date}</span></div><div class="setting-row">${icon("clock", 18)}<strong>Dernière sauvegarde</strong><span>${formatTime(state.lastSavedAt)}</span></div></div></section>
     <section class="section"><div class="section-head"><h2>Historique récent</h2></div><div class="event-list">${recentEvents.map((event) => `<div class="event-row"><span class="event-icon">${icon(event.family === "failure" ? "activity" : event.type.includes("AUDIT") ? "clipboard" : "history", 18)}</span><span class="event-copy"><strong>${eventLabel(event)}</strong><small>${escapeHtml(event.subject)} · ${formatTime(event.at)} · ${escapeHtml(event.user)}</small></span></div>`).join("")}</div></section>
     <section class="section"><button class="danger-button" data-action="reset-demo">Réinitialiser les données de démonstration</button></section>
   `, "profile");

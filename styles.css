@@ -236,6 +236,19 @@ svg {
   font-size: 0.9rem;
 }
 
+.release-stamp {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 5px 9px;
+  border: 1px solid #c9d8e8;
+  border-radius: 999px;
+  color: #4c6078;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
 .section {
   margin-top: 22px;
 }
@@ -270,15 +283,20 @@ svg {
 
 .priority-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  align-items: stretch;
   gap: 10px;
 }
 
 .priority-card {
-  position: relative;
-  min-height: 140px;
+  display: grid;
+  grid-template-rows: auto minmax(min-content, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+  min-height: 200px;
   padding: 16px;
-  overflow: hidden;
   cursor: pointer;
   text-align: left;
   border: 0;
@@ -313,48 +331,77 @@ svg {
   box-shadow: 0 10px 25px rgba(217, 45, 32, 0.17);
 }
 
-.priority-icon {
+.priority-card__icon {
   display: grid;
   width: 38px;
   height: 38px;
-  margin-bottom: 17px;
   place-items: center;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.18);
 }
 
-.priority-card strong,
-.priority-card small {
+.priority-card__content {
   display: block;
+  min-width: 0;
+  align-self: start;
 }
 
-.priority-card strong {
-  max-width: 12rem;
+.priority-card__content strong,
+.priority-card__content small {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.priority-card__content strong {
   font-size: 0.94rem;
+  line-height: 1.2;
   letter-spacing: 0.015em;
 }
 
-.priority-card small {
-  max-width: 11rem;
+.priority-card__content small {
   margin-top: 5px;
   color: rgba(255, 255, 255, 0.82);
   font-size: 0.74rem;
   line-height: 1.35;
 }
 
-.priority-value {
-  position: absolute;
-  right: 14px;
-  bottom: 11px;
-  font-size: 2rem;
-  font-weight: 850;
-  letter-spacing: -0.06em;
+.priority-card__indicator {
+  position: static;
+  display: flex;
+  min-width: 0;
+  min-height: 2.4rem;
+  max-width: 100%;
+  align-items: baseline;
+  align-content: flex-end;
+  justify-content: flex-end;
+  align-self: end;
+  justify-self: stretch;
+  flex-wrap: wrap;
+  column-gap: 0.3em;
+  line-height: 1;
+  text-align: right;
 }
 
-.priority-value span {
-  margin-left: 3px;
+.priority-card__indicator--empty {
+  visibility: hidden;
+}
+
+.priority-card__number {
+  max-width: 100%;
+  font-size: clamp(1.55rem, 7vw, 2rem);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.priority-card__suffix {
+  max-width: 100%;
   font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.2;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .card {
@@ -1853,15 +1900,13 @@ svg {
 @media (min-width: 600px) {
   .page { padding-right: 28px; padding-left: 28px; }
   .local-state { display: inline-flex; }
-  .priority-card { min-height: 158px; }
+  .priority-card { min-height: 210px; }
   .metrics { grid-template-columns: repeat(4, 1fr); }
   .home-secondary { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: start; }
 }
 
 @media (max-width: 380px) {
-  .priority-card { min-height: 135px; padding: 13px; }
-  .priority-icon { margin-bottom: 13px; }
-  .priority-card small { font-size: 0.68rem; }
+  .priority-card { gap: 10px; min-height: 200px; padding: 13px; }
   .status-pill { padding-right: 7px; padding-left: 7px; font-size: 0.58rem; }
   .page { padding-right: 12px; padding-left: 12px; }
 }

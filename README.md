@@ -2,6 +2,8 @@
 
 Prototype PWA mobile centré sur l'état de préparation opérationnelle, et non sur un stock comptable.
 
+Version de l'application : **0.2.0 — 15/07/2026**.
+
 ## Lancer localement
 
 Servir le dossier avec n'importe quel serveur HTTP statique, par exemple :

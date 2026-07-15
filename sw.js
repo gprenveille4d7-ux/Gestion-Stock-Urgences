@@ -1,4 +1,4 @@
-const CACHE = "releve-smur-v1";
+const CACHE = "releve-smur-v0.2.0-20260715";
 const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", (event) => {
