@@ -90,6 +90,12 @@ Les statistiques sont des projections du journal, jamais une seconde source de v
 
 L'IA prédictive reste hors P0. Le schéma événementiel est néanmoins prêt à fournir plus tard un historique propre et explicable.
 
+## Repère service
+
+La mini-map est une projection spatiale des actions existantes. Elle ne possède aucune checklist métier autonome : les gestes « prendre » et « placer » lisent et modifient directement les lignes du réarmement ouvert. Les scénarios sans action liée restent explicitement en mode exploration.
+
+Le parcours mémorise localement la zone courante, les micro-validations et l'affichage du trajet. La clôture d'un parcours de réarmement lié appelle le même moteur de conformité que l'écran de réarmement ciblé.
+
 ## Périmètre de ce prototype
 
 Implémenté et testable :
@@ -101,5 +107,6 @@ Implémenté et testable :
 - contrôle bimestriel à reprise exacte ;
 - séparation disponibilité / cause / gravité ;
 - aperçu d'analyse explicable.
+- repère spatial relié aux actions de réarmement.
 
 Volontairement différé : stock de réserve réel, QR codes, authentification hospitalière, synchronisation serveur, passation multi-utilisateur et modèle prédictif entraîné.

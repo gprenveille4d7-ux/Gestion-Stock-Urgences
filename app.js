@@ -1,6 +1,6 @@
 const STORAGE_KEY = "releve-smur-operational-v1";
-const SCHEMA_VERSION = 1;
-const APP_RELEASE = Object.freeze({ version: "0.2.0", date: "15/07/2026" });
+const SCHEMA_VERSION = 2;
+const APP_RELEASE = Object.freeze({ version: "0.3.0", date: "15/07/2026" });
 
 const REFERENCE = Object.freeze({
   id: "ref-smur-2026-07-v3",
@@ -100,6 +100,77 @@ const EXPIRIES = [
   { id: "adrenaline", name: "Adrénaline 1 mg", place: "Frigo médicaments", lot: "240101", days: 105 }
 ];
 
+const GUIDE_SCENARIOS = Object.freeze({
+  rearm: {
+    label: "Réarmement SMUR",
+    fallbackSteps: [
+      {
+        zone: "reserve1",
+        title: "Réserve 1",
+        subtitle: "À gauche en sortant du PC IDE",
+        pointer: [715, 188],
+        tasks: [
+          { id: "demo-kt22", icon: "+", title: "Prendre 1 KT 22G", detail: "Stock de réarmement" },
+          { id: "demo-biseptine", icon: "+", title: "Prendre 2 Biseptines", detail: "Pour le Kit perfusion PÉDIA" }
+        ]
+      },
+      {
+        zone: "reservesmur",
+        title: "Réserve SMUR",
+        subtitle: "Au fond du couloir · environ 20 m",
+        pointer: [1012, 188],
+        tasks: [
+          { id: "demo-pedia", icon: "▣", title: "Réarmer le Sac PÉDIA", detail: "Kit perfusion" },
+          { id: "demo-corpuls", icon: "✓", title: "Vérifier le Corpuls", detail: "Présence et état fonctionnel" }
+        ]
+      },
+      {
+        zone: "respireserve",
+        title: "Réserve matériel respi",
+        subtitle: "Salle attenante au pôle SMUR",
+        pointer: [1107, 188],
+        tasks: [{ id: "demo-respi", icon: "◎", title: "Prendre le matériel respi", detail: "Élément déclaré manquant" }]
+      },
+      {
+        zone: "garage",
+        title: "Garage SMUR",
+        subtitle: "Sortir par les SAS puis traverser la cour",
+        pointer: [91, 610],
+        tasks: [
+          { id: "demo-vehicle", icon: "🚑", title: "Replacer le sac dans le véhicule", detail: "Confirmer la remise à bord" },
+          { id: "demo-close", icon: "✓", title: "Clôturer le réarmement", detail: "SMUR prêt à repartir" }
+        ]
+      }
+    ]
+  },
+  respi: {
+    label: "Contrôle respi",
+    fallbackSteps: [{
+      zone: "respireserve",
+      title: "Réserve matériel respi",
+      subtitle: "Au fond du couloir, après le pôle SMUR",
+      pointer: [1107, 188],
+      tasks: [
+        { id: "respi-presence", icon: "◎", title: "Rejoindre la zone respi", detail: "Le contrôle reprendra sur l'élément exact" },
+        { id: "respi-ready", icon: "◷", title: "Préparer la zone de contrôle", detail: "Référentiel bimestriel figé" }
+      ]
+    }]
+  },
+  garage: {
+    label: "Vérification véhicule",
+    fallbackSteps: [{
+      zone: "garage",
+      title: "Garage SMUR",
+      subtitle: "Sortir par les SAS puis traverser la cour",
+      pointer: [91, 610],
+      tasks: [
+        { id: "garage-visual", icon: "🚑", title: "Vérifier le véhicule SMUR", detail: "Contrôle visuel ciblé" },
+        { id: "garage-bags", icon: "▣", title: "Confirmer la présence des sacs", detail: "Selon le référentiel véhicule" }
+      ]
+    }]
+  }
+});
+
 const ICONS = {
   cross: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z"/>',
   home: '<path d="m3 11 9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
@@ -124,6 +195,7 @@ const ICONS = {
   activity: '<path d="M3 12h4l2-7 4 14 2-7h6"/>',
   package: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>',
+  map: '<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15M15 6v15"/>',
   hand: '<path d="M7 12V6a2 2 0 0 1 4 0v5M11 11V4a2 2 0 0 1 4 0v7M15 11V6a2 2 0 0 1 4 0v8c0 5-3 7-7 7h-1c-3 0-5-2-7-5l-2-3a2 2 0 0 1 3-2l2 1Z"/>',
   more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'
 };
@@ -138,6 +210,18 @@ function nowIso() {
 
 function uid(prefix) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function createGuideState() {
+  return {
+    scenarioKey: "rearm",
+    stepIndex: 0,
+    completedTaskIds: [],
+    routeVisible: true,
+    status: "active",
+    returnRoute: "home",
+    linkedActionId: null
+  };
 }
 
 function createInitialState() {
@@ -181,6 +265,7 @@ function createInitialState() {
       observations: Object.fromEntries(REFERENCE.kitItems.map((item) => [item.id, { present: item.demoPresent, verified: false, updatedAt: null }]))
     },
     restock: null,
+    guide: createGuideState(),
     audit: {
       id: "audit-jul-aug-2026",
       name: "Contrôle JUILLET / AOÛT",
@@ -210,7 +295,13 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return createInitialState();
     const parsed = JSON.parse(raw);
+    if (parsed.schemaVersion === 1) {
+      parsed.schemaVersion = SCHEMA_VERSION;
+      parsed.guide = createGuideState();
+      return parsed;
+    }
     if (parsed.schemaVersion !== SCHEMA_VERSION) return createInitialState();
+    parsed.guide = { ...createGuideState(), ...(parsed.guide || {}) };
     return parsed;
   } catch {
     return createInitialState();
@@ -366,6 +457,168 @@ function priorityCard({ tone = "", route, iconName, title, description, indicato
   </button>`;
 }
 
+function activeRestockAction() {
+  if (!state.restock) return null;
+  return state.actions.find((action) => action.id === state.restock.actionId && action.status === "open") || null;
+}
+
+function guideScenarioData() {
+  const scenarioKey = GUIDE_SCENARIOS[state.guide.scenarioKey] ? state.guide.scenarioKey : "rearm";
+  const definition = GUIDE_SCENARIOS[scenarioKey];
+  const restockAction = scenarioKey === "rearm" ? activeRestockAction() : null;
+
+  if (!restockAction) return { key: scenarioKey, label: definition.label, steps: definition.fallbackSteps, linked: false };
+
+  const collectionTasks = state.restock.lines.map((line) => ({
+    id: `collect-${line.itemId}`,
+    icon: "+",
+    title: `Prendre ${line.quantity} × ${line.name}`,
+    detail: "Réserve de réarmement",
+    phase: "collect",
+    itemId: line.itemId
+  }));
+  const placementTasks = state.restock.lines.map((line) => ({
+    id: `place-${line.itemId}`,
+    icon: "▣",
+    title: `Placer ${line.quantity} × ${line.name}`,
+    detail: "Sac PÉDIA → Sac rouge → Kit perfusion",
+    phase: "place",
+    itemId: line.itemId
+  }));
+
+  return {
+    key: scenarioKey,
+    label: definition.label,
+    linked: true,
+    steps: [
+      { zone: "reserve1", title: "Réserve 1", subtitle: "À gauche en sortant du PC IDE", pointer: [715, 188], tasks: collectionTasks },
+      { zone: "reservesmur", title: "Réserve SMUR", subtitle: "Au fond du couloir · environ 20 m", pointer: [1012, 188], tasks: placementTasks },
+      {
+        zone: "garage",
+        title: "Garage SMUR",
+        subtitle: "Sortir par les SAS puis traverser la cour",
+        pointer: [91, 610],
+        tasks: [
+          { id: "linked-return-vehicle", icon: "🚑", title: "Replacer le sac dans le véhicule", detail: "Confirmer la remise à bord" },
+          { id: "linked-close-rearm", icon: "✓", title: "Clôturer le réarmement", detail: "La conformité sera recalculée" }
+        ]
+      }
+    ]
+  };
+}
+
+function guideTaskKey(task, stepIndex = state.guide.stepIndex) {
+  return `${state.guide.scenarioKey}:${stepIndex}:${task.id}`;
+}
+
+function isGuideTaskDone(task, stepIndex = state.guide.stepIndex) {
+  if (task.phase && state.restock) {
+    const line = state.restock.lines.find((entry) => entry.itemId === task.itemId);
+    return Boolean(line?.[task.phase === "collect" ? "collected" : "placed"]);
+  }
+  return state.guide.completedTaskIds.includes(guideTaskKey(task, stepIndex));
+}
+
+function resetGuide(scenarioKey = state.guide.scenarioKey) {
+  state.guide.scenarioKey = GUIDE_SCENARIOS[scenarioKey] ? scenarioKey : "rearm";
+  state.guide.stepIndex = 0;
+  state.guide.status = "active";
+  state.guide.completedTaskIds = state.guide.completedTaskIds.filter((id) => !id.startsWith(`${state.guide.scenarioKey}:`));
+}
+
+function openGuide(scenarioKey, returnRoute = "home") {
+  const nextScenario = GUIDE_SCENARIOS[scenarioKey] ? scenarioKey : "rearm";
+  const linkedActionId = nextScenario === "rearm" ? activeRestockAction()?.id || null : null;
+  if (state.guide.scenarioKey !== nextScenario || state.guide.linkedActionId !== linkedActionId || state.guide.status === "complete") {
+    resetGuide(nextScenario);
+  }
+  state.guide.returnRoute = returnRoute;
+  state.guide.linkedActionId = linkedActionId;
+  saveState();
+  navigate("map");
+}
+
+function guideZoneClass(zoneId, steps, currentIndex) {
+  const index = steps.findIndex((step) => step.zone === zoneId);
+  if (index < 0) return "";
+  if (index < currentIndex) return "visited";
+  if (index === currentIndex) return "active";
+  return "";
+}
+
+function serviceMapSvg(scenario, stepIndex) {
+  const step = scenario.steps[stepIndex];
+  const zoneClass = (zoneId) => guideZoneClass(zoneId, scenario.steps, stepIndex);
+  return `<svg id="service-map" viewBox="0 0 1200 700" role="img" aria-label="Plan schématique des Urgences et du parcours de réarmement">
+    <defs><filter id="guide-soft-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="8" flood-opacity=".12"/></filter></defs>
+    <rect class="service-map-bg" x="0" y="0" width="1200" height="700" rx="36" />
+    <path class="service-corridor" d="M 105 300 H 900" />
+    <text class="service-map-note" x="520" y="284" text-anchor="middle">COULOIR PRINCIPAL · ENVIRON 20 M</text>
+
+    <g class="service-zone service-zone-care ${zoneClass("box7")}"><rect x="65" y="45" width="120" height="85" rx="16"/><text x="125" y="94" text-anchor="middle">BOX 7</text></g>
+    <g class="service-zone service-zone-care ${zoneClass("pcide")}"><rect x="280" y="55" width="145" height="80" rx="16"/><text x="352" y="87" text-anchor="middle">PC IDE</text><text class="sub" x="352" y="108" text-anchor="middle">départ</text></g>
+    <g class="service-zone service-zone-care"><rect x="425" y="55" width="145" height="80" rx="16"/><text x="498" y="101" text-anchor="middle">BOX 6</text></g>
+    <g class="service-zone service-zone-care"><rect x="570" y="55" width="145" height="80" rx="16"/><text x="642" y="101" text-anchor="middle">BOX 5</text></g>
+    <g class="service-zone service-zone-care"><rect x="20" y="220" width="95" height="95" rx="14"/><text x="68" y="258" text-anchor="middle">BOX 8</text><text x="68" y="280" text-anchor="middle">ET IOA</text></g>
+    <g class="service-zone service-zone-pedia"><rect x="195" y="210" width="100" height="45" rx="12"/><text x="245" y="238" text-anchor="middle">BOX PED 2</text></g>
+    <g class="service-zone service-zone-pedia"><rect x="195" y="257" width="100" height="45" rx="12"/><text x="245" y="285" text-anchor="middle">BOX PED 1</text></g>
+    <g class="service-zone service-zone-care"><rect x="295" y="210" width="125" height="92" rx="14"/><text x="358" y="263" text-anchor="middle">BOX 2</text></g>
+    <g class="service-zone service-zone-care"><rect x="420" y="210" width="125" height="92" rx="14"/><text x="483" y="263" text-anchor="middle">BOX 3</text></g>
+    <g class="service-zone service-zone-care"><rect x="545" y="210" width="125" height="92" rx="14"/><text x="608" y="263" text-anchor="middle">BOX 4</text></g>
+    <g class="service-zone service-zone-storage ${zoneClass("reserve1")}"><rect x="670" y="205" width="90" height="165" rx="14"/><text x="715" y="274" text-anchor="middle">RÉSERVE</text><text x="715" y="296" text-anchor="middle">1</text></g>
+    <g class="service-zone service-zone-uhcd"><rect x="760" y="205" width="210" height="92" rx="14"/><text x="865" y="258" text-anchor="middle">UHCD</text></g>
+    <g class="service-zone service-zone-storage ${zoneClass("reservesmur")}"><rect x="970" y="205" width="85" height="165" rx="14"/><text x="1012" y="268" text-anchor="middle">RÉSERVE</text><text x="1012" y="290" text-anchor="middle">SMUR</text></g>
+    <g class="service-zone service-zone-respi ${zoneClass("respireserve")}"><rect x="1055" y="205" width="105" height="165" rx="14"/><text x="1107" y="268" text-anchor="middle">RÉSERVE</text><text x="1107" y="290" text-anchor="middle">RESPI</text></g>
+    <g class="service-zone service-zone-transition"><rect x="85" y="315" width="95" height="72" rx="12"/><text x="133" y="357" text-anchor="middle">SAS 1</text></g>
+    <g class="service-zone service-zone-transition"><rect x="85" y="387" width="95" height="95" rx="12"/><text x="133" y="441" text-anchor="middle">SAS 2</text></g>
+    <g class="service-zone service-zone-outdoor"><rect x="18" y="482" width="300" height="145" rx="18"/><text x="168" y="548" text-anchor="middle">COUR EXTÉRIEURE</text><text class="sub" x="168" y="573" text-anchor="middle">vers le garage</text></g>
+    <g class="service-zone service-zone-garage ${zoneClass("garage")}"><rect x="18" y="627" width="145" height="65" rx="14"/><text x="91" y="666" text-anchor="middle">GARAGE SMUR</text></g>
+
+    <path class="service-route ${state.guide.routeVisible ? "" : "hidden"}" d="M 352 140 L 352 175 L 715 175 L 715 205 M 715 370 L 715 410 L 1012 410 L 1012 370 M 1012 370 L 1012 430 L 1107 430 L 1107 370 M 1012 430 L 180 430 L 180 520 L 110 520 L 110 627" />
+    <g class="service-pointer" transform="translate(${step.pointer[0]}, ${step.pointer[1]})"><circle class="service-pointer-pulse" r="28"/><circle class="service-pointer-core" r="13"/><path d="M0 12 C -10 12 -15 23 0 38 C 15 23 10 12 0 12 Z"/></g>
+    <g class="service-start" transform="translate(352 150)"><circle r="10"/><text x="16" y="6">Départ PC IDE</text></g>
+  </svg>`;
+}
+
+function guideMapView() {
+  const scenario = guideScenarioData();
+  const stepIndex = Math.min(state.guide.stepIndex, scenario.steps.length - 1);
+  const step = scenario.steps[stepIndex];
+  const completed = step.tasks.filter((task) => isGuideTaskDone(task, stepIndex)).length;
+  const remaining = step.tasks.length - completed;
+  const allDone = remaining === 0;
+  const lastStep = stepIndex === scenario.steps.length - 1;
+  const guideComplete = state.guide.status === "complete";
+  const nextLabel = guideComplete
+    ? "Recommencer ce parcours"
+    : lastStep
+    ? scenario.key === "respi" ? "Ouvrir le contrôle respi" : scenario.linked ? "Terminer et valider la conformité" : "Terminer le parcours"
+    : "J'ai terminé dans cette zone";
+
+  return flowShell(`
+    <header class="page-header"><div><p class="eyebrow">Parcours terrain</p><h1 class="page-title">Repère service</h1><p class="page-subtitle">Le plan n'affiche que la prochaine zone utile. Les tâches liées au réarmement mettent à jour l'action réelle.</p></div><button class="icon-button" data-action="map-reset" aria-label="Réinitialiser le parcours">${icon("refresh", 20)}</button></header>
+    ${scenario.linked ? `<div class="success-banner">${icon("shield", 19)}<div><strong>Relié à l'action de réarmement</strong>Chaque case cochée est enregistrée dans le moteur opérationnel.</div></div>` : `<div class="info-banner">${icon("map", 19)}<div><strong>Mode exploration</strong>Ce scénario permet d'évaluer le parcours sans modifier une action ouverte.</div></div>`}
+    <section class="guide-summary-card">
+      <div><p class="section-label">PROCHAINE ÉTAPE</p><h2>${escapeHtml(state.guide.status === "complete" ? "Parcours terminé" : step.title)}</h2><p>${escapeHtml(state.guide.status === "complete" ? "Toutes les zones du parcours ont été traitées." : step.subtitle)}</p></div>
+      <div class="guide-progress-pill"><strong>${stepIndex + 1} / ${scenario.steps.length}</strong><span>zones</span></div>
+    </section>
+    <section class="guide-map-card">
+      <div class="guide-map-toolbar"><div><p class="section-label">MINI-MAP</p><p>Le pointeur indique la prochaine zone utile.</p></div><button class="small-button" data-action="map-toggle-route">${state.guide.routeVisible ? "Masquer le parcours" : "Afficher le parcours"}</button></div>
+      <div class="guide-map-wrap">${serviceMapSvg(scenario, stepIndex)}</div>
+      <div class="guide-legend"><span><i class="guide-dot blue"></i>Soins</span><span><i class="guide-dot green"></i>Réserves</span><span><i class="guide-dot orange"></i>Extérieur</span><span><i class="guide-dot red"></i>Garage</span></div>
+    </section>
+    <section class="guide-action-card">
+      <div class="guide-action-head"><div><p class="section-label">À FAIRE ICI</p><h3>${escapeHtml(step.title)}</h3></div><span class="guide-task-count">${remaining === 0 ? "Zone terminée" : `${remaining} action${remaining > 1 ? "s" : ""}`}</span></div>
+      <div class="guide-task-list">${step.tasks.map((task) => {
+        const done = isGuideTaskDone(task, stepIndex);
+        return `<button class="guide-task-item ${done ? "done" : ""}" data-action="map-task" data-id="${task.id}"><span class="guide-task-icon">${task.icon}</span><span class="guide-task-copy"><strong>${escapeHtml(task.title)}</strong><small>${escapeHtml(task.detail)}</small></span><span class="guide-task-check">${done ? icon("check", 16) : ""}</span></button>`;
+      }).join("")}</div>
+      <button class="primary-button" data-action="${guideComplete ? "map-reset" : "map-next"}" ${allDone ? "" : "disabled"}>${nextLabel}</button>
+    </section>
+    <section class="guide-scenarios"><div><p class="section-label">AUTRES PARCOURS</p><h3>Changer de scénario</h3></div><div class="guide-scenario-grid">${Object.entries(GUIDE_SCENARIOS).map(([key, item]) => `<button class="guide-scenario ${scenario.key === key ? "active" : ""}" data-action="map-scenario" data-id="${key}">${item.label}</button>`).join("")}</div></section>
+  `, "Repère service", state.guide.returnRoute || "home");
+}
+
 function homeView() {
   const progress = auditProgress();
   const current = currentAuditItem();
@@ -425,6 +678,14 @@ function homeView() {
         </button>
       </section>
     </div>
+    <section class="section">
+      <div class="section-head"><h2>Repère terrain</h2></div>
+      <button class="analysis-teaser" data-action="open-map" data-scenario="rearm" data-return="home">
+        <span class="spark map">${icon("map")}</span>
+        <span><strong>Repère service</strong><small>Voir la prochaine zone utile et regrouper les gestes par emplacement.</small></span>
+        ${icon("chevron", 18)}
+      </button>
+    </section>
   `, "home");
 }
 
@@ -558,6 +819,8 @@ function restockView(actionId) {
     <header class="page-header"><div><p class="eyebrow">Réarmement ciblé</p><h1 class="page-title">${stage === "collect" ? "Préparer le réarmement" : "Placer dans le kit"}</h1><p class="page-subtitle">Seuls les écarts constatés sont présentés. Le reste du kit a déjà été vérifié.</p></div></header>
     <div class="tour-stepper"><div class="tour-step ${stage === "collect" ? "active" : "done"}"><span>${stage === "collect" ? "1" : icon("check", 18)}</span>À prendre</div><div class="tour-line"></div><div class="tour-step ${stage === "place" ? "active" : ""}"><span>2</span>À placer</div></div>
     ${stage === "collect" ? `<div class="info-banner">${icon("package", 19)}<div><strong>Réserve de réarmement</strong>Cochez chaque élément au moment où vous l'avez réellement en main.</div></div>` : `<div class="info-banner">${icon("bag", 19)}<div><strong>Sac vert PÉDIA → Sac rouge → Kit perfusion</strong>Confirmez le placement physique de chaque élément.</div></div>`}
+    <div class="spacer-12"></div>
+    <button class="guide-launch-card" data-action="open-map" data-scenario="rearm" data-return="restock/${action.id}"><span>${icon("map", 21)}</span><span><strong>Ouvrir le Repère service</strong><small>Suivre le parcours physique jusqu'au véhicule</small></span>${icon("chevron", 18)}</button>
     <div class="spacer-12"></div>
     <div class="card pick-list">
       ${state.restock.lines.map((line) => {
@@ -705,6 +968,7 @@ function eventLabel(event) {
     OBSERVATION_SAVED: "Constat enregistré",
     ANOMALIES_CONFIRMED: "Anomalies confirmées",
     RESTOCK_COMPLETED: "Réarmement terminé",
+    GUIDE_COMPLETED: "Parcours terrain terminé",
     AUDIT_ITEM_CHECKED: "Élément contrôlé",
     AUDIT_ANOMALY: "Anomalie de contrôle"
   };
@@ -731,6 +995,7 @@ function render() {
     case "search": html = searchView(); break;
     case "expiries": html = expiriesView(); break;
     case "analysis": html = analysisView(); break;
+    case "map": html = guideMapView(); break;
     case "profile": html = profileView(); break;
     default: html = homeView();
   }
@@ -834,6 +1099,58 @@ function finishRestock() {
   navigate("conform-success");
 }
 
+function toggleGuideTask(taskId) {
+  const scenario = guideScenarioData();
+  const stepIndex = Math.min(state.guide.stepIndex, scenario.steps.length - 1);
+  const task = scenario.steps[stepIndex].tasks.find((entry) => entry.id === taskId);
+  if (!task) return;
+
+  if (task.phase && state.restock) {
+    const line = state.restock.lines.find((entry) => entry.itemId === task.itemId);
+    if (!line) return;
+    const property = task.phase === "collect" ? "collected" : "placed";
+    line[property] = !line[property];
+    if (task.phase === "collect") {
+      state.restock.stage = state.restock.lines.every((entry) => entry.collected) ? "place" : "collect";
+    }
+  } else {
+    const key = guideTaskKey(task, stepIndex);
+    const index = state.guide.completedTaskIds.indexOf(key);
+    if (index >= 0) state.guide.completedTaskIds.splice(index, 1);
+    else state.guide.completedTaskIds.push(key);
+  }
+
+  saveState({ notify: true, message: `${task.title} · enregistré` });
+  render();
+}
+
+function advanceGuide() {
+  if (state.guide.status === "complete") return;
+  const scenario = guideScenarioData();
+  const stepIndex = Math.min(state.guide.stepIndex, scenario.steps.length - 1);
+  const step = scenario.steps[stepIndex];
+  if (!step.tasks.every((task) => isGuideTaskDone(task, stepIndex))) return;
+
+  if (stepIndex < scenario.steps.length - 1) {
+    state.guide.stepIndex = stepIndex + 1;
+    saveState();
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  addEvent("GUIDE_COMPLETED", "usage", scenario.label, state.user.name, { scenario: scenario.key, linkedActionId: state.guide.linkedActionId });
+  if (scenario.linked && activeRestockAction()) return finishRestock();
+  if (scenario.key === "respi") {
+    state.guide.status = "complete";
+    saveState();
+    return navigate("control/item");
+  }
+  state.guide.status = "complete";
+  saveState({ notify: true, message: "Parcours terminé" });
+  render();
+}
+
 function recordAudit(result) {
   const item = currentAuditItem();
   if (!item) return;
@@ -907,6 +1224,25 @@ document.addEventListener("click", (event) => {
     return render();
   }
   if (action === "finish-restock") return finishRestock();
+  if (action === "open-map") return openGuide(button.dataset.scenario, button.dataset.return || "home");
+  if (action === "map-toggle-route") {
+    state.guide.routeVisible = !state.guide.routeVisible;
+    saveState();
+    return render();
+  }
+  if (action === "map-task") return toggleGuideTask(button.dataset.id);
+  if (action === "map-next") return advanceGuide();
+  if (action === "map-reset") {
+    resetGuide();
+    saveState();
+    return render();
+  }
+  if (action === "map-scenario") {
+    resetGuide(button.dataset.id);
+    state.guide.linkedActionId = button.dataset.id === "rearm" ? activeRestockAction()?.id || null : null;
+    saveState();
+    return render();
+  }
   if (action === "audit-conform") return recordAudit("compliant");
   if (action === "audit-anomaly") return recordAudit("anomaly");
   if (action === "audit-pause") {

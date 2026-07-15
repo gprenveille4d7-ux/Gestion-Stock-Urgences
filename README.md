@@ -2,7 +2,7 @@
 
 Prototype PWA mobile centré sur l'état de préparation opérationnelle, et non sur un stock comptable.
 
-Version de l'application : **0.2.0 — 15/07/2026**.
+Version de l'application : **0.3.0 — 15/07/2026**.
 
 ## Lancer localement
 
@@ -32,5 +32,6 @@ Les données du prototype sont enregistrées dans `localStorage` après chaque g
 - Retour SMUR → Sac PÉDIA → Kit perfusion → action créée.
 - Action ouverte → contrôle du kit → deux manquants → tournée de réarmement → conformité retrouvée.
 - Contrôle bimestriel à 64 % → fermeture/rechargement → reprise au prochain élément exact.
+- Repère service → progression par zones → tâches de réarmement synchronisées avec l'action ouverte.
 
 Le module Analyse sépare usage normal, écart de conformité et défaillance. Les alertes prédictives sont présentées comme des signaux explicables, jamais comme des décisions automatiques.
