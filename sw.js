@@ -1,5 +1,5 @@
-const CACHE = "releve-smur-v0.3.0-20260715";
-const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon.svg"];
+const CACHE = "releve-smur-v0.4.0-20260716";
+const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon.svg", "./assets/plan-urgences-falaise.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));

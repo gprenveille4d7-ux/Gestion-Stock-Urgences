@@ -1,6 +1,6 @@
 const STORAGE_KEY = "releve-smur-operational-v1";
 const SCHEMA_VERSION = 2;
-const APP_RELEASE = Object.freeze({ version: "0.3.0", date: "15/07/2026" });
+const APP_RELEASE = Object.freeze({ version: "0.4.0", date: "16/07/2026" });
 
 const REFERENCE = Object.freeze({
   id: "ref-smur-2026-07-v3",
@@ -100,25 +100,41 @@ const EXPIRIES = [
   { id: "adrenaline", name: "Adrénaline 1 mg", place: "Frigo médicaments", lot: "240101", days: 105 }
 ];
 
+const SERVICE_MAP = Object.freeze({
+  viewBoxWidth: 1000,
+  viewBoxHeight: 605.8,
+  zones: Object.freeze({
+    pcide: { label: "PC IDE", x: 30.5, y: 12.5, tone: "pc" },
+    reserve1: { label: "Réserve 1", x: 46.5, y: 27, tone: "reserve1" },
+    reservesmur: { label: "Réserve SMUR", x: 82.7, y: 27, tone: "smur" },
+    respireserve: { label: "Réserve Respi", x: 88.3, y: 27, tone: "respi" },
+    garage: { label: "Garage SMUR", x: 16.3, y: 86, tone: "garage" }
+  })
+});
+
 const GUIDE_SCENARIOS = Object.freeze({
   rearm: {
     label: "Réarmement SMUR",
     fallbackSteps: [
       {
+        zone: "pcide",
+        title: "PC IDE",
+        subtitle: "Poste infirmier et armoires à traitements",
+        tasks: [{ id: "demo-biseptine", icon: "+", title: "Prendre 2 Biseptines", detail: "Double armoire traitements" }]
+      },
+      {
         zone: "reserve1",
         title: "Réserve 1",
-        subtitle: "À gauche en sortant du PC IDE",
-        pointer: [715, 188],
+        subtitle: "Première réserve de matériel général",
         tasks: [
           { id: "demo-kt22", icon: "+", title: "Prendre 1 KT 22G", detail: "Stock de réarmement" },
-          { id: "demo-biseptine", icon: "+", title: "Prendre 2 Biseptines", detail: "Pour le Kit perfusion PÉDIA" }
+          { id: "demo-tegaderm", icon: "+", title: "Prendre 1 Tegaderm", detail: "Stock de réarmement" }
         ]
       },
       {
         zone: "reservesmur",
         title: "Réserve SMUR",
-        subtitle: "Au fond du couloir · environ 20 m",
-        pointer: [1012, 188],
+        subtitle: "Sacs SMUR, Corpuls et LifePak",
         tasks: [
           { id: "demo-pedia", icon: "▣", title: "Réarmer le Sac PÉDIA", detail: "Kit perfusion" },
           { id: "demo-corpuls", icon: "✓", title: "Vérifier le Corpuls", detail: "Présence et état fonctionnel" }
@@ -126,16 +142,14 @@ const GUIDE_SCENARIOS = Object.freeze({
       },
       {
         zone: "respireserve",
-        title: "Réserve matériel respi",
-        subtitle: "Salle attenante au pôle SMUR",
-        pointer: [1107, 188],
+        title: "Réserve Respi",
+        subtitle: "Matériel respiratoire",
         tasks: [{ id: "demo-respi", icon: "◎", title: "Prendre le matériel respi", detail: "Élément déclaré manquant" }]
       },
       {
         zone: "garage",
         title: "Garage SMUR",
-        subtitle: "Sortir par les SAS puis traverser la cour",
-        pointer: [91, 610],
+        subtitle: "Dans le fond de la cour, en bas à gauche",
         tasks: [
           { id: "demo-vehicle", icon: "🚑", title: "Replacer le sac dans le véhicule", detail: "Confirmer la remise à bord" },
           { id: "demo-close", icon: "✓", title: "Clôturer le réarmement", detail: "SMUR prêt à repartir" }
@@ -147,9 +161,8 @@ const GUIDE_SCENARIOS = Object.freeze({
     label: "Contrôle respi",
     fallbackSteps: [{
       zone: "respireserve",
-      title: "Réserve matériel respi",
-      subtitle: "Au fond du couloir, après le pôle SMUR",
-      pointer: [1107, 188],
+      title: "Réserve Respi",
+      subtitle: "Matériel respiratoire",
       tasks: [
         { id: "respi-presence", icon: "◎", title: "Rejoindre la zone respi", detail: "Le contrôle reprendra sur l'élément exact" },
         { id: "respi-ready", icon: "◷", title: "Préparer la zone de contrôle", detail: "Référentiel bimestriel figé" }
@@ -161,8 +174,7 @@ const GUIDE_SCENARIOS = Object.freeze({
     fallbackSteps: [{
       zone: "garage",
       title: "Garage SMUR",
-      subtitle: "Sortir par les SAS puis traverser la cour",
-      pointer: [91, 610],
+      subtitle: "Fond de la cour, en bas à gauche",
       tasks: [
         { id: "garage-visual", icon: "🚑", title: "Vérifier le véhicule SMUR", detail: "Contrôle visuel ciblé" },
         { id: "garage-bags", icon: "▣", title: "Confirmer la présence des sacs", detail: "Selon le référentiel véhicule" }
@@ -218,6 +230,7 @@ function createGuideState() {
     stepIndex: 0,
     completedTaskIds: [],
     routeVisible: true,
+    zoom: 1,
     status: "active",
     returnRoute: "home",
     linkedActionId: null
@@ -486,18 +499,24 @@ function guideScenarioData() {
     itemId: line.itemId
   }));
 
+  const pcTasks = collectionTasks.filter((task) => task.itemId === "biseptine");
+  const reserveTasks = collectionTasks.filter((task) => task.itemId !== "biseptine");
+  const collectionSteps = [
+    pcTasks.length ? { zone: "pcide", title: "PC IDE", subtitle: "Double armoire à traitements", tasks: pcTasks } : null,
+    reserveTasks.length ? { zone: "reserve1", title: "Réserve 1", subtitle: "Première réserve de matériel général", tasks: reserveTasks } : null
+  ].filter(Boolean);
+
   return {
     key: scenarioKey,
     label: definition.label,
     linked: true,
     steps: [
-      { zone: "reserve1", title: "Réserve 1", subtitle: "À gauche en sortant du PC IDE", pointer: [715, 188], tasks: collectionTasks },
-      { zone: "reservesmur", title: "Réserve SMUR", subtitle: "Au fond du couloir · environ 20 m", pointer: [1012, 188], tasks: placementTasks },
+      ...collectionSteps,
+      { zone: "reservesmur", title: "Réserve SMUR", subtitle: "Sacs SMUR, Corpuls et LifePak", tasks: placementTasks },
       {
         zone: "garage",
         title: "Garage SMUR",
-        subtitle: "Sortir par les SAS puis traverser la cour",
-        pointer: [91, 610],
+        subtitle: "Dans le fond de la cour, en bas à gauche",
         tasks: [
           { id: "linked-return-vehicle", icon: "🚑", title: "Replacer le sac dans le véhicule", detail: "Confirmer la remise à bord" },
           { id: "linked-close-rearm", icon: "✓", title: "Clôturer le réarmement", detail: "La conformité sera recalculée" }
@@ -523,6 +542,8 @@ function resetGuide(scenarioKey = state.guide.scenarioKey) {
   state.guide.scenarioKey = GUIDE_SCENARIOS[scenarioKey] ? scenarioKey : "rearm";
   state.guide.stepIndex = 0;
   state.guide.status = "active";
+  state.guide.routeVisible = true;
+  state.guide.zoom = 1;
   state.guide.completedTaskIds = state.guide.completedTaskIds.filter((id) => !id.startsWith(`${state.guide.scenarioKey}:`));
 }
 
@@ -538,46 +559,26 @@ function openGuide(scenarioKey, returnRoute = "home") {
   navigate("map");
 }
 
-function guideZoneClass(zoneId, steps, currentIndex) {
-  const index = steps.findIndex((step) => step.zone === zoneId);
-  if (index < 0) return "";
-  if (index < currentIndex) return "visited";
-  if (index === currentIndex) return "active";
-  return "";
-}
+function serviceMapView(scenario, stepIndex) {
+  const zoom = Math.min(2.2, Math.max(1, Number(state.guide.zoom) || 1));
+  const routePoints = scenario.steps.map((step) => SERVICE_MAP.zones[step.zone]).filter(Boolean).map((zone) => `${zone.x * 10},${zone.y * (SERVICE_MAP.viewBoxHeight / 100)}`).join(" ");
+  const markers = scenario.steps.map((step, index) => {
+    const zone = SERVICE_MAP.zones[step.zone];
+    if (!zone) return "";
+    const status = index < stepIndex ? "visited" : index === stepIndex ? "active" : "upcoming";
+    const markerLabel = index < stepIndex ? icon("check", 16) : index + 1;
+    return `<span class="guide-map-marker ${zone.tone} ${status}" style="left:${zone.x}%;top:${zone.y}%" title="${escapeHtml(zone.label)}" aria-label="${escapeHtml(zone.label)} · étape ${index + 1}"><span>${markerLabel}</span></span>`;
+  }).join("");
+  const origin = SERVICE_MAP.zones.pcide;
 
-function serviceMapSvg(scenario, stepIndex) {
-  const step = scenario.steps[stepIndex];
-  const zoneClass = (zoneId) => guideZoneClass(zoneId, scenario.steps, stepIndex);
-  return `<svg id="service-map" viewBox="0 0 1200 700" role="img" aria-label="Plan schématique des Urgences et du parcours de réarmement">
-    <defs><filter id="guide-soft-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="8" flood-opacity=".12"/></filter></defs>
-    <rect class="service-map-bg" x="0" y="0" width="1200" height="700" rx="36" />
-    <path class="service-corridor" d="M 105 300 H 900" />
-    <text class="service-map-note" x="520" y="284" text-anchor="middle">COULOIR PRINCIPAL · ENVIRON 20 M</text>
-
-    <g class="service-zone service-zone-care ${zoneClass("box7")}"><rect x="65" y="45" width="120" height="85" rx="16"/><text x="125" y="94" text-anchor="middle">BOX 7</text></g>
-    <g class="service-zone service-zone-care ${zoneClass("pcide")}"><rect x="280" y="55" width="145" height="80" rx="16"/><text x="352" y="87" text-anchor="middle">PC IDE</text><text class="sub" x="352" y="108" text-anchor="middle">départ</text></g>
-    <g class="service-zone service-zone-care"><rect x="425" y="55" width="145" height="80" rx="16"/><text x="498" y="101" text-anchor="middle">BOX 6</text></g>
-    <g class="service-zone service-zone-care"><rect x="570" y="55" width="145" height="80" rx="16"/><text x="642" y="101" text-anchor="middle">BOX 5</text></g>
-    <g class="service-zone service-zone-care"><rect x="20" y="220" width="95" height="95" rx="14"/><text x="68" y="258" text-anchor="middle">BOX 8</text><text x="68" y="280" text-anchor="middle">ET IOA</text></g>
-    <g class="service-zone service-zone-pedia"><rect x="195" y="210" width="100" height="45" rx="12"/><text x="245" y="238" text-anchor="middle">BOX PED 2</text></g>
-    <g class="service-zone service-zone-pedia"><rect x="195" y="257" width="100" height="45" rx="12"/><text x="245" y="285" text-anchor="middle">BOX PED 1</text></g>
-    <g class="service-zone service-zone-care"><rect x="295" y="210" width="125" height="92" rx="14"/><text x="358" y="263" text-anchor="middle">BOX 2</text></g>
-    <g class="service-zone service-zone-care"><rect x="420" y="210" width="125" height="92" rx="14"/><text x="483" y="263" text-anchor="middle">BOX 3</text></g>
-    <g class="service-zone service-zone-care"><rect x="545" y="210" width="125" height="92" rx="14"/><text x="608" y="263" text-anchor="middle">BOX 4</text></g>
-    <g class="service-zone service-zone-storage ${zoneClass("reserve1")}"><rect x="670" y="205" width="90" height="165" rx="14"/><text x="715" y="274" text-anchor="middle">RÉSERVE</text><text x="715" y="296" text-anchor="middle">1</text></g>
-    <g class="service-zone service-zone-uhcd"><rect x="760" y="205" width="210" height="92" rx="14"/><text x="865" y="258" text-anchor="middle">UHCD</text></g>
-    <g class="service-zone service-zone-storage ${zoneClass("reservesmur")}"><rect x="970" y="205" width="85" height="165" rx="14"/><text x="1012" y="268" text-anchor="middle">RÉSERVE</text><text x="1012" y="290" text-anchor="middle">SMUR</text></g>
-    <g class="service-zone service-zone-respi ${zoneClass("respireserve")}"><rect x="1055" y="205" width="105" height="165" rx="14"/><text x="1107" y="268" text-anchor="middle">RÉSERVE</text><text x="1107" y="290" text-anchor="middle">RESPI</text></g>
-    <g class="service-zone service-zone-transition"><rect x="85" y="315" width="95" height="72" rx="12"/><text x="133" y="357" text-anchor="middle">SAS 1</text></g>
-    <g class="service-zone service-zone-transition"><rect x="85" y="387" width="95" height="95" rx="12"/><text x="133" y="441" text-anchor="middle">SAS 2</text></g>
-    <g class="service-zone service-zone-outdoor"><rect x="18" y="482" width="300" height="145" rx="18"/><text x="168" y="548" text-anchor="middle">COUR EXTÉRIEURE</text><text class="sub" x="168" y="573" text-anchor="middle">vers le garage</text></g>
-    <g class="service-zone service-zone-garage ${zoneClass("garage")}"><rect x="18" y="627" width="145" height="65" rx="14"/><text x="91" y="666" text-anchor="middle">GARAGE SMUR</text></g>
-
-    <path class="service-route ${state.guide.routeVisible ? "" : "hidden"}" d="M 352 140 L 352 175 L 715 175 L 715 205 M 715 370 L 715 410 L 1012 410 L 1012 370 M 1012 370 L 1012 430 L 1107 430 L 1107 370 M 1012 430 L 180 430 L 180 520 L 110 520 L 110 627" />
-    <g class="service-pointer" transform="translate(${step.pointer[0]}, ${step.pointer[1]})"><circle class="service-pointer-pulse" r="28"/><circle class="service-pointer-core" r="13"/><path d="M0 12 C -10 12 -15 23 0 38 C 15 23 10 12 0 12 Z"/></g>
-    <g class="service-start" transform="translate(352 150)"><circle r="10"/><text x="16" y="6">Départ PC IDE</text></g>
-  </svg>`;
+  return `<div class="guide-map-viewport">
+    <div id="service-map" class="guide-map-stage" style="width:${zoom * 100}%">
+      <img class="guide-map-image" src="assets/plan-urgences-falaise.png" alt="Plan réel des Urgences de Falaise" draggable="false" />
+      <svg class="guide-route-layer" viewBox="0 0 ${SERVICE_MAP.viewBoxWidth} ${SERVICE_MAP.viewBoxHeight}" preserveAspectRatio="none" aria-hidden="true"><polyline class="service-route ${state.guide.routeVisible ? "" : "hidden"}" points="${routePoints}" vector-effect="non-scaling-stroke" /></svg>
+      <span class="guide-map-origin" style="left:${origin.x}%;top:${origin.y}%"><span class="guide-origin-pulse"></span><span class="guide-origin-dot"></span><span class="guide-origin-label">VOUS ÊTES ICI</span></span>
+      <span class="guide-map-markers">${markers}</span>
+    </div>
+  </div>`;
 }
 
 function guideMapView() {
@@ -603,9 +604,10 @@ function guideMapView() {
       <div class="guide-progress-pill"><strong>${stepIndex + 1} / ${scenario.steps.length}</strong><span>zones</span></div>
     </section>
     <section class="guide-map-card">
-      <div class="guide-map-toolbar"><div><p class="section-label">MINI-MAP</p><p>Le pointeur indique la prochaine zone utile.</p></div><button class="small-button" data-action="map-toggle-route">${state.guide.routeVisible ? "Masquer le parcours" : "Afficher le parcours"}</button></div>
-      <div class="guide-map-wrap">${serviceMapSvg(scenario, stepIndex)}</div>
-      <div class="guide-legend"><span><i class="guide-dot blue"></i>Soins</span><span><i class="guide-dot green"></i>Réserves</span><span><i class="guide-dot orange"></i>Extérieur</span><span><i class="guide-dot red"></i>Garage</span></div>
+      <div class="guide-map-toolbar"><div><p class="section-label">PLAN RÉEL DES URGENCES</p><p>Le marqueur agrandi indique la prochaine zone utile.</p></div><button class="small-button" data-action="map-toggle-route">${state.guide.routeVisible ? "Masquer le trajet" : "Afficher le trajet"}</button></div>
+      <div class="guide-map-wrap">${serviceMapView(scenario, stepIndex)}</div>
+      <div class="guide-zoom-controls"><button data-action="map-zoom-out" aria-label="Dézoomer">−</button><button data-action="map-zoom-in" aria-label="Zoomer">+</button><button class="guide-zoom-reset" data-action="map-zoom-reset">${Math.round((Number(state.guide.zoom) || 1) * 100)} %</button></div>
+      <div class="guide-legend"><span><i class="guide-dot blue"></i>Étape actuelle</span><span><i class="guide-dot green"></i>Terminée</span><span><i class="guide-dot neutral"></i>À venir</span></div>
     </section>
     <section class="guide-action-card">
       <div class="guide-action-head"><div><p class="section-label">À FAIRE ICI</p><h3>${escapeHtml(step.title)}</h3></div><span class="guide-task-count">${remaining === 0 ? "Zone terminée" : `${remaining} action${remaining > 1 ? "s" : ""}`}</span></div>
@@ -1227,6 +1229,21 @@ document.addEventListener("click", (event) => {
   if (action === "open-map") return openGuide(button.dataset.scenario, button.dataset.return || "home");
   if (action === "map-toggle-route") {
     state.guide.routeVisible = !state.guide.routeVisible;
+    saveState();
+    return render();
+  }
+  if (action === "map-zoom-in") {
+    state.guide.zoom = Math.min(2.2, Math.round(((Number(state.guide.zoom) || 1) + 0.2) * 10) / 10);
+    saveState();
+    return render();
+  }
+  if (action === "map-zoom-out") {
+    state.guide.zoom = Math.max(1, Math.round(((Number(state.guide.zoom) || 1) - 0.2) * 10) / 10);
+    saveState();
+    return render();
+  }
+  if (action === "map-zoom-reset") {
+    state.guide.zoom = 1;
     saveState();
     return render();
   }
