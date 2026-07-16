@@ -3,15 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="referrer" content="no-referrer" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
     <meta name="theme-color" content="#073f8c" />
-    <meta name="description" content="Centre de préparation opérationnelle Urgences / SMUR" />
+    <meta name="description" content="Préparation opérationnelle, contrôles et réarmement Urgences / SMUR" />
+    <meta name="application-name" content="Relève SMUR" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Relève — SMUR / Urgences</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/icon-180.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="app" aria-live="polite"></div>
+    <div id="app"></div>
     <div id="toast-root" class="toast-root" aria-live="assertive"></div>
     <script type="module" src="app.js"></script>
   </body>

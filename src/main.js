@@ -1,0 +1,242 @@
+import { SMUR_CONTAINERS } from './data/reference.js';
+import { OperationalStore } from './application/operational-store.js';
+import { renderApp } from './ui/views.js';
+import { navigate, routeParts } from './ui/utils.js';
+
+const appRoot = document.querySelector('#app');
+const toastRoot = document.querySelector('#toast-root');
+const ui = {
+  online: navigator.onLine,
+  search: '',
+  usageContainer: '',
+  usageSection: '',
+  usageItem: '',
+  usageDeclaration: 'ouvert',
+  actionFilter: 'open',
+  expiryHorizon: 90,
+  defectContainer: SMUR_CONTAINERS[0].id,
+  mapOrigin: 'pc-ide',
+  mapZoom: 1
+};
+
+let store;
+let busy = false;
+const channel = 'BroadcastChannel' in globalThis ? new BroadcastChannel('releve-smur-updates') : null;
+
+function showToast(message, tone = 'saved', action = null) {
+  const toast = document.createElement('div');
+  toast.className = `toast ${tone}`;
+  const text = document.createElement('span');
+  text.textContent = message;
+  toast.append(text);
+  if (action) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = action.label;
+    button.addEventListener('click', action.onClick, { once: true });
+    toast.append(button);
+  }
+  toastRoot.append(toast);
+  window.setTimeout(() => toast.remove(), action ? 12000 : 3600);
+}
+
+function render() {
+  if (!store?.state.ready) return;
+  appRoot.innerHTML = renderApp(store.state, ui, routeParts());
+  document.title = `${routeParts()[0] === 'home' ? 'Relève' : 'Relève · ' + routeParts()[0]} — SMUR / Urgences`;
+}
+
+async function loadChariotReference() {
+  try {
+    const response = await fetch('./src/data/chariot-reference.json');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.warn('Référentiel chariots indisponible', error);
+    return null;
+  }
+}
+
+async function perform(operation, successMessage = '') {
+  if (busy) return null;
+  busy = true;
+  appRoot.setAttribute('aria-busy', 'true');
+  try {
+    const result = await operation();
+    if (successMessage) showToast(successMessage);
+    channel?.postMessage({ type: 'data-changed' });
+    return result;
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || 'Opération impossible', 'error');
+    return null;
+  } finally {
+    busy = false;
+    appRoot.removeAttribute('aria-busy');
+  }
+}
+
+appRoot.addEventListener('click', async (event) => {
+  const target = event.target.closest('button, [data-nav]');
+  if (!target || target.disabled) return;
+  if (target.dataset.nav) return navigate(target.dataset.nav);
+
+  if (target.dataset.startAudit) {
+    const audit = await perform(() => store.startAudit(target.dataset.startAudit, target.dataset.originAction || null), 'Contrôle démarré');
+    if (audit) navigate(`audit/${audit.id}`);
+    return;
+  }
+  if (target.dataset.resumeAudit) {
+    const audit = await perform(() => store.resumeAudit(target.dataset.resumeAudit), 'Contrôle repris');
+    if (audit) navigate(`audit/${audit.id}`);
+    return;
+  }
+  if (target.dataset.pauseAudit) {
+    const paused = await perform(() => store.pauseAudit(target.dataset.pauseAudit), 'Contrôle mis en pause');
+    if (paused !== null) navigate('audits');
+    return;
+  }
+  if (target.dataset.observeConforme) {
+    await perform(() => store.recordAuditObservation({ auditId: target.dataset.observeConforme, itemId: target.dataset.itemId, result: 'conforme' }), 'Observation enregistrée');
+    return;
+  }
+  if (target.dataset.completeAudit) {
+    const done = await perform(() => store.completeAudit(target.dataset.completeAudit), 'Contrôle clôturé');
+    if (done !== null) navigate('actions');
+    return;
+  }
+  if (target.dataset.toggleLine) {
+    await perform(() => store.toggleActionLine(target.dataset.toggleLine, target.dataset.itemId));
+    return;
+  }
+  if (target.dataset.advanceAction) {
+    await perform(() => store.advanceAction(target.dataset.advanceAction), 'Étape enregistrée');
+    return;
+  }
+  if (target.dataset.actionFilter) {
+    ui.actionFilter = target.dataset.actionFilter;
+    render();
+    return;
+  }
+  if (target.dataset.expiryHorizon) {
+    ui.expiryHorizon = Number(target.dataset.expiryHorizon);
+    render();
+    return;
+  }
+  if (target.dataset.mapZoom) {
+    ui.mapZoom = target.dataset.mapZoom === 'in' ? Math.min(2.5, ui.mapZoom + 0.25) : target.dataset.mapZoom === 'out' ? Math.max(1, ui.mapZoom - 0.25) : 1;
+    render();
+    return;
+  }
+  if (target.dataset.planExpiry) {
+    const action = await perform(() => store.planExpiryReplacement(target.dataset.planExpiry), 'Remplacement planifié');
+    if (action) navigate(`action/${action.id}`);
+  }
+});
+
+appRoot.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.target;
+  const data = new FormData(form);
+  if (form.id === 'usage-form') {
+    const action = await perform(() => store.declareReturn({
+      containerId: data.get('containerId'), sectionId: data.get('sectionId') || null, itemId: data.get('itemId') || null,
+      declaration: data.get('declaration'), quantity: data.get('quantity') || 1, note: data.get('note')
+    }), 'Déclaration enregistrée');
+    if (action) navigate(`action/${action.id}`);
+  } else if (form.id === 'observation-form') {
+    await perform(() => store.recordAuditObservation({
+      auditId: data.get('auditId'), itemId: data.get('itemId'), result: data.get('result'),
+      observedQuantity: data.get('observedQuantity'), note: data.get('note'), severity: data.get('severity')
+    }), 'Écart enregistré et action créée');
+  } else if (form.id === 'defect-form') {
+    const action = await perform(() => store.reportDefect({
+      containerId: data.get('containerId'), itemId: data.get('itemId') || null, note: data.get('note'), blocking: data.get('blocking') === 'on'
+    }), 'Défaut enregistré');
+    if (action) navigate(`action/${action.id}`);
+  } else if (form.id === 'role-form') {
+    await perform(() => store.setUserRole(data.get('role')), 'Rôle local enregistré');
+  } else if (form.id === 'audit-assignment-form') {
+    await perform(() => store.assignAudit(data.get('auditId'), data.get('userId'), data.get('reason')), 'Passation enregistrée');
+  } else if (form.id === 'expiry-completion-form') {
+    const lot = await perform(() => store.completeExpiryAction(data.get('actionId'), { lotNumber: data.get('lotNumber'), expiryMonth: data.get('expiryMonth'), quantity: data.get('quantity') }), 'Nouveau lot enregistré');
+    if (lot) navigate('expiry');
+  }
+});
+
+appRoot.addEventListener('input', (event) => {
+  if (event.target.id !== 'reference-search') return;
+  ui.search = event.target.value;
+  const position = event.target.selectionStart;
+  render();
+  const input = document.querySelector('#reference-search');
+  input?.focus();
+  input?.setSelectionRange(position, position);
+});
+
+appRoot.addEventListener('change', (event) => {
+  if (event.target.id === 'usage-container') {
+    ui.usageContainer = event.target.value;
+    ui.usageSection = '';
+    ui.usageItem = '';
+    render();
+  } else if (event.target.id === 'usage-section') {
+    ui.usageSection = event.target.value;
+    ui.usageItem = '';
+    render();
+  } else if (event.target.id === 'usage-item') {
+    ui.usageItem = event.target.value;
+    render();
+  } else if (event.target.id === 'usage-declaration') {
+    ui.usageDeclaration = event.target.value;
+    render();
+  } else if (event.target.id === 'defect-container') {
+    ui.defectContainer = event.target.value;
+    render();
+  } else if (event.target.id === 'map-origin') {
+    ui.mapOrigin = event.target.value;
+    render();
+  }
+});
+
+window.addEventListener('hashchange', render);
+window.addEventListener('online', () => { ui.online = true; render(); });
+window.addEventListener('offline', () => { ui.online = false; render(); });
+channel?.addEventListener('message', (event) => {
+  if (event.data?.type === 'data-changed') store?.reload();
+});
+
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const registration = await navigator.serviceWorker.register('./sw.js');
+    registration.addEventListener('updatefound', () => {
+      const worker = registration.installing;
+      worker?.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          showToast('Une mise à jour est prête.', 'saved', { label: 'Actualiser', onClick: () => { worker.postMessage({ type: 'SKIP_WAITING' }); location.reload(); } });
+        }
+      });
+    });
+  } catch (error) {
+    console.warn('Service worker non enregistré', error);
+  }
+}
+
+async function boot() {
+  appRoot.innerHTML = '<div class="p0-loading"><span></span><strong>Ouverture du journal local…</strong></div>';
+  try {
+    const chariotReference = await loadChariotReference();
+    store = await OperationalStore.create(chariotReference);
+    store.subscribe(render);
+    render();
+    await registerServiceWorker();
+  } catch (error) {
+    console.error(error);
+    appRoot.innerHTML = '<div class="p0-fatal"><h1>Impossible d’ouvrir l’application</h1><p id="fatal-message"></p><button id="fatal-retry">Réessayer</button></div>';
+    document.querySelector('#fatal-message').textContent = String(error.message || error);
+    document.querySelector('#fatal-retry').addEventListener('click', () => location.reload());
+  }
+}
+
+boot();
