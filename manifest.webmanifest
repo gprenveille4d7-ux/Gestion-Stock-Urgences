@@ -8,7 +8,25 @@
   "display": "standalone",
   "background_color": "#f2f6fb",
   "theme_color": "#073f8c",
+  "categories": ["medical", "productivity"],
+  "shortcuts": [
+    { "name": "Retour d'intervention", "short_name": "Retour", "url": "./#/return", "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
+    { "name": "Actions ouvertes", "short_name": "Actions", "url": "./#/actions", "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
+    { "name": "Nouveau contrôle", "short_name": "Contrôle", "url": "./#/audits", "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
+  ],
   "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "icon.svg",
       "sizes": "any",

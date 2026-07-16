@@ -1,112 +1,56 @@
-# Architecture métier — préparation opérationnelle SMUR
+# Architecture technique
 
-## Décision centrale
+## Choix directeur
 
-Le produit n'est pas un inventaire comptable. Sa responsabilité est de répondre à quatre questions :
-
-- le matériel peut-il repartir ;
-- une action est-elle nécessaire ;
-- quelle action concrète reste à effectuer ;
-- qui peut la reprendre et depuis quel point exact.
-
-La disponibilité est donc **calculée**. Elle n'est jamais saisie directement comme un statut unique.
-
-## Les six objets du modèle
-
-### 1. Référentiel versionné
-
-Décrit la composition officielle et l'ordre physique de contrôle. Une session retient `referenceId` et `referenceVersion` à son démarrage. Une activation ultérieure ne modifie jamais une session en cours.
-
-### 2. Structure physique
-
-Arbre récursif `contenant → sous-contenant → kit → élément`. La navigation suit le geste terrain et n'impose aucune profondeur arbitraire.
-
-### 3. Événement
-
-Fait daté et immuable : ouverture déclarée, défaillance signalée, contrôle commencé ou réarmement terminé. Un événement ne prouve pas à lui seul l'état physique actuel.
-
-Champs minimaux préparés pour l'analyse future :
+L’application reste déployable comme site statique sans chaîne de compilation. Elle utilise des modules JavaScript natifs, IndexedDB et un service worker. Ce choix conserve la simplicité du prototype tout en séparant réellement les responsabilités. TypeScript ou un framework pourront être introduits plus tard sans modifier le modèle métier.
 
 ```text
-id, type, family, subject, containerId, nodeId, quantity,
-occurredAt, userId, context, source, referenceVersion
+UI mobile / routes par hash
+        │ commandes utilisateur
+        ▼
+OperationalStore (cas d’usage)
+        │ événements + conséquences
+        ▼
+Moteurs de domaine ──► disponibilité / actions / péremptions / parcours / statistiques
+        │ transactions atomiques
+        ▼
+Repository ──► IndexedDB ──► outbox locale ──► futur adaptateur serveur
+        ▲
+Référentiel versionné PDF/XLSX + fixtures synthétiques séparées
 ```
 
-`family` sépare strictement :
+## Couches
 
-- `usage` : consommation normale liée à une intervention ;
-- `compliance` : écart constaté sans usage normal établi ;
-- `failure` : défaut, casse ou test fonctionnel négatif.
+- `src/data/` : référentiel, provenance, import XLSX généré et fixtures de démonstration ;
+- `src/domain/` : fonctions pures et testables, sans DOM ni stockage ;
+- `src/infrastructure/` : IndexedDB, repository transactionnel et contrat de synchronisation ;
+- `src/application/` : orchestration des cas d’usage et journalisation ;
+- `src/ui/` : rendu, navigation, accessibilité et événements de l’interface ;
+- `app.js` : point d’entrée minimal ;
+- `sw.js` : cache PWA versionné et stratégie réseau d’abord ;
+- `tests/` : tests unitaires et d’intégration du domaine.
 
-### 4. Observation
+## Règles d’architecture
 
-Constat terrain daté : quantité présente, conformité d'un emballage, résultat d'un test. Chaque observation de contrôle est enregistrée immédiatement. L'état réel constaté prime toujours sur un mouvement théorique supposé.
+1. L’interface n’écrit jamais directement dans IndexedDB.
+2. Un fait opérationnel produit un événement immuable.
+3. Une observation non conforme, son anomalie et son action sont enregistrées dans la même transaction.
+4. La disponibilité est une projection calculée ; elle n’est jamais saisie manuellement comme un état isolé.
+5. Une composition source n’est activable qu’après validation institutionnelle explicite.
+6. Les fixtures portent `source: demo-synthetic` et ne sont pas confondues avec les documents sources.
+7. Le rôle local prépare les autorisations futures mais ne constitue pas une authentification.
 
-### 5. Anomalie
+## Stockage et évolution
 
-Écart entre référentiel et observation. L'absence n'est qu'un motif parmi d'autres : mauvais calibre, souillure, scellé rompu, mauvais emplacement, surplus, péremption illisible ou défaut fonctionnel.
+La base `releve-smur-operational`, version 2, contient des stores distincts, dont les utilisateurs de démonstration. Les migrations futures incrémenteront la version IndexedDB et resteront additives. Au premier démarrage, les événements et actions trouvés dans `releve-smur-operational-v1` sont copiés sans supprimer la clé d’origine.
 
-### 6. Action ouverte
+L’outbox conserve chaque événement opérationnel avec un statut `pending`. L’adaptateur actuel est volontairement `local-only` : aucune synchronisation fictive n’est affichée comme réussie. Un futur adaptateur HTTP pourra traiter les événements de manière idempotente grâce à leurs identifiants et corrélations.
 
-Geste restant à accomplir : vérifier, ajouter, tester, remplacer ou reprendre un contrôle. L'action conserve sa source, sa gravité et son cycle de vie indépendamment de la disponibilité.
+## Frontières futures
 
-## Règles de transition
-
-| Déclencheur | Constat | Action produite | Impact calculé |
-| --- | --- | --- | --- |
-| Kit déclaré ouvert | Contenu inconnu | Vérifier le kit | À vérifier |
-| Vérification avec deux absences | 2 écarts confirmés | Ajouter les 2 éléments | À réarmer |
-| Éléments replacés | Aucun écart restant | Action fermée | Prêt |
-| Péremption à 28 jours | Produit encore valide | Remplacer avant échéance | Prêt avec action à prévoir |
-| Défaillance fonctionnelle | Équipement inutilisable | Tester/remplacer | Indisponible |
-
-Une couleur rouge d'anticipation n'implique donc pas automatiquement une indisponibilité.
-
-## Contrôle atomique et interruption
-
-Le contrôle n'est pas un formulaire long. Chaque geste écrit immédiatement :
-
-```text
-auditId + itemId + result + userId + timestamp + referenceVersion
-```
-
-La reprise est déduite du premier `itemId` sans observation dans l'ordre physique figé. Une passation future changera le responsable actif tout en conservant l'auteur de chaque micro-validation.
-
-## Persistance hors ligne du prototype
-
-Le prototype écrit l'état complet dans `localStorage` après chaque geste et le service worker met en cache l'interface. La cible de production remplacera cette implémentation par un journal IndexedDB transactionnel avec file de synchronisation idempotente.
-
-Principes de synchronisation prévus :
-
-- création locale avant toute tentative réseau ;
-- identifiant client stable pour éviter les doublons ;
-- événements append-only ;
-- résolution explicite des conflits d'observations ;
-- aucune migration silencieuse d'une session vers un nouveau référentiel.
-
-## Statistiques et anticipation
-
-Les statistiques sont des projections du journal, jamais une seconde source de vérité. Une alerte de couverture doit exposer ses facteurs : réserve actuelle, consommation récente et délai d'approvisionnement. Elle signale un risque ; elle ne commande rien et ne modifie jamais une dotation.
-
-L'IA prédictive reste hors P0. Le schéma événementiel est néanmoins prêt à fournir plus tard un historique propre et explicable.
-
-## Repère service
-
-Le plan réel des Urgences de Falaise est une projection spatiale des actions existantes. Il ne possède aucune checklist métier autonome : les gestes « prendre » et « placer » lisent et modifient directement les lignes du réarmement ouvert. Les scénarios sans action liée restent explicitement en mode exploration.
-
-Le parcours mémorise localement la zone courante, les micro-validations et l'affichage du trajet. La clôture d'un parcours de réarmement lié appelle le même moteur de conformité que l'écran de réarmement ciblé.
-
-## Périmètre de ce prototype
-
-Implémenté et testable :
-
-- retour SMUR en quatre gestes ;
-- moteur d'actions ouvertes ;
-- contrôle exploratoire du Kit perfusion ;
-- réarmement ciblé en deux temps ;
-- contrôle bimestriel à reprise exacte ;
-- séparation disponibilité / cause / gravité ;
-- aperçu d'analyse explicable.
-- repère spatial relié aux actions de réarmement.
-
-Volontairement différé : stock de réserve réel, QR codes, authentification hospitalière, synchronisation serveur, passation multi-utilisateur et modèle prédictif entraîné.
+- authentification OIDC/annuaire et autorisations côté serveur ;
+- API événementielle idempotente et résolution de conflits ;
+- gestion de plusieurs établissements/unités/véhicules ;
+- activation signée et historisée des versions de référentiel ;
+- notifications serveur et tableaux de bord agrégés ;
+- tests end-to-end sur navigateurs mobiles réels.

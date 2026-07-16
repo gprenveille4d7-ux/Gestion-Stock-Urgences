@@ -1,39 +1,62 @@
-# Relève — prototype opérationnel SMUR
+# Relève — SMUR / Urgences
 
-Prototype PWA mobile centré sur l'état de préparation opérationnelle, et non sur un stock comptable.
+PWA mobile-first de préparation opérationnelle pour les retours d’intervention, contrôles, réarmements, péremptions, défauts fonctionnels et parcours dans le service.
 
-Version de l'application : **0.4.0 — 16/07/2026**.
+Version actuelle : **0.5.0-p0 — 16/07/2026**.
 
-## Lancer localement
+> Le référentiel livré est un jeu de démonstration structuré à partir des documents fournis. Il doit être validé par l’établissement avant tout usage réel. L’application ne donne aucun conseil clinique, aucune posologie et aucune instruction thérapeutique.
 
-Servir le dossier avec n'importe quel serveur HTTP statique, par exemple :
+## Démarrage local
 
 ```powershell
-.\serve.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\serve.ps1 -Port 4173
 ```
 
-Puis ouvrir `http://localhost:4173`.
+Ouvrir ensuite `http://127.0.0.1:4173/`. Le premier chargement doit être réalisé avec le serveur accessible ; le service worker met ensuite le shell et le référentiel en cache.
 
-## Modèle métier retenu
+## Fonctions P0
 
-Le référentiel versionné décrit ce qui doit être présent. Il est immuable pendant un contrôle. L'état terrain est dérivé de quatre journaux distincts :
+- déclaration de retour d’intervention avec création automatique d’un contrôle ;
+- contrôle élément par élément, reprise après interruption et écriture atomique ;
+- génération d’anomalies et d’actions depuis les observations non conformes ;
+- cycle collecte → vérification → remise en place → clôture ;
+- disponibilité calculée depuis les anomalies ouvertes ;
+- péremptions par horizons et planification de remplacement ;
+- défaut fonctionnel, avec caractère bloquant décidé explicitement par l’utilisateur ;
+- carte réelle du service et parcours regroupé par zone ;
+- référentiel SMUR issu de 13 PDF et référentiels historiques issus de 3 classeurs ;
+- IndexedDB, migration non destructive de l’ancien `localStorage`, journal et outbox locale ;
+- fixtures synthétiques séparées des données de référence.
 
-1. `events` : ce qui s'est produit (ouverture, contrôle, remplacement) ;
-2. `observations` : ce qui a été constaté ;
-3. `actions` : ce qui reste à faire ;
-4. `availability` : l'impact opérationnel calculé pour le contenant.
+## Tests
 
-La boucle centrale est : **constater → générer une action → corriger → recalculer la disponibilité**.
+Avec Node.js 20 ou plus :
 
-Les données du prototype sont enregistrées dans `localStorage` après chaque geste. Le contrôle bimestriel conserve sa version de référentiel, son dernier élément validé et l'élément suivant exact.
+```powershell
+npm test
+```
 
-## Parcours démontrés
+Les 17 tests couvrent le moteur d’actions, la disponibilité, les priorités, les péremptions, les conflits, le parcours, les statistiques, l’import des classeurs, les routes UI et les simulations terrain principales.
 
-- Retour SMUR → Sac PÉDIA → Kit perfusion → action créée.
-- Action ouverte → contrôle du kit → deux manquants → tournée de réarmement → conformité retrouvée.
-- Contrôle bimestriel à 64 % → fermeture/rechargement → reprise au prochain élément exact.
-- Repère service → plan réel des Urgences de Falaise → progression par zones → tâches de réarmement synchronisées avec l'action ouverte.
+## Reconstruction du référentiel XLSX
 
-Le module Analyse sépare usage normal, écart de conformité et défaillance. Les alertes prédictives sont présentées comme des signaux explicables, jamais comme des décisions automatiques.
+Les classeurs sources restent en lecture seule. Pour régénérer le JSON applicatif :
 
-Le plan réel est intégré hors ligne dans `assets/plan-urgences-falaise.png`. Les positions des repères sont définies en pourcentage dans `SERVICE_MAP.zones`, dans `app.js`.
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\extract-xlsx-reference.ps1
+```
+
+L’extracteur exclut les signatures, identités, dates de péremption historiques, alertes et instructions.
+
+## Documentation
+
+- [Architecture](ARCHITECTURE.md)
+- [Audit initial](docs/INITIAL_AUDIT.md)
+- [Modèle de données](docs/DATA_MODEL.md)
+- [Processus métier](docs/PROCESS_FLOWS.md)
+- [Intégration des sources](docs/SOURCE_INTEGRATION.md)
+- [Guide de configuration](docs/ADMINISTRATION_GUIDE.md)
+- [Stratégie de tests](docs/TEST_STRATEGY.md)
+- [Sécurité et confidentialité](docs/SECURITY.md)
+- [Matrice de responsabilités](docs/RESPONSIBILITY_MATRIX.md)
+- [État P0 à P3](docs/IMPLEMENTATION_STATUS.md)
