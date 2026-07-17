@@ -12,6 +12,13 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   const store = await OperationalStore.create(chariots);
   const section = SMUR_CONTAINERS.find((container) => container.id === 'sac-vert-pedia').sections.find((candidate) => candidate.id.endsWith(':kit-perfusion'));
   const audit = await store.startAudit('sac-vert-pedia', null, section.id);
+  const operationalAction = {
+    id: 'ui-test-action', type: 'rearmement', title: 'Réarmer le kit perfusion', status: 'open', priority: 'haute',
+    containerId: 'sac-vert-pedia', targetZoneId: null, targetZoneStatus: 'missing-to-validate', finalZoneId: null,
+    finalZoneStatus: 'missing-to-validate', lines: [{ itemId: section.items[0].id, quantity: 1, done: false }],
+    createdAt: new Date().toISOString(), source: 'user-entry'
+  };
+  const state = { ...store.state, actions: [...store.state.actions, operationalAction] };
   const ui = {
     online: false,
     search: 'adrénaline',
@@ -20,18 +27,20 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
     usageItem: section.items[0].id,
     usageDeclaration: 'utilise',
     actionFilter: 'open',
-    expiryHorizon: 90,
+    expiryFilter: 'all',
+    expirySearch: '',
+    expiryItemId: '',
     defectContainer: 'sac-bleu-respi',
     mapOrigin: 'pc-ide',
     mapZoom: 1.25
   };
   const routes = [
     ['home'], ['return'], ['inventory'], ['container', 'sac-vert-pedia'], ['container', 'sac-vert-pedia', 'kit-perfusion'],
-    ['reserve', 'reserve-smur'], ['chariot', 'chariot-pediatrique'], ['actions'], ['action', store.state.actions[0].id], ['audits'], ['audit', audit.id],
-    ['expiry'], ['defect'], ['map'], ['stats'], ['history'], ['profile']
+    ['reserve', 'reserve-smur'], ['chariot', 'chariot-pediatrique'], ['actions'], ['action', operationalAction.id], ['audits'], ['audit', audit.id],
+    ['expiry'], ['expiry', 'add'], ['defect'], ['map'], ['stats'], ['history'], ['profile']
   ];
   for (const route of routes) {
-    const html = renderApp(store.state, ui, route);
+    const html = renderApp(state, ui, route);
     assert.ok(html.length > 1500, `${route.join('/')} trop court`);
     assert.equal(html.includes('>undefined<'), false, route.join('/'));
     assert.equal(html.includes('NaN'), false, route.join('/'));
@@ -83,7 +92,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   });
   const validatedDiagramHtml = renderVisualSchema(validatedDiagram, { kind: 'container' });
   assert.ok(validatedDiagramHtml.includes('visual-hotspot is-validated'));
-  assert.ok(validatedDiagramHtml.includes('Implantation validée'));
+  assert.ok(validatedDiagramHtml.includes('Organisation visuelle validée'));
   assert.ok(validatedDiagramHtml.includes('role="group" aria-label="Zones interactives'));
   assert.equal(validatedDiagramHtml.includes('visual-hotspot is-ready'), false, 'un schéma validé ne prouve pas que le matériel est prêt');
 
@@ -100,16 +109,20 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
 
   const inventoryHtml = renderApp(store.state, { ...ui, search: '' }, ['inventory']);
   assert.ok(inventoryHtml.includes('Sacs et contenants SMUR'));
-  assert.ok(inventoryHtml.includes('Chariots historiques'));
+  assert.ok(inventoryHtml.includes('Chariots d’urgence'));
   assert.ok(inventoryHtml.includes('Réserves'));
   assert.ok(inventoryHtml.includes('718 lignes issues de 16 inventaires'));
+  assert.ok(inventoryHtml.includes('URG.ENR.007 V4'));
+  assert.equal(inventoryHtml.includes('source historique'), false);
+  assert.equal(inventoryHtml.includes('Activation interdite'), false);
   assert.ok(inventoryHtml.includes('class="schema-thumbnail"'));
   assert.ok(inventoryHtml.includes('aria-hidden="true"'));
-  const actionListHtml = renderApp(store.state, ui, ['actions']);
-  assert.ok(actionListHtml.includes('DÉMO'));
-  const demoActionHtml = renderApp(store.state, ui, ['action', 'action-demo-biseptine']);
-  assert.ok(demoActionHtml.includes('Étape bloquée · emplacement à confirmer'));
-  const mapHtml = renderApp(store.state, ui, ['map']);
+  const actionListHtml = renderApp(state, ui, ['actions']);
+  assert.ok(actionListHtml.includes('Réarmer le kit perfusion'));
+  assert.equal(/prototype|démonstration|données de démonstration|lot de démonstration|action de démonstration/i.test(actionListHtml), false);
+  const missingSyntheticActionHtml = renderApp(state, ui, ['action', 'action-demo-biseptine']);
+  assert.ok(missingSyntheticActionHtml.includes('Action introuvable'));
+  const mapHtml = renderApp(state, ui, ['map']);
   assert.ok(mapHtml.includes('sans emplacement opérationnel validé'));
   const searchedInventoryHtml = renderApp(store.state, { ...ui, search: 'adrénaline' }, ['inventory']);
   assert.ok(searchedInventoryHtml.includes('affectation de zone à confirmer'));
@@ -119,13 +132,140 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
 
   const reserveHtml = renderApp(store.state, ui, ['reserve', 'reserve-1']);
   assert.ok(reserveHtml.includes('PHOTO DE LA RÉSERVE À AJOUTER'));
-  assert.ok(reserveHtml.includes('Les armoires, étagères et bacs ne sont pas inventés'));
+  assert.ok(reserveHtml.includes('Organisation visuelle à préciser · armoires, étagères et bacs à relever sur place.'));
+  assert.equal(reserveHtml.includes('reserve-warning'), false);
 
-  const degradedState = { ...store.state, chariotReference: null };
+  const degradedState = { ...state, chariotReference: null };
   const degradedInventory = renderApp(degradedState, { ...ui, search: '' }, ['inventory']);
   assert.ok(degradedInventory.includes('361 lignes issues de 13 inventaires chargés'));
   assert.ok(degradedInventory.includes('Référentiel chariots indisponible'));
   const degradedProfile = renderApp(degradedState, ui, ['profile']);
-  assert.ok(degradedProfile.includes('0/3 classeurs historiques chargés'));
+  assert.ok(degradedProfile.includes('0/3 inventaires XLSX chargés'));
+});
+
+test('les annotations source des chariots restent visibles sans devenir des lignes actives', async () => {
+  const chariots = JSON.parse(await readFile(new URL('../src/data/chariot-reference.json', import.meta.url), 'utf8'));
+  const reference = chariots.references.find((candidate) => candidate.id === 'chariot-pediatrique');
+  const section = reference.containers[0];
+  section.sourceAnnotations = [{
+    label: 'LIBELLÉ SOURCE QUANTITÉ NULLE', sourceCell: 'B2', expectedQuantity: 0,
+    validationIssue: 'Quantité source non positive à confirmer', sourceStatus: 'source-ambiguity-to-validate'
+  }];
+  const state = expiryState({ chariotReference: chariots });
+  const html = renderApp(state, expiryUi, ['chariot', reference.id, section.id]);
+  assert.equal((html.match(/class="inventory-line"/g) || []).length, section.items.length);
+  assert.ok(html.includes('LIBELLÉ SOURCE QUANTITÉ NULLE'));
+  assert.ok(html.includes('quantité source 0 · non activée dans le total théorique'));
+  assert.ok(html.includes('source-ambiguity-to-validate'));
+  assert.equal(html.includes('Source historique uniquement'), false);
+  assert.ok(html.includes('Référentiel actif'));
+});
+
+function atDayOffset(days) {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
+}
+
+function expiryState(overrides = {}) {
+  return {
+    ready: true,
+    persistent: true,
+    user: { id: 'local-user', displayName: 'Utilisateur local', role: 'soignant' },
+    users: [], events: [], audits: [], observations: [], anomalies: [], actions: [], lots: [], outbox: [], metadata: [], settings: [],
+    sync: { status: 'local-only', pending: 0, sent: 0 }, chariotReference: null,
+    ...overrides
+  };
+}
+
+const expiryUi = {
+  online: true, search: '', usageContainer: '', usageSection: '', usageItem: '', usageDeclaration: 'ouvert',
+  actionFilter: 'open', expiryFilter: 'all', expirySearch: '', expiryItemId: '', defectContainer: 'sac-bleu-respi',
+  mapOrigin: 'pc-ide', mapZoom: 1
+};
+
+test('une installation neuve montre quatre panneaux à zéro et aucun contenu inventé', () => {
+  const html = renderApp(expiryState(), expiryUi, ['expiry']);
+  assert.equal((html.match(/class="expiry-panel /g) || []).length, 4);
+  assert.equal((html.match(/expiry-panel-count">0/g) || []).length, 4);
+  assert.ok(html.includes('id="expiry-thresholds-form"'));
+  for (const [name, value] of [['urgentDays', 0], ['rapidReplacementDays', 30], ['anticipationDays', 90], ['monitoringDays', 180]]) assert.ok(html.includes(`name="${name}" min="0" step="1" inputmode="numeric" value="${value}"`));
+  assert.ok(html.includes('Aucun lot enregistré'));
+  assert.ok(html.includes('Les inventaires sont disponibles. Ajoutez les lots et les dates réellement présents'));
+  for (const label of ['Commencer la saisie', 'Scanner ou rechercher un produit', 'Voir les inventaires']) assert.ok(html.includes(label));
+  assert.equal(/prototype|démonstration|données de démonstration|lot de démonstration|action de démonstration/i.test(html), false);
+});
+
+test('un lot réel à vingt jours alimente le panneau orange et son filtre tactile', () => {
+  const item = SMUR_CONTAINERS.find((container) => container.id === 'sac-vert-pedia').sections.find((section) => section.id.endsWith(':kit-perfusion')).items.find((candidate) => candidate.label.includes('NaCl 0,9 % 10 mL'));
+  const state = expiryState({ lots: [{ id: 'lot-ui-20-days', itemId: item.id, lotNumber: 'LOT-UI-20', expiryDate: atDayOffset(20), quantity: 2, status: 'active', source: 'user-entry' }] });
+  const html = renderApp(state, { ...expiryUi, expiryFilter: 'soon' }, ['expiry']);
+  assert.ok(html.includes('class="expiry-panel orange is-active"'));
+  assert.ok(html.includes('aria-pressed="true" aria-label="Filtrer : ≤ 30 jours, 1"'));
+  assert.ok(html.includes('class="expiry-product-card orange"'));
+  assert.ok(html.includes('LOT-UI-20'));
+  assert.ok(html.includes('20 j restants'));
+  assert.ok(html.includes('Sac vert n°1 — Pédia'));
+});
+
+test('la saisie reprend le vrai référentiel sans préremplir le stock vivant', () => {
+  const item = SMUR_CONTAINERS.find((container) => container.id === 'sac-vert-pedia').sections.find((section) => section.id.endsWith(':kit-perfusion')).items.find((candidate) => candidate.label.includes('NaCl 0,9 % 10 mL'));
+  const html = renderApp(expiryState(), { ...expiryUi, expirySearch: 'NaCl 0,9 % 10 mL', expiryItemId: item.id }, ['expiry', 'add']);
+  assert.ok(html.includes('id="expiry-lot-form"'));
+  assert.ok(html.includes('Sac vert n°1 — Pédia'));
+  assert.ok(html.includes('Sac rouge · Kit perfusion'));
+  assert.ok(html.includes('Organisation visuelle à préciser'));
+  assert.ok(html.includes(`name="itemId" value="${item.id}"`));
+  assert.ok(html.includes('Quantité théorique : 1'));
+  assert.match(html, /name="lotNumber" required/);
+  assert.match(html, /name="quantity" min="1" step="1" inputmode="numeric" required/);
+  assert.equal(/name="lotNumber"[^>]+value=/i.test(html), false, 'aucun lot ne doit être généré ou suggéré');
+});
+
+test('le détail de lot expose Localiser, Retirer, Remplacer et Valider', () => {
+  const item = SMUR_CONTAINERS.find((container) => container.id === 'sac-vert-pedia').sections.find((section) => section.id.endsWith(':kit-perfusion')).items.find((candidate) => candidate.label.includes('NaCl 0,9 % 10 mL'));
+  const lot = { id: 'lot-ui-workflow', itemId: item.id, lotNumber: 'LOT-UI-FLOW', expiryDate: atDayOffset(20), quantity: 1, status: 'active', source: 'user-entry' };
+  const action = { id: 'action-ui-workflow', lotId: lot.id, type: 'remplacement_peremption', status: 'in_progress', stage: 'verification', lines: [{ itemId: item.id, quantity: 1, done: true }], source: 'user-entry' };
+  const html = renderApp(expiryState({ lots: [lot], actions: [action] }), expiryUi, ['expiry', 'lot', lot.id]);
+  for (const title of ['Localiser', 'Retirer', 'Remplacer', 'Valider']) assert.ok(html.includes(`<h2>${title}</h2>`));
+  assert.ok(html.includes('id="expiry-replacement-form"'));
+  assert.ok(html.includes('Organisation visuelle à préciser'));
+  assert.ok(html.includes('data-schema-kind="container"'));
+});
+
+test('un lot traité ce mois alimente le panneau vert et conserve son historique', () => {
+  const item = SMUR_CONTAINERS[0].sections[0].items[0];
+  const lot = { id: 'lot-ui-treated', itemId: item.id, lotNumber: 'LOT-UI-DONE', expiryDate: atDayOffset(-2), quantity: 1, status: 'replaced', replacedAt: new Date().toISOString(), source: 'user-entry' };
+  const html = renderApp(expiryState({ lots: [lot] }), { ...expiryUi, expiryFilter: 'treated' }, ['expiry']);
+  assert.ok(html.includes('class="expiry-panel green is-active"'));
+  assert.ok(html.includes('Filtrer : Traité ce mois, 1'));
+  assert.ok(html.includes('class="expiry-product-card green"'));
+  assert.ok(html.includes('Historique conservé'));
+});
+
+test('les enregistrements synthétiques restent invisibles même avant migration', () => {
+  const item = SMUR_CONTAINERS[0].sections[0].items[0];
+  const state = expiryState({
+    lots: [{ id: 'hidden-lot', itemId: item.id, lotNumber: 'HIDDEN-SEED', expiryDate: atDayOffset(5), quantity: 9, status: 'active', source: 'synthetic' }],
+    actions: [{ id: 'hidden-action', title: 'HIDDEN-ACTION', status: 'open', source: 'example' }],
+    events: [{ id: 'hidden-event', type: 'HIDDEN_EVENT', at: new Date().toISOString(), source: 'seed-demo' }]
+  });
+  const expiryHtml = renderApp(state, expiryUi, ['expiry']);
+  const actionsHtml = renderApp(state, expiryUi, ['actions']);
+  const historyHtml = renderApp(state, expiryUi, ['history']);
+  assert.ok(expiryHtml.includes('Aucun lot enregistré'));
+  assert.equal(expiryHtml.includes('HIDDEN-SEED'), false);
+  assert.equal(actionsHtml.includes('HIDDEN-ACTION'), false);
+  assert.equal(historyHtml.includes('HIDDEN_EVENT'), false);
+});
+
+test('la feuille de style impose une grille iPhone 2 × 2 et colore toute la surface', async () => {
+  const css = await readFile(new URL('../styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\.expiry-panel-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
+  for (const [tone, color] of [['red', '#b42318'], ['orange', '#c2410c'], ['violet', '#6d28d9'], ['green', '#137a42']]) {
+    assert.ok(css.includes(`.expiry-panel.${tone} { background: ${color}; }`));
+  }
+  assert.match(css, /\.expiry-panel\s*\{[^}]*min-height:\s*138px/s);
 });
 

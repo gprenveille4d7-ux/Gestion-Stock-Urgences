@@ -13,20 +13,32 @@ $box3Workbook = (Get-ChildItem -LiteralPath $downloads -File -Filter '*.xlsx' | 
 $sources = @(
   [pscustomobject]@{
     Id = 'chariot-pediatrique'
-    Label = "Chariot d'urgence pediatrique"
+    ManifestId = 'src-chariots-pedia'
+    Label = "Chariot d'urgence pédiatrique"
     Scope = 'pediatrie'
+    DocumentRef = 'URG.ENR.007'
+    Revision = 'V4'
+    SourceDate = '2024-03'
     File = $pediatricWorkbook
   },
   [pscustomobject]@{
     Id = 'chariot-box-4'
+    ManifestId = 'src-chariot-box4'
     Label = "Chariot d'urgence - Box 4"
     Scope = 'urgences'
+    DocumentRef = 'URG.ENR.007'
+    Revision = 'V4'
+    SourceDate = '2024-03'
     File = $box4Workbook
   },
   [pscustomobject]@{
     Id = 'chariot-box-3'
+    ManifestId = 'src-chariot-box3'
     Label = "Chariot d'urgence - Box 3"
     Scope = 'urgences'
+    DocumentRef = 'URG.ENR.007'
+    Revision = 'V4'
+    SourceDate = '2024-03'
     File = $box3Workbook
   }
 )
@@ -114,6 +126,7 @@ foreach ($source in $sources) {
       $sheetNs.AddNamespace('m', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main')
       $sheetSlug = ConvertTo-Slug $sheet.name
       $items = @()
+      $sourceAnnotations = @()
 
       foreach ($row in $sheetXml.SelectNodes('//m:sheetData/m:row', $sheetNs)) {
         $quantityCell = $row.SelectSingleNode('./m:c[starts-with(@r,"A")]', $sheetNs)
@@ -122,7 +135,30 @@ foreach ($source in $sources) {
         $label = (Read-CellValue $labelCell $sheetNs $sharedStrings).Trim()
         $quantity = 0.0
         if (-not [double]::TryParse($quantityRaw, [Globalization.NumberStyles]::Any, [Globalization.CultureInfo]::InvariantCulture, [ref]$quantity)) { continue }
-        if ($quantity -le 0 -or [string]::IsNullOrWhiteSpace($label)) { continue }
+        if ([string]::IsNullOrWhiteSpace($label)) { continue }
+
+        # Ces six lignes du Tiroir 5 pédiatrique sont des produits avec un stock
+        # théorique explicitement égal à zéro dans le classeur. Elles restent
+        # visibles comme annotations sourcées : les activer avec une quantité
+        # positive reviendrait à inventer une valeur absente du document.
+        $isKnownZeroInventoryLine = $source.Id -eq 'chariot-pediatrique' -and
+          $sheet.name -like 'Tiroir 5*' -and
+          [int]$row.r -in @(18, 19, 20, 21, 28, 31)
+        if ($quantity -le 0) {
+          if ($isKnownZeroInventoryLine) {
+            $sourceAnnotations += [ordered]@{
+              id = "$($source.Id)-$sheetSlug-$($row.r)"
+              label = $label
+              expectedQuantitySource = $quantity
+              sourceId = $source.ManifestId
+              sourceCell = "B$($row.r)"
+              sourceStatus = 'source-ambiguity-to-validate'
+              validationIssues = @('Quantité théorique égale à zéro dans le document source ; activation à confirmer')
+              visible = $true
+            }
+          }
+          continue
+        }
 
         $productCode = ''
         foreach ($column in @('G', 'F')) {
@@ -144,7 +180,9 @@ foreach ($source in $sources) {
           unit = 'unite'
           presentation = $presentation
           productCode = $productCode
+          sourceId = $source.ManifestId
           sourceCell = "B$($row.r)"
+          sourceStatus = 'source-validated'
         }
       }
 
@@ -152,7 +190,9 @@ foreach ($source in $sources) {
         id = "$($source.Id)-$sheetSlug"
         label = [string]$sheet.name
         kind = if ($sheet.name -like 'Tiroir*') { 'tiroir' } else { 'plateau' }
+        physicalLayoutStatus = 'physical-layout-provisional'
         items = $items
+        sourceAnnotations = $sourceAnnotations
       }
     }
 
@@ -160,16 +200,24 @@ foreach ($source in $sources) {
       id = $source.Id
       label = $source.Label
       scope = $source.Scope
-      sourceStatus = 'historical-reference-only'
-      validationRequired = $true
+      sourceId = $source.ManifestId
+      documentRef = $source.DocumentRef
+      revision = $source.Revision
+      sourceDate = $source.SourceDate
+      sourceStatus = 'imported-from-source'
+      physicalLayoutStatus = 'physical-layout-provisional'
+      validationRequired = $source.Id -eq 'chariot-pediatrique'
       kind = 'chariot'
       containers = $containers
     }
     $sourceManifest += [ordered]@{
       referenceId = $source.Id
+      sourceId = $source.ManifestId
       fileName = [IO.Path]::GetFileName($source.File)
       sha256 = Get-FileSha256 $source.File
-      sourcePeriod = '2024-03'
+      documentRef = $source.DocumentRef
+      revision = $source.Revision
+      sourcePeriod = $source.SourceDate
       importedFields = @('expectedQuantity', 'label', 'presentation', 'productCode', 'sourceCell')
       excludedFields = @('expiry', 'alert', 'signature', 'author', 'approval', 'instruction')
     }
@@ -179,9 +227,9 @@ foreach ($source in $sources) {
 }
 
 $payload = [ordered]@{
-  schemaVersion = 1
-  generatedAt = '2026-07-16T00:00:00.000Z'
-  sourceStatus = 'demo-draft-needs-hospital-validation'
+  schemaVersion = 2
+  generatedAt = '2026-07-17T00:00:00.000Z'
+  sourceStatus = 'imported-from-source'
   sources = $sourceManifest
   references = $references
 }

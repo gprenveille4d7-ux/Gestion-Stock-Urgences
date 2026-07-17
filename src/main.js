@@ -13,7 +13,9 @@ const ui = {
   usageItem: '',
   usageDeclaration: 'ouvert',
   actionFilter: 'open',
-  expiryHorizon: 90,
+  expiryFilter: 'all',
+  expirySearch: '',
+  expiryItemId: '',
   defectContainer: SMUR_CONTAINERS[0].id,
   mapOrigin: 'pc-ide',
   mapZoom: 1
@@ -84,6 +86,24 @@ appRoot.addEventListener('click', async (event) => {
   if (!target || target.disabled) return;
   if (target.dataset.nav) return navigate(target.dataset.nav);
 
+  if (target.dataset.expiryFilter) {
+    ui.expiryFilter = target.dataset.expiryFilter;
+    render();
+    return;
+  }
+  if (target.dataset.selectExpiryItem) {
+    ui.expiryItemId = target.dataset.selectExpiryItem;
+    render();
+    document.querySelector('#expiry-lot-form input[name="lotNumber"]')?.focus();
+    return;
+  }
+  if (target.dataset.clearExpiryItem) {
+    ui.expiryItemId = '';
+    render();
+    document.querySelector('#expiry-reference-search')?.focus();
+    return;
+  }
+
   if (target.dataset.schemaAction === 'select-usage-section') {
     const selectedSectionId = target.dataset.schemaValue;
     ui.usageSection = selectedSectionId;
@@ -128,17 +148,16 @@ appRoot.addEventListener('click', async (event) => {
     await perform(() => store.toggleActionLine(target.dataset.toggleLine, target.dataset.itemId));
     return;
   }
+  if (target.dataset.localizeExpiryAction) {
+    await perform(() => store.localizeExpiryAction(target.dataset.localizeExpiryAction), 'Emplacement confirmé');
+    return;
+  }
   if (target.dataset.advanceAction) {
     await perform(() => store.advanceAction(target.dataset.advanceAction), 'Étape enregistrée');
     return;
   }
   if (target.dataset.actionFilter) {
     ui.actionFilter = target.dataset.actionFilter;
-    render();
-    return;
-  }
-  if (target.dataset.expiryHorizon) {
-    ui.expiryHorizon = Number(target.dataset.expiryHorizon);
     render();
     return;
   }
@@ -149,7 +168,8 @@ appRoot.addEventListener('click', async (event) => {
   }
   if (target.dataset.planExpiry) {
     const action = await perform(() => store.planExpiryReplacement(target.dataset.planExpiry), 'Remplacement planifié');
-    if (action) navigate(`action/${action.id}`);
+    if (action) navigate(`expiry/lot/${target.dataset.planExpiry}`);
+    return;
   }
 });
 
@@ -177,6 +197,46 @@ appRoot.addEventListener('submit', async (event) => {
     await perform(() => store.setUserRole(data.get('role')), 'Rôle local enregistré');
   } else if (form.id === 'audit-assignment-form') {
     await perform(() => store.assignAudit(data.get('auditId'), data.get('userId'), data.get('reason')), 'Passation enregistrée');
+  } else if (form.id === 'expiry-lot-form') {
+    const lot = await perform(() => store.addTrackedLot({
+      itemId: data.get('itemId'),
+      containerId: data.get('containerId'),
+      sectionId: data.get('sectionId'),
+      locationId: data.get('locationId'),
+      locationStatus: data.get('locationStatus'),
+      lotNumber: data.get('lotNumber'),
+      expiryMonth: data.get('expiryMonth'),
+      quantity: data.get('quantity')
+    }), 'Lot enregistré');
+    if (lot) {
+      ui.expiryFilter = 'all';
+      ui.expirySearch = '';
+      ui.expiryItemId = '';
+      navigate('expiry');
+    }
+  } else if (form.id === 'expiry-removal-form') {
+    await perform(() => store.removeExpiryLot(data.get('actionId'), {
+      quantity: data.get('quantity'),
+      reason: data.get('reason')
+    }), 'Retrait enregistré');
+  } else if (form.id === 'expiry-replacement-form') {
+    await perform(() => store.replaceExpiryLot(data.get('actionId'), {
+      lotNumber: data.get('lotNumber'),
+      expiryMonth: data.get('expiryMonth'),
+      quantity: data.get('quantity')
+    }), 'Remplacement enregistré');
+  } else if (form.id === 'expiry-validation-form') {
+    const completed = await perform(() => store.validateExpiryReplacement(data.get('actionId'), {
+      removed: data.get('removed') === 'on',
+      replaced: data.get('replaced') === 'on',
+      quantityConform: data.get('quantityConform') === 'on',
+      dateRecorded: data.get('dateRecorded') === 'on',
+      containerAvailable: data.get('containerAvailable') === 'on'
+    }), 'Traitement clôturé');
+    if (completed) {
+      ui.expiryFilter = 'treated';
+      navigate('expiry');
+    }
   } else if (form.id === 'expiry-completion-form') {
     const lot = await perform(() => store.completeExpiryAction(data.get('actionId'), { lotNumber: data.get('lotNumber'), expiryMonth: data.get('expiryMonth'), quantity: data.get('quantity') }), 'Nouveau lot enregistré');
     if (lot) navigate('expiry');
@@ -184,11 +244,17 @@ appRoot.addEventListener('submit', async (event) => {
 });
 
 appRoot.addEventListener('input', (event) => {
-  if (event.target.id !== 'reference-search') return;
-  ui.search = event.target.value;
+  if (!['reference-search', 'expiry-reference-search'].includes(event.target.id)) return;
+  const expirySearch = event.target.id === 'expiry-reference-search';
+  if (expirySearch) {
+    ui.expirySearch = event.target.value;
+    ui.expiryItemId = '';
+  } else {
+    ui.search = event.target.value;
+  }
   const position = event.target.selectionStart;
   render();
-  const input = document.querySelector('#reference-search');
+  const input = document.querySelector(expirySearch ? '#expiry-reference-search' : '#reference-search');
   input?.focus();
   input?.setSelectionRange(position, position);
 });

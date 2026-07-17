@@ -1,10 +1,10 @@
 # Relève — SMUR / Urgences
 
-PWA mobile-first de préparation opérationnelle pour les retours d’intervention, contrôles, réarmements, péremptions, défauts fonctionnels et parcours dans le service.
+PWA mobile-first de préparation opérationnelle : inventaires, retours d’intervention, contrôles, réarmements, péremptions, défauts fonctionnels et historique local.
 
-Version actuelle : **0.6.0-p0 — 17/07/2026**.
+Version actuelle : **1.0.0 — 17/07/2026**.
 
-> Le référentiel livré est un jeu de démonstration structuré à partir des documents fournis. Il doit être validé par l’établissement avant tout usage réel. L’application ne donne aucun conseil clinique, aucune posologie et aucune instruction thérapeutique.
+Le référentiel actif est importé des 13 PDF et 3 classeurs fournis. Les compositions théoriques sont séparées du stock vivant : aucun lot, numéro, date de péremption, contrôle ou action n’est créé au premier démarrage. L’application ne fournit ni conseil clinique, ni posologie, ni instruction thérapeutique.
 
 ## Démarrage local
 
@@ -12,24 +12,16 @@ Version actuelle : **0.6.0-p0 — 17/07/2026**.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\serve.ps1 -Port 4173
 ```
 
-Ouvrir ensuite `http://127.0.0.1:4173/`. Le premier chargement doit être réalisé avec le serveur accessible ; le service worker met ensuite le shell et le référentiel en cache.
+Ouvrir `http://127.0.0.1:4173/`. Après le premier chargement, le service worker conserve le shell et les référentiels pour la consultation hors ligne.
 
-## Fonctions P0
+## Fonctions principales
 
-- déclaration de retour d’intervention avec création automatique d’un contrôle ;
-- contrôle élément par élément, reprise après interruption et écriture atomique ;
-- génération d’anomalies et d’actions depuis les observations non conformes ;
-- cycle collecte → vérification → remise en place → clôture ;
-- disponibilité calculée depuis les anomalies ouvertes ;
-- péremptions par horizons et planification de remplacement ;
-- défaut fonctionnel, avec caractère bloquant décidé explicitement par l’utilisateur ;
-- carte réelle du service et parcours regroupé par zone ;
-- référentiel SMUR issu de 13 PDF et référentiels historiques issus de 3 classeurs ;
-- navigation visuelle dans les 13 contenants PDF, les 3 chariots historiques et les 3 réserves ;
-- schémas génériques pilotés par des zones en pourcentage, versionnés et modifiables sans réécrire l’interface ;
-- placeholders explicites pour les photos, armoires, étagères et bacs encore non documentés ;
-- IndexedDB, migration non destructive de l’ancien `localStorage`, journal et outbox locale ;
-- fixtures synthétiques séparées des données de référence.
+- consultation des 16 inventaires actifs, de leurs sources, versions, sections et quantités théoriques ;
+- organisation visuelle provisoire et modifiable lorsque le rangement physique n’est pas documenté ;
+- saisie terrain des lots, dates de péremption, quantités présentes et emplacements constatés ;
+- quatre filtres colorés de péremption et parcours Localiser → Retirer → Remplacer → Valider ;
+- contrôles, écarts, actions, défauts et disponibilité calculés depuis les seules saisies réelles ;
+- IndexedDB, historique traçable, migration sélective des anciens enregistrements synthétiques et fonctionnement hors ligne.
 
 ## Tests
 
@@ -39,28 +31,23 @@ Avec Node.js 20 ou plus :
 npm test
 ```
 
-Les 23 tests couvrent le moteur d’actions, la disponibilité, les priorités, les péremptions, les conflits, le parcours, les statistiques, l’import des classeurs, les schémas visuels, les routes UI et les simulations terrain principales.
+Les tests couvrent le référentiel, l’exhaustivité des sources, une installation neuve, la migration, le stock vivant, le parcours de remplacement, les schémas visuels, l’interface mobile et le cache hors ligne.
 
 ## Reconstruction du référentiel XLSX
-
-Les classeurs sources restent en lecture seule. Pour régénérer le JSON applicatif :
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\extract-xlsx-reference.ps1
 ```
 
-L’extracteur exclut les signatures, identités, dates de péremption historiques, alertes et instructions.
+Les 357 lignes à quantité positive restent actives. Six lignes dont la quantité source vaut zéro restent visibles comme annotations à confirmer, sans quantité inventée. Les signatures, identités, péremptions historiques, alertes et instructions ne sont pas importées dans le stock vivant.
 
 ## Documentation
 
 - [Architecture](ARCHITECTURE.md)
-- [Audit initial](docs/INITIAL_AUDIT.md)
 - [Modèle de données](docs/DATA_MODEL.md)
 - [Processus métier](docs/PROCESS_FLOWS.md)
 - [Intégration des sources](docs/SOURCE_INTEGRATION.md)
 - [Guide de configuration](docs/ADMINISTRATION_GUIDE.md)
 - [Stratégie de tests](docs/TEST_STRATEGY.md)
 - [Sécurité et confidentialité](docs/SECURITY.md)
-- [Matrice de responsabilités](docs/RESPONSIBILITY_MATRIX.md)
-- [État P0 à P3](docs/IMPLEMENTATION_STATUS.md)
-- [Inventaires visuels, complétude et édition sûre](docs/VISUAL_INVENTORIES.md)
+- [Inventaires visuels](docs/VISUAL_INVENTORIES.md)

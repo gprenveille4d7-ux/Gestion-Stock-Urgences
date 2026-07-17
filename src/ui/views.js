@@ -1,14 +1,100 @@
-import { APP_RELEASE, EXPIRY_HORIZONS } from '../config.js';
+import { APP_RELEASE, DEFAULT_EXPIRY_THRESHOLDS } from '../config.js';
+import { flattenActiveChariotReference } from '../data/chariot-adapter.js';
 import { OPERATIONAL_ASSETS } from '../data/operational-assets.js';
 import { EXCLUDED_SOURCE_CONTENT, SOURCE_DOCUMENTS } from '../data/source-manifest.js';
 import { findContainer, findReferenceItem, findZone, REFERENCE_ITEMS, SERVICE_ZONES, SMUR_CONTAINERS } from '../data/reference.js';
 import { getChariotDiagram, getContainerDiagram, getReserveDiagram, RESERVE_ZONE_IDS } from '../data/visual-schemas.js';
 import { deriveAvailability, summarizeAvailability } from '../domain/availability.js';
-import { filterLotsByHorizon } from '../domain/expiry.js';
+import { computeExpiryDashboard, daysUntil, EXPIRY_PANELS } from '../domain/expiry.js';
 import { actionZoneId, planRoute } from '../domain/route-planner.js';
 import { computeStatistics } from '../domain/statistics.js';
 import { escapeHtml, formatDate, formatRelative, icon, normalizeSearch } from './utils.js';
 import { renderSchemaThumbnail, renderVisualSchema } from './visual-schema.js';
+
+const SYNTHETIC_SOURCES = new Set(['demo', 'demo-synthetic', 'synthetic', 'example', 'seed-demo']);
+
+function isSynthetic(record) {
+  return SYNTHETIC_SOURCES.has(String(record?.source || record?.sourceStatus || '').toLowerCase());
+}
+
+function realRecords(records) {
+  return Array.isArray(records) ? records.filter((record) => !isSynthetic(record)) : [];
+}
+
+function operationalViewState(state) {
+  return {
+    ...state,
+    events: realRecords(state.events),
+    audits: realRecords(state.audits),
+    observations: realRecords(state.observations),
+    anomalies: realRecords(state.anomalies),
+    actions: realRecords(state.actions),
+    lots: realRecords(state.lots),
+    users: realRecords(state.users)
+  };
+}
+
+function expiryThresholds(state) {
+  const settings = Array.isArray(state.settings) ? state.settings : [];
+  const configured = state.expiryThresholds
+    || settings.find((setting) => ['expiry-thresholds', 'expiryThresholds'].includes(setting?.id))
+    || {};
+  const numberOr = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+  return {
+    urgentDays: numberOr(configured.urgentDays ?? configured.redDays, DEFAULT_EXPIRY_THRESHOLDS.urgentDays),
+    rapidReplacementDays: numberOr(configured.rapidReplacementDays ?? configured.orangeDays, DEFAULT_EXPIRY_THRESHOLDS.rapidReplacementDays),
+    anticipationDays: numberOr(configured.anticipationDays ?? configured.violetDays, DEFAULT_EXPIRY_THRESHOLDS.anticipationDays),
+    monitoringDays: numberOr(configured.monitoringDays, DEFAULT_EXPIRY_THRESHOLDS.monitoringDays)
+  };
+}
+
+function activeReferenceItems(state) {
+  return [...REFERENCE_ITEMS, ...flattenActiveChariotReference(state.chariotReference)];
+}
+
+function activeReferenceItem(state, itemId, lot = null) {
+  const item = activeReferenceItems(state).find((candidate) => candidate.id === itemId || candidate.rawItemId === itemId);
+  if (item) return item;
+  const snapshot = lot?.referenceSnapshot;
+  return snapshot ? {
+    id: itemId,
+    label: snapshot.itemLabel,
+    expectedQuantity: snapshot.expectedQuantity,
+    containerId: snapshot.containerId,
+    sectionId: snapshot.sectionId,
+    containerLabel: lot.containerLabel,
+    sectionLabel: lot.sectionLabel,
+    category: 'non_determinee',
+    sourceId: snapshot.sourceId,
+    referenceType: snapshot.referenceType || null
+  } : null;
+}
+
+function expiryModels(state, now = new Date()) {
+  const thresholds = expiryThresholds(state);
+  const actions = realRecords(state.actions);
+  const lots = realRecords(state.lots);
+  const dashboard = computeExpiryDashboard(lots, now, thresholds);
+  const bucketByPanel = {
+    [EXPIRY_PANELS.TO_TREAT]: 'urgent',
+    [EXPIRY_PANELS.WITHIN_30]: 'soon',
+    [EXPIRY_PANELS.WITHIN_90]: 'anticipate',
+    monitoring: 'monitor',
+    compliant: 'monitor'
+  };
+  const active = dashboard.activeLots.map((lot) => ({ ...lot, bucket: bucketByPanel[lot.expiryPanel] || 'urgent', item: activeReferenceItem(state, lot.itemId, lot) }));
+  const activeLotIds = new Set(active.map((lot) => lot.id));
+  const workflowLotIds = new Set(actions.filter((action) => action.type === 'remplacement_peremption' && !['done', 'cancelled'].includes(action.status)).map((action) => action.lotId).filter(Boolean));
+  const workflow = lots
+    .filter((lot) => workflowLotIds.has(lot.id) && !activeLotIds.has(lot.id))
+    .map((lot) => ({ ...lot, daysRemaining: daysUntil(lot.expiryDate, now), bucket: 'urgent', item: activeReferenceItem(state, lot.itemId, lot) }));
+  const treated = dashboard.treatedLots.map((lot) => ({ ...lot, bucket: 'treated', item: activeReferenceItem(state, lot.itemId, lot), daysRemaining: daysUntil(lot.expiryDate, now) }));
+  return { active, workflow, treated, thresholds };
+}
+
+function distinctProductCount(lots) {
+  return new Set(lots.map((lot) => lot.itemId).filter(Boolean)).size;
+}
 
 function statusPill(status, label) {
   const css = ['pret', 'disponible'].includes(status) ? 'ready' : status === 'indisponible' ? 'blocked' : status === 'pret_avec_action_a_anticiper' ? 'plan' : 'review';
@@ -23,9 +109,10 @@ function header(title, subtitle, eyebrow = 'Préparation opérationnelle', back 
 function actionCard(action) {
   const container = findContainer(action.containerId);
   const stage = action.stage ? action.stage.replaceAll('_', ' ') : action.status === 'open' ? 'à démarrer' : action.status;
-  return `<button class="action-card" data-nav="action/${action.id}">
+  const route = action.type === 'remplacement_peremption' && action.lotId ? `expiry/lot/${encodeURIComponent(action.lotId)}` : `action/${action.id}`;
+  return `<button class="action-card" data-nav="${route}">
     <span class="action-accent ${action.priority === 'critique' ? 'red' : 'blue'}"></span>
-    <span class="action-copy"><strong>${escapeHtml(action.title)}${action.source === 'demo-synthetic' ? ' · DÉMO' : ''}</strong><p>${escapeHtml(container?.label || 'Référentiel hérité')}</p><span class="action-meta"><span>${icon('clock', 14)} ${escapeHtml(stage)}</span><span>${escapeHtml(formatRelative(action.dueAt || action.createdAt))}</span></span></span>
+    <span class="action-copy"><strong>${escapeHtml(action.title)}</strong><p>${escapeHtml(container?.label || 'Référentiel importé')}</p><span class="action-meta"><span>${icon('clock', 14)} ${escapeHtml(stage)}</span><span>${escapeHtml(formatRelative(action.dueAt || action.createdAt))}</span></span></span>
     ${icon('chevron', 18)}
   </button>`;
 }
@@ -47,20 +134,15 @@ function bottomNav(route) {
   return `<nav class="bottom-nav" aria-label="Navigation principale">${entries.map(([id, label, iconName], index) => `<button class="nav-item ${index === 1 ? 'center' : ''} ${active === id ? 'active' : ''}" data-nav="${id}" ${active === id ? 'aria-current="page"' : ''}>${icon(iconName, 20)}<span>${label}</span></button>`).join('')}</nav>`;
 }
 
-function demoBanner() {
-  return `<div class="p0-reference-banner">${icon('alert', 18)}<div><strong>Référentiel de démonstration</strong><span>Compositions importées, validation hospitalière requise avant usage réel.</span></div></div>`;
-}
-
 function renderHome(state) {
   const summary = summarizeAvailability(state, SMUR_CONTAINERS);
   const openActions = state.actions.filter((action) => !['done', 'cancelled'].includes(action.status));
   const priorityRank = { critique: 4, haute: 3, normale: 2, planifiee: 1 };
   const prioritized = [...openActions].sort((a, b) => (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0) || new Date(a.createdAt) - new Date(b.createdAt)).slice(0, 4);
-  const nextLots = filterLotsByHorizon(state.lots, 90).slice(0, 3);
+  const nextLots = expiryModels(state).active.filter((lot) => lot.daysRemaining <= 90).slice(0, 3);
   const attentionContainers = SMUR_CONTAINERS.map((container) => ({ container, availability: deriveAvailability(container.id, state) })).filter((entry) => entry.availability.status !== 'pret');
   return `${header('Bonjour', 'Vue synthétique de la préparation opérationnelle locale.', 'Relève du jour')}
     <span class="release-stamp">Version ${APP_RELEASE.version} · ${APP_RELEASE.date}</span>
-    ${demoBanner()}
     <section class="p0-kpi-grid" aria-label="Synthèse des disponibilités">
       <button class="p0-kpi success" data-nav="inventory"><strong>${summary.pret}</strong><span>prêts</span></button>
       <button class="p0-kpi warning" data-nav="actions"><strong>${summary.pret_avec_action_a_anticiper + summary.a_verifier + summary.a_rearmer}</strong><span>à traiter</span></button>
@@ -75,7 +157,7 @@ function renderHome(state) {
     </section>
     <section class="section"><div class="section-head"><h2>Priorités opérationnelles</h2><button class="text-button" data-nav="actions">Tout voir</button></div><div class="action-list">${prioritized.length ? prioritized.map(actionCard).join('') : '<div class="empty-state"><h3>Aucune action ouverte</h3><p>Les contenants connus sont sans action active.</p></div>'}</div></section>
     ${attentionContainers.length ? `<section class="section"><div class="section-head"><h2>Disponibilité à expliquer</h2></div><div class="p0-status-list">${attentionContainers.slice(0, 5).map(({ container, availability }) => `<button data-nav="inventory" class="p0-status-row"><span class="p0-color-dot" data-color="${escapeHtml(container.color)}"></span><span><strong>${escapeHtml(container.label)}</strong><small>${escapeHtml(availability.reasons[0] || 'Action ouverte')}</small></span>${statusPill(availability.status, availability.label)}</button>`).join('')}</div></section>` : ''}
-    <section class="section"><div class="section-head"><h2>Prochaines péremptions démo</h2><button class="text-button" data-nav="expiry">Gérer</button></div><div class="card">${nextLots.map((lot) => { const item = findReferenceItem(lot.itemId); return `<div class="p0-list-row"><span><strong>${escapeHtml(item?.label)}</strong><small>${escapeHtml(item?.containerLabel)} · lot de démonstration</small></span><strong class="p0-days ${lot.daysRemaining <= 30 ? 'danger' : ''}">${lot.daysRemaining} j</strong></div>`; }).join('') || '<div class="card-pad">Aucun lot dans cet horizon.</div>'}</div></section>`;
+    <section class="section"><div class="section-head"><h2>Prochaines péremptions</h2><button class="text-button" data-nav="expiry">Gérer</button></div><div class="card">${nextLots.map((lot) => `<button type="button" class="p0-list-row expiry-home-row" data-nav="expiry/lot/${encodeURIComponent(lot.id)}"><span><strong>${escapeHtml(lot.item?.label || 'Produit du référentiel')}</strong><small>${escapeHtml(lot.item?.containerLabel || 'Contenant à confirmer')} · lot ${escapeHtml(lot.lotNumber)}</small></span><strong class="p0-days ${lot.daysRemaining <= 0 ? 'danger' : ''}">${lot.daysRemaining} j</strong></button>`).join('') || '<div class="expiry-home-empty"><p>Aucun lot suivi pour le moment</p><button type="button" class="small-button" data-nav="expiry/add">Commencer la saisie</button></div>'}</div></section>`;
 }
 
 function renderReturn(state, ui) {
@@ -86,7 +168,6 @@ function renderReturn(state, ui) {
   const direct = ui.usageItem && ['utilise', 'manquant'].includes(ui.usageDeclaration);
   const diagram = selectedContainer ? getContainerDiagram(selectedContainer) : null;
   return `${header("Retour d'intervention", 'Ciblez le niveau physique le plus précis connu. Le sac parent est déduit automatiquement.', 'Déclaration rapide', 'home')}
-    ${demoBanner()}
     <form id="usage-form" class="p0-form card card-pad">
       <label class="p0-field"><span>1. Sac ou contenant</span><select id="usage-container" name="containerId" required><option value="">Sélectionner…</option>${SMUR_CONTAINERS.map((container) => `<option value="${container.id}" ${ui.usageContainer === container.id ? 'selected' : ''}>${escapeHtml(container.label)}</option>`).join('')}</select></label>
       ${diagram ? renderVisualSchema(diagram, {
@@ -97,7 +178,7 @@ function renderReturn(state, ui) {
       ${selectedSection ? `<label class="p0-field"><span>3. Élément précis si connu (facultatif)</span><select id="usage-item" name="itemId"><option value="">Contrôler tout le kit</option>${items.map((item) => `<option value="${item.id}" ${ui.usageItem === item.id ? 'selected' : ''} ${item.operationalUseAllowed === false ? 'disabled' : ''}>${escapeHtml(item.label)}${item.operationalUseAllowed === false ? ' — À CONFIRMER' : ''}</option>`).join('')}</select></label>` : ''}
       <label class="p0-field"><span>${selectedSection ? '4' : '2'}. Constat</span><select id="usage-declaration" name="declaration"><option value="ouvert" ${ui.usageDeclaration === 'ouvert' ? 'selected' : ''}>Ouvert — contrôle nécessaire</option><option value="utilise" ${ui.usageDeclaration === 'utilise' ? 'selected' : ''}>Élément utilisé — remplacement ciblé</option><option value="manquant" ${ui.usageDeclaration === 'manquant' ? 'selected' : ''}>Élément manquant — anomalie</option><option value="defectueux" ${ui.usageDeclaration === 'defectueux' ? 'selected' : ''}>Défectueux — constat fonctionnel</option></select></label>
       ${ui.usageItem && ['utilise', 'manquant'].includes(ui.usageDeclaration) ? `<label class="p0-field"><span>Quantité concernée</span><input type="number" min="1" step="1" name="quantity" value="1" inputmode="numeric"></label>` : ''}
-      <label class="p0-field"><span>Note factuelle (facultatif)</span><textarea name="note" rows="3" placeholder="Ex. sac ouvert, contenu à contrôler"></textarea></label>
+      <label class="p0-field"><span>Note factuelle (facultatif)</span><textarea name="note" rows="3" placeholder="Décrire uniquement le constat observé"></textarea></label>
       <div class="p0-info">${icon(direct ? 'plus' : 'clipboard', 18)} ${direct ? 'L’élément connu créera directement une action de réarmement, sans imposer un contrôle complet.' : 'Le contrôle sera limité au kit choisi, ou au contenant complet si aucun kit n’est sélectionné.'}</div>
       <button class="primary-button" type="submit">${direct ? 'Créer le réarmement ciblé' : 'Enregistrer la déclaration'}</button>
     </form>
@@ -105,17 +186,20 @@ function renderReturn(state, ui) {
 }
 
 function flattenChariotReference(chariotReference) {
-  if (!chariotReference?.references) return [];
-  return chariotReference.references.flatMap((reference) => reference.containers.flatMap((container) => container.items.map((item) => ({
+  return flattenActiveChariotReference(chariotReference).map((item) => ({
     ...item,
-    id: `xlsx:${item.id}`,
-    inventoryId: reference.id,
-    sectionId: container.id,
-    containerLabel: reference.label,
-    sectionLabel: container.label,
-    sourceStatus: reference.sourceStatus,
+    documentRef: item.sourceReference,
+    revision: item.sourceRevision,
     sourceType: 'xlsx'
-  }))));
+  }));
+}
+
+function isPhysicalLayoutValidated(diagram, entity) {
+  return diagram?.status === 'validated' || diagram?.status === 'physical-layout-validated' || entity?.physicalLayoutStatus === 'physical-layout-validated';
+}
+
+function theoreticalTotalForSections(sections) {
+  return sections.reduce((sum, section) => sum + section.items.reduce((sectionSum, item) => sectionSum + Number(item.expectedQuantity || 0), 0), 0);
 }
 
 function sectionToken(sectionId) {
@@ -148,63 +232,64 @@ function openActionTouchesSection(state, containerId, sectionId) {
 function renderContainerInventoryCard(state, container) {
   const availability = deriveAvailability(container.id, state);
   const itemCount = container.sections.reduce((sum, section) => sum + section.items.length, 0);
+  const theoreticalTotal = theoreticalTotalForSections(container.sections);
   const diagram = getContainerDiagram(container);
   const source = SOURCE_DOCUMENTS.find((candidate) => candidate.id === container.sourceId);
   return `<article class="inventory-visual-card">
     <button type="button" class="inventory-visual-main" data-nav="container/${container.id}">
       ${renderSchemaThumbnail(diagram, { kind: 'container', color: container.color })}
-      <span class="inventory-visual-copy"><span class="inventory-kind">${escapeHtml(container.kind)} · ${escapeHtml(source?.documentRef || 'source à vérifier')}</span><strong>${escapeHtml(container.label)}</strong><small>${itemCount} lignes · ${container.sections.length} zone${container.sections.length > 1 ? 's' : ''}</small></span>
+      <span class="inventory-visual-copy"><span class="inventory-kind">${escapeHtml(container.kind)} · ${escapeHtml(source?.documentRef || 'source à vérifier')}</span><strong>${escapeHtml(container.label)}</strong><small>${itemCount} lignes · ${container.sections.length} zone${container.sections.length > 1 ? 's' : ''} · total théorique ${theoreticalTotal}</small></span>
       ${icon('chevron', 18)}
     </button>
-    <div class="inventory-visual-footer">${statusPill(availability.status, availability.label)}<span>Schéma modifiable</span></div>
+    <div class="inventory-visual-footer">${statusPill(availability.status, availability.label)}<span>${isPhysicalLayoutValidated(diagram, container) ? 'Organisation visuelle validée' : 'Organisation visuelle à préciser'}</span></div>
   </article>`;
 }
 
 function renderReserveInventoryCard(zone) {
-  const diagram = getReserveDiagram(zone.id, SMUR_CONTAINERS, OPERATIONAL_ASSETS);
+  const diagram = getReserveDiagram(zone.id, SMUR_CONTAINERS, realRecords(OPERATIONAL_ASSETS));
   return `<article class="inventory-visual-card reserve-card">
     <button type="button" class="inventory-visual-main" data-nav="reserve/${zone.id}">
       ${renderSchemaThumbnail(diagram, { kind: 'reserve' })}
       <span class="inventory-visual-copy"><span class="inventory-kind">Réserve · implantation à valider</span><strong>${escapeHtml(zone.label)}</strong><small>${diagram.zones.length} contenant${diagram.zones.length > 1 ? 's' : ''} ou équipement${diagram.zones.length > 1 ? 's' : ''} connu${diagram.zones.length > 1 ? 's' : ''}</small></span>
       ${icon('chevron', 18)}
     </button>
-    <div class="inventory-visual-footer">${statusPill('a_verifier', 'À cartographier')}<span>Photo absente</span></div>
+    <div class="inventory-visual-footer">${statusPill('a_verifier', 'À cartographier')}<span>Organisation visuelle à préciser</span></div>
   </article>`;
 }
 
 function renderChariotInventoryCard(reference) {
   const diagram = getChariotDiagram(reference);
   const itemCount = reference.containers.reduce((sum, container) => sum + container.items.length, 0);
-  return `<article class="inventory-visual-card historical-card">
+  const theoreticalTotal = theoreticalTotalForSections(reference.containers);
+  return `<article class="inventory-visual-card active-reference-card">
     <button type="button" class="inventory-visual-main" data-nav="chariot/${reference.id}">
       ${renderSchemaThumbnail(diagram, { kind: 'chariot' })}
-      <span class="inventory-visual-copy"><span class="inventory-kind">Chariot · source historique</span><strong>${escapeHtml(reference.label)}</strong><small>${itemCount} lignes · ${reference.containers.length} tiroirs ou plateaux</small></span>
+      <span class="inventory-visual-copy"><span class="inventory-kind">Chariot · ${escapeHtml(reference.documentRef || 'référence source non renseignée')} ${escapeHtml(reference.revision || '')}</span><strong>${escapeHtml(reference.label)}</strong><small>${itemCount} lignes · ${reference.containers.length} sections · total théorique ${theoreticalTotal}</small></span>
       ${icon('chevron', 18)}
     </button>
-    <div class="inventory-visual-footer">${statusPill('a_verifier', 'Historique')}<span>Activation interdite sans validation</span></div>
+    <div class="inventory-visual-footer">${statusPill('disponible', 'Importé depuis la source')}<span>${isPhysicalLayoutValidated(diagram, reference) ? 'Organisation visuelle validée' : 'Organisation visuelle à préciser'}</span></div>
   </article>`;
 }
 
 function renderInventory(state, ui) {
   const query = normalizeSearch(ui.search);
   const chariotItems = flattenChariotReference(state.chariotReference);
-  const all = [...REFERENCE_ITEMS.map((item) => ({ ...item, sourceType: 'pdf', sourceStatus: 'draft-to-validate' })), ...chariotItems];
+  const all = [...REFERENCE_ITEMS.map((item) => ({ ...item, sourceType: 'pdf' })), ...chariotItems];
   const results = query ? all.filter((item) => normalizeSearch(`${item.label} ${item.sourceText || ''} ${item.containerLabel} ${item.sectionLabel} ${item.productCode || ''}`).includes(query)).slice(0, 80) : [];
   const chariots = state.chariotReference?.references || [];
   const inventoryCount = SMUR_CONTAINERS.length + chariots.length;
   return `${header('Matériel', `${REFERENCE_ITEMS.length + chariotItems.length} lignes issues de ${inventoryCount} inventaires chargés, sans masquer leur niveau de validation.`, 'Inventaires visuels')}
-    ${demoBanner()}
     <label class="p0-search">${icon('search', 19)}<span class="sr-only">Rechercher dans le référentiel</span><input id="reference-search" type="search" value="${escapeHtml(ui.search)}" placeholder="Produit, matériel, code ou emplacement…" autocomplete="off"></label>
     ${query ? `<section class="section"><div class="section-head"><h2>${results.length} résultat${results.length > 1 ? 's' : ''}${results.length === 80 ? ' affichés' : ''}</h2></div><div class="p0-search-results">${results.map((item) => {
       const container = item.sourceType === 'pdf' ? findContainer(item.containerId) : null;
       const zone = container ? findZone(container.stockZoneId) : null;
       const route = item.sourceType === 'pdf' ? `container/${item.containerId}/${sectionToken(item.sectionId)}` : `chariot/${item.inventoryId}/${item.sectionId}`;
-      return `<article class="p0-search-result"><div><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.containerLabel)} › ${escapeHtml(item.sectionLabel)}</small><small>${Number(item.expectedQuantity)} attendu · ${item.sourceType === 'xlsx' ? 'source historique XLSX' : `affectation de zone à confirmer : ${zone?.label || 'non renseignée'}`}</small></div><button class="small-button" data-nav="${escapeHtml(route)}">Voir</button></article>`;
+      return `<article class="p0-search-result"><div><strong>${escapeHtml(item.label)}</strong>${item.sourceStatus === 'source-ambiguity-to-validate' ? `<span class="data-quality-badge">${icon('alert', 12)} Libellé source à valider</span>` : ''}<small>${escapeHtml(item.containerLabel)} › ${escapeHtml(item.sectionLabel)}</small><small>${Number(item.expectedQuantity)} attendu · ${item.sourceType === 'xlsx' ? `inventaire XLSX actif · ${escapeHtml(item.documentRef || 'référence source non renseignée')} ${escapeHtml(item.revision || '')}` : `affectation de zone à confirmer : ${zone?.label || 'non renseignée'}`}</small></div><button class="small-button" data-nav="${escapeHtml(route)}">Voir</button></article>`;
     }).join('') || '<div class="empty-state"><h3>Aucun résultat</h3><p>Essayez un libellé plus court.</p></div>'}</div></section>` : `
       <section class="inventory-overview" aria-label="Couverture des inventaires"><div><strong>${SMUR_CONTAINERS.length}</strong><span>contenants PDF</span></div><div><strong>${chariots.length}</strong><span>chariots XLSX chargés</span></div><div><strong>${RESERVE_ZONE_IDS.length}</strong><span>réserves</span></div></section>
       <section class="section"><div class="section-head"><div><p class="section-eyebrow">Localiser dans le service</p><h2>Réserves</h2></div><span class="section-count">3 vues</span></div><div class="inventory-visual-grid reserves">${RESERVE_ZONE_IDS.map((zoneId) => findZone(zoneId)).filter(Boolean).map(renderReserveInventoryCard).join('')}</div></section>
       <section class="section"><div class="section-head"><div><p class="section-eyebrow">Compositions PDF · 361 lignes</p><h2>Sacs et contenants SMUR</h2></div><span class="section-count">${SMUR_CONTAINERS.length} inventaires</span></div><div class="inventory-visual-grid">${SMUR_CONTAINERS.map((container) => renderContainerInventoryCard(state, container)).join('')}</div></section>
-      <section class="section"><div class="section-head"><div><p class="section-eyebrow">Sources XLSX de mars 2024</p><h2>Chariots historiques</h2></div><span class="section-count">${chariotItems.length} lignes</span></div>${chariots.length ? `<div class="inventory-visual-grid">${chariots.map(renderChariotInventoryCard).join('')}</div>` : `<div class="p0-reference-banner historical-warning">${icon('alert', 18)}<div><strong>Référentiel chariots indisponible</strong><span>Les 3 fichiers restent référencés mais leurs 357 lignes n’ont pas pu être chargées. Réessayez en ligne ou vérifiez le cache PWA.</span></div></div>`}</section>`}`;
+      <section class="section"><div class="section-head"><div><p class="section-eyebrow">URG.ENR.007 V4 · sources XLSX de mars 2024</p><h2>Chariots d’urgence</h2></div><span class="section-count">${chariotItems.length} lignes</span></div>${chariots.length ? `<div class="inventory-visual-grid">${chariots.map(renderChariotInventoryCard).join('')}</div>` : `<div class="p0-reference-banner historical-warning">${icon('alert', 18)}<div><strong>Référentiel chariots indisponible</strong><span>Les 3 fichiers restent référencés mais leurs 357 lignes n’ont pas pu être chargées. Réessayez en ligne ou vérifiez le cache PWA.</span></div></div>`}</section>`}`;
 }
 
 function renderContainerDetail(state, containerId, sectionId) {
@@ -216,34 +301,38 @@ function renderContainerDetail(state, containerId, sectionId) {
   const availability = deriveAvailability(container.id, state);
   const stockZone = findZone(container.stockZoneId);
   const itemCount = container.sections.reduce((sum, section) => sum + section.items.length, 0);
+  const theoreticalTotal = theoreticalTotalForSections(container.sections);
   const routeForZone = (zone) => `container/${container.id}/${sectionToken(zone.targetId)}`;
-  const statusForZone = (zone) => openActionTouchesSection(state, container.id, zone.targetId) ? (availability.status === 'indisponible' ? 'indisponible' : 'a_rearmer') : container.validationRequired ? 'a_verifier' : 'pret';
+  const statusForZone = (zone) => {
+    if (openActionTouchesSection(state, container.id, zone.targetId)) return availability.status === 'indisponible' ? 'indisponible' : 'a_rearmer';
+    return container.sections.find((section) => section.id === zone.targetId)?.sourceStatus === 'source-ambiguity-to-validate' ? 'a_verifier' : 'pret';
+  };
   return `${header(container.label, `${itemCount} lignes d’inventaire · ${container.sections.length} zone${container.sections.length > 1 ? 's' : ''}.`, 'Schéma du contenant', 'inventory')}
-    ${demoBanner()}
     <section class="inventory-detail-summary">
-      <div><span class="p0-bag-color" data-color="${escapeHtml(container.color)}">${icon('bag')}</span><span><strong>${escapeHtml(container.shortLabel)}</strong><small>${escapeHtml(container.kind)} · affectation proposée : ${escapeHtml(stockZone?.label || 'non renseignée')} · à confirmer</small></span></div>
+      <div><span class="p0-bag-color" data-color="${escapeHtml(container.color)}">${icon('bag')}</span><span><strong>${escapeHtml(container.shortLabel)}</strong><small>${escapeHtml(container.kind)} · ${itemCount} lignes · total théorique ${theoreticalTotal} · affectation proposée : ${escapeHtml(stockZone?.label || 'non renseignée')} · à confirmer</small></span></div>
       ${statusPill(availability.status, availability.label)}
     </section>
     ${renderVisualSchema(diagram, { kind: 'container', label: container.label, color: container.color, selectedTargetId: selectedSection?.id || '', routeForZone, statusForZone })}
     <ol class="schema-zone-index" aria-label="Index des zones">${container.sections.map((section, index) => `<li class="${selectedSection?.id === section.id ? 'active' : ''}"><button type="button" data-nav="container/${container.id}/${sectionToken(section.id)}"><span>${index + 1}</span><span><strong>${escapeHtml(section.label)}</strong><small>${section.items.length} ligne${section.items.length > 1 ? 's' : ''}</small></span>${icon('chevron', 16)}</button></li>`).join('')}</ol>
-    ${selectedSection ? `<section class="section inventory-section-detail"><div class="section-head"><div><p class="section-eyebrow">Zone ${container.sections.indexOf(selectedSection) + 1}</p><h2>${escapeHtml(selectedSection.label)}</h2></div><span class="section-count">${selectedSection.items.length} lignes</span></div><div class="inventory-line-list">${selectedSection.items.map((item) => `<div class="inventory-line"><span class="inventory-quantity">${Number(item.expectedQuantity)}×</span><span><strong>${escapeHtml(item.label)}</strong>${item.validationIssues.length ? `<span class="data-quality-badge">${icon('alert', 12)} À confirmer</span>` : ''}<small>${escapeHtml(item.category)} · unité : ${escapeHtml(item.unit)}${item.packSize ? ` · ${item.packSize} par paquet` : ''}${item.expiryTracked ? ' · péremption suivie' : ' · réutilisable'}</small>${item.validationIssues.map((issue) => `<small class="inventory-validation-issue">${escapeHtml(issue)}</small>`).join('')}${item.sourceText ? `<small class="inventory-source-text">Source : ${escapeHtml(item.sourceText)}</small>` : ''}</span></div>`).join('')}</div><div class="inventory-detail-actions"><button type="button" class="primary-button" data-return-container="${container.id}" data-return-section="${selectedSection.id}">${icon('plus', 18)} Déclarer cette zone ouverte ou utilisée</button><button type="button" class="secondary-button" data-start-audit="${container.id}" data-audit-section="${selectedSection.id}">${icon('clipboard', 18)} Contrôler cette zone</button></div></section>` : `<div class="schema-guidance">${icon('bag', 20)}<div><strong>Touchez une zone du schéma</strong><span>Vous n’afficherez alors que le kit ou compartiment concerné, sans parcourir une longue liste.</span></div></div>`}
-    <details class="p0-details"><summary>Source, version et limites</summary><div><p><strong>${escapeHtml(source?.documentRef || source?.id || 'Source non renseignée')}</strong> · ${escapeHtml(source?.fileName || '')}<br><small>${escapeHtml(source?.revision || 'révision inconnue')} · ${escapeHtml(source?.sourceDate || 'date inconnue')} · composition à valider par l’établissement</small></p><p><strong>Schéma ${escapeHtml(diagram.version)}</strong><br><small>${diagram.layoutMode === 'semantic-override' ? 'Disposition déduite uniquement des intitulés de zones.' : diagram.layoutMode === 'inventory-placeholder' ? 'Aucune position interne n’est déduite : la zone ouvre seulement l’inventaire sourcé.' : 'Grille fonctionnelle générée, non représentative du rangement réel.'} Photo et coordonnées réelles à compléter.</small></p></div></details>`;
+    ${selectedSection ? `<section class="section inventory-section-detail"><div class="section-head"><div><p class="section-eyebrow">Zone ${container.sections.indexOf(selectedSection) + 1}</p><h2>${escapeHtml(selectedSection.label)}</h2></div><span class="section-count">${selectedSection.items.length} lignes</span></div><div class="inventory-line-list">${selectedSection.items.map((item) => `<div class="inventory-line"><span class="inventory-quantity">${Number(item.expectedQuantity)}×</span><span><strong>${escapeHtml(item.label)}</strong>${itemHasSourceAmbiguity(item) ? `<span class="data-quality-badge">${icon('alert', 12)} Libellé source à valider</span>` : ''}<small>${escapeHtml(item.category)} · unité : ${escapeHtml(item.unit)}${item.packSize ? ` · ${item.packSize} par paquet` : ''}${item.expiryTracked ? ' · péremption suivie' : ' · réutilisable'}</small>${(item.validationIssues || []).map((issue) => `<small class="inventory-validation-issue">${escapeHtml(issue)}</small>`).join('')}${item.sourceText ? `<small class="inventory-source-text">Source : ${escapeHtml(item.sourceText)}</small>` : ''}</span></div>`).join('')}</div><div class="inventory-detail-actions"><button type="button" class="primary-button" data-return-container="${container.id}" data-return-section="${selectedSection.id}">${icon('plus', 18)} Déclarer cette zone ouverte ou utilisée</button><button type="button" class="secondary-button" data-start-audit="${container.id}" data-audit-section="${selectedSection.id}">${icon('clipboard', 18)} Contrôler cette zone</button></div></section>` : `<div class="schema-guidance">${icon('bag', 20)}<div><strong>Touchez une zone du schéma</strong><span>Vous n’afficherez alors que le kit ou compartiment concerné, sans parcourir une longue liste.</span></div></div>`}
+    <details class="p0-details"><summary>Source, version et limites</summary><div><p><strong>${escapeHtml(source?.documentRef || source?.id || 'Source non renseignée')}</strong> · ${escapeHtml(source?.fileName || '')}<br><small>${escapeHtml(source?.revision || 'révision inconnue')} · ${escapeHtml(source?.sourceDate || 'date inconnue')} · ${escapeHtml(source?.status || container.sourceStatus || 'imported-from-source')}</small></p><p><strong>Schéma ${escapeHtml(diagram.version)}</strong><br><small>${isPhysicalLayoutValidated(diagram, container) ? 'Organisation visuelle validée.' : 'Organisation visuelle à préciser. '}${diagram.layoutMode === 'semantic-override' ? 'Disposition déduite uniquement des intitulés de zones.' : diagram.layoutMode === 'inventory-placeholder' ? 'Aucune position interne n’est déduite : la zone ouvre seulement l’inventaire sourcé.' : 'Grille fonctionnelle générée, non représentative du rangement réel.'}</small></p></div></details>`;
 }
 
 function renderReserveDetail(state, reserveId) {
   const zone = findZone(reserveId);
   if (!zone || !RESERVE_ZONE_IDS.includes(zone.id)) return `${header('Réserve introuvable', '', 'Erreur', 'inventory')}`;
-  const diagram = getReserveDiagram(zone.id, SMUR_CONTAINERS, OPERATIONAL_ASSETS);
+  const operationalAssets = realRecords(OPERATIONAL_ASSETS);
+  const diagram = getReserveDiagram(zone.id, SMUR_CONTAINERS, operationalAssets);
   const knownContainers = SMUR_CONTAINERS.filter((container) => container.stockZoneId === zone.id);
-  const knownAssets = OPERATIONAL_ASSETS.filter((asset) => asset.homeZoneId === zone.id);
+  const knownAssets = operationalAssets.filter((asset) => asset.homeZoneId === zone.id);
   return `${header(zone.label, 'Vue de repérage fondée uniquement sur les rattachements de zone connus.', 'Schéma de réserve', 'inventory')}
-    <div class="p0-reference-banner reserve-warning">${icon('alert', 18)}<div><strong>Implantation physique non documentée</strong><span>Les armoires, étagères et bacs ne sont pas inventés. Ils restent à relever et valider sur place.</span></div></div>
+    <p class="reserve-layout-note">Organisation visuelle à préciser · armoires, étagères et bacs à relever sur place.</p>
     ${renderVisualSchema(diagram, {
       kind: 'reserve', label: zone.label,
       routeForZone: (schemaZone) => findContainer(schemaZone.targetId) ? `container/${schemaZone.targetId}` : ''
     })}
     <section class="physical-data-grid" aria-label="Données physiques à compléter"><div>${icon('map', 18)}<span><strong>Photo générale</strong><small>À ajouter</small></span></div><div>${icon('alert', 18)}<span><strong>Armoires</strong><small>À numéroter</small></span></div><div>${icon('alert', 18)}<span><strong>Étagères</strong><small>À relever</small></span></div><div>${icon('alert', 18)}<span><strong>Bacs</strong><small>À localiser</small></span></div></section>
-    <section class="section"><div class="section-head"><h2>Matériel rattaché provisoirement à cette zone</h2><span class="section-count">${knownContainers.length + knownAssets.length}</span></div><div class="reserve-known-list">${knownContainers.map((container) => `<button type="button" data-nav="container/${container.id}"><span class="p0-color-dot" data-color="${escapeHtml(container.color)}"></span><span><strong>${escapeHtml(container.label)}</strong><small>${container.sections.reduce((sum, section) => sum + section.items.length, 0)} lignes · rattachement et position à confirmer</small></span>${icon('chevron', 17)}</button>`).join('')}${knownAssets.map((asset) => `<div><span class="asset-symbol">${icon('activity', 18)}</span><span><strong>${escapeHtml(asset.label)}</strong><small>Équipement de démonstration · position à confirmer</small></span>${statusPill('a_verifier', 'Démo')}</div>`).join('') || ''}</div></section>
+    <section class="section"><div class="section-head"><h2>Matériel rattaché provisoirement à cette zone</h2><span class="section-count">${knownContainers.length + knownAssets.length}</span></div><div class="reserve-known-list">${knownContainers.map((container) => `<button type="button" data-nav="container/${container.id}"><span class="p0-color-dot" data-color="${escapeHtml(container.color)}"></span><span><strong>${escapeHtml(container.label)}</strong><small>${container.sections.reduce((sum, section) => sum + section.items.length, 0)} lignes · rattachement et position à confirmer</small></span>${icon('chevron', 17)}</button>`).join('')}${knownAssets.map((asset) => `<div><span class="asset-symbol">${icon('activity', 18)}</span><span><strong>${escapeHtml(asset.label)}</strong><small>Emplacement physique à confirmer</small></span>${statusPill('a_verifier', 'À localiser')}</div>`).join('') || ''}</div></section>
     <div class="schema-guidance">${icon('alert', 20)}<div><strong>Stock de réarmement non cartographié</strong><span>La réserve, l’armoire, l’étagère et le bac de chaque produit devront être ajoutés après validation humaine.</span></div></div>`;
 }
 
@@ -253,18 +342,20 @@ function renderChariotDetail(state, referenceId, sectionId) {
   const diagram = getChariotDiagram(reference);
   const selectedSection = findChariotSection(reference, sectionId);
   const itemCount = reference.containers.reduce((sum, container) => sum + container.items.length, 0);
-  return `${header(reference.label, `${itemCount} lignes importées · ${reference.containers.length} tiroirs ou plateaux.`, 'Inventaire historique', 'inventory')}
-    <div class="p0-reference-banner historical-warning">${icon('alert', 18)}<div><strong>Source historique uniquement</strong><span>Ce classeur de mars 2024 est consultable mais ne peut pas piloter un contrôle opérationnel avant validation.</span></div></div>
+  const theoreticalTotal = theoreticalTotalForSections(reference.containers);
+  const annotations = selectedSection?.sourceAnnotations || [];
+  return `${header(reference.label, `${itemCount} lignes importées · ${reference.containers.length} sections · total théorique ${theoreticalTotal}.`, 'Référentiel actif', 'inventory')}
+    <section class="inventory-detail-summary"><div><span class="p0-bag-color" data-color="non-renseignee">${icon('clipboard')}</span><span><strong>${escapeHtml(reference.documentRef || 'Référence source non renseignée')} ${escapeHtml(reference.revision || '')}</strong><small>${escapeHtml(reference.sourceDate || 'date source non renseignée')} · ${escapeHtml(reference.sourceStatus || 'imported-from-source')}</small></span></div>${statusPill('disponible', 'Inventaire actif')}</section>
     ${renderVisualSchema(diagram, { kind: 'chariot', label: reference.label, selectedTargetId: selectedSection?.id || '', routeForZone: (zone) => `chariot/${reference.id}/${zone.targetId}` })}
-    <ol class="schema-zone-index chariot-index">${reference.containers.map((container, index) => `<li class="${selectedSection?.id === container.id ? 'active' : ''}"><button type="button" data-nav="chariot/${reference.id}/${container.id}"><span>${index + 1}</span><span><strong>${escapeHtml(container.label)}</strong><small>${container.items.length} lignes</small></span>${icon('chevron', 16)}</button></li>`).join('')}</ol>
-    ${selectedSection ? `<section class="section inventory-section-detail"><div class="section-head"><h2>${escapeHtml(selectedSection.label)}</h2><span class="section-count">${selectedSection.items.length} lignes</span></div><div class="inventory-line-list historical">${selectedSection.items.map((item) => `<div class="inventory-line"><span class="inventory-quantity">${Number(item.expectedQuantity)}×</span><span><strong>${escapeHtml(item.label)}</strong><small>${item.productCode ? `Code ${escapeHtml(item.productCode)} · ` : ''}cellule source ${escapeHtml(item.sourceCell || 'inconnue')}</small></span></div>`).join('')}</div></section>` : `<div class="schema-guidance">${icon('clipboard', 20)}<div><strong>Sélectionnez un tiroir ou un plateau</strong><span>L’inventaire correspondant s’affichera sans confondre cette source historique avec le référentiel actif.</span></div></div>`}`;
+    <p class="reserve-layout-note">${isPhysicalLayoutValidated(diagram, reference) ? 'Organisation visuelle validée' : 'Organisation visuelle à préciser'}</p>
+    <ol class="schema-zone-index chariot-index">${reference.containers.map((container, index) => `<li class="${selectedSection?.id === container.id ? 'active' : ''}"><button type="button" data-nav="chariot/${reference.id}/${container.id}"><span>${index + 1}</span><span><strong>${escapeHtml(container.label)}</strong><small>${container.items.length} lignes${container.sourceAnnotations?.length ? ` · ${container.sourceAnnotations.length} libellé${container.sourceAnnotations.length > 1 ? 's' : ''} source à valider` : ''}</small></span>${icon('chevron', 16)}</button></li>`).join('')}</ol>
+    ${selectedSection ? `<section class="section inventory-section-detail"><div class="section-head"><h2>${escapeHtml(selectedSection.label)}</h2><span class="section-count">${selectedSection.items.length} lignes actives</span></div><div class="inventory-line-list">${selectedSection.items.map((item) => `<div class="inventory-line"><span class="inventory-quantity">${Number(item.expectedQuantity)}×</span><span><strong>${escapeHtml(item.label)}</strong>${item.sourceStatus === 'source-ambiguity-to-validate' ? `<span class="data-quality-badge">${icon('alert', 12)} Libellé source à valider</span>` : ''}<small>${item.presentation ? `${escapeHtml(item.presentation)} · ` : ''}${item.productCode ? `Code ${escapeHtml(item.productCode)} · ` : ''}cellule source ${escapeHtml(item.sourceCell || 'inconnue')}</small></span></div>`).join('')}</div>${annotations.length ? `<aside class="source-annotation-list" aria-label="Libellés source à valider"><h3>Libellés source à valider</h3>${annotations.map((annotation) => `<div class="source-annotation"><span>${icon('alert', 15)}</span><div><strong>${escapeHtml(annotation.label || annotation.sourceText || annotation.rawLabel || 'Ligne source à valider')}</strong><small>${escapeHtml(annotation.sourceCell ? `Cellule ${annotation.sourceCell} · ` : '')}quantité source ${Number(annotation.expectedQuantitySource ?? annotation.expectedQuantity ?? annotation.quantity ?? annotation.rawQuantity ?? 0)} · non activée dans le total théorique</small><small>${escapeHtml((annotation.validationIssues || []).join(' · ') || annotation.validationIssue || annotation.reason || 'Quantité source non positive à confirmer')}</small><code>source-ambiguity-to-validate</code></div></div>`).join('')}</aside>` : ''}</section>` : `<div class="schema-guidance">${icon('clipboard', 20)}<div><strong>Sélectionnez un tiroir ou un plateau</strong><span>L’inventaire actif de la section s’affichera, avec ses éventuelles ambiguïtés source conservées séparément.</span></div></div>`}`;
 }
 
 function renderActions(state, ui) {
   const filter = ui.actionFilter || 'open';
   const actions = state.actions.filter((action) => filter === 'all' || (filter === 'done' ? action.status === 'done' : !['done', 'cancelled'].includes(action.status)));
   return `${header('Actions', 'File locale issue des déclarations, contrôles, défauts et péremptions.', 'File opérationnelle')}
-    ${actions.some((action) => action.source === 'demo-synthetic') ? demoBanner() : ''}
     <div class="p0-tabs"><button data-action-filter="open" class="${filter === 'open' ? 'active' : ''}">Ouvertes</button><button data-action-filter="done" class="${filter === 'done' ? 'active' : ''}">Clôturées</button><button data-action-filter="all" class="${filter === 'all' ? 'active' : ''}">Toutes</button></div>
     <div class="action-list">${actions.length ? actions.map(actionCard).join('') : '<div class="empty-state"><h3>Aucune action</h3><p>La sélection courante ne contient aucun élément.</p></div>'}</div>
     <button class="secondary-button p0-full" data-nav="defect">${icon('activity', 18)} Signaler un défaut fonctionnel</button>`;
@@ -281,6 +372,7 @@ function stageText(action) {
 function renderActionDetail(state, id) {
   const action = state.actions.find((candidate) => candidate.id === id);
   if (!action) return `${header('Action introuvable', '', 'Erreur', 'actions')}<div class="empty-state"><p>Cette action n’existe plus localement.</p></div>`;
+  if (action.type === 'remplacement_peremption' && action.lotId) return renderExpiryDetail(state, action.lotId);
   const container = findContainer(action.containerId);
   const effectiveZoneId = actionZoneId(action);
   const zone = findZone(effectiveZoneId);
@@ -291,8 +383,7 @@ function renderActionDetail(state, id) {
   const stageIndex = action.status === 'done' ? 4 : !action.stage || action.stage === 'collecte' ? 0 : action.stage === 'verification' ? 1 : 2;
   const requiredLocationReady = action.type === 'controle' || (stageIndex === 0 ? targetLocationReady : finalLocationReady);
   const nextLabel = stageIndex === 0 ? 'Passer à la vérification' : stageIndex === 1 ? 'Confirmer la remise en place' : 'Clôturer l’action';
-  return `${header(action.title, container?.label || 'Action importée', action.source === 'demo-synthetic' ? 'Action de démonstration' : 'Action opérationnelle', 'actions')}
-    ${action.source === 'demo-synthetic' ? demoBanner() : ''}
+  return `${header(action.title, container?.label || 'Action importée', 'Action opérationnelle', 'actions')}
     ${action.status !== 'done' && !requiredLocationReady ? `<div class="p0-reference-banner route-location-warning">${icon('alert', 18)}<div><strong>Étape bloquée · emplacement à confirmer</strong><span>${stageIndex === 0 ? 'La réserve, l’armoire, l’étagère et le bac de prélèvement doivent être validés.' : 'La destination finale du contenant doit être validée.'}</span></div></div>` : ''}
     <section class="p0-action-hero ${action.priority === 'critique' ? 'danger' : ''}"><div>${statusPill(action.status === 'done' ? 'pret' : 'a_verifier', action.status === 'done' ? 'Clôturée' : action.priority)}<h2>${escapeHtml(stageText(action))}</h2><p>${zone ? `${escapeHtml(zone.label)} · ${escapeHtml(zone.detail)}` : 'Emplacement opérationnel à confirmer'}</p></div><button class="icon-button" data-nav="map" aria-label="Voir sur le plan">${icon('map')}</button></section>
     <ol class="p0-stagebar">${stages.map((label, index) => `<li class="${index < stageIndex ? 'done' : index === stageIndex ? 'active' : ''}"><span>${index < stageIndex ? '✓' : index + 1}</span><small>${label}</small></li>`).join('')}</ol>
@@ -325,7 +416,7 @@ function renderAuditDetail(state, auditId) {
   return `${header('Contrôle en cours', container.label, current.sectionLabel, 'audits')}
     <div class="p0-progress-head"><strong>${observations.length} / ${items.length}</strong><span>${progress} %</span></div><div class="p0-progress"><span style="width:${progress}%"></span></div>
     ${renderVisualSchema(diagram, { kind: 'container', label: container.label, color: container.color, selectedTargetId: current.sectionId })}
-    <details class="p0-details p0-assignment"><summary>Attribution · ${escapeHtml(state.users.find((user) => user.id === audit.userId)?.displayName || audit.userId)}</summary><form id="audit-assignment-form" class="p0-form"><input type="hidden" name="auditId" value="${audit.id}"><label class="p0-field"><span>Transmettre à</span><select name="userId">${state.users.filter((user) => user.active).map((user) => `<option value="${user.id}" ${user.id === audit.userId ? 'selected' : ''}>${escapeHtml(user.displayName)} · ${escapeHtml(user.role)}</option>`).join('')}</select></label><label class="p0-field"><span>Motif factuel (facultatif)</span><input name="reason" placeholder="Ex. remplacement pendant absence"></label><button class="secondary-button" type="submit">Enregistrer la passation</button></form></details>
+    ${state.users.some((user) => user.active) ? `<details class="p0-details p0-assignment"><summary>Attribution · ${escapeHtml(state.users.find((user) => user.id === audit.userId)?.displayName || 'Utilisateur local')}</summary><form id="audit-assignment-form" class="p0-form"><input type="hidden" name="auditId" value="${audit.id}"><label class="p0-field"><span>Transmettre à</span><select name="userId">${state.users.filter((user) => user.active).map((user) => `<option value="${user.id}" ${user.id === audit.userId ? 'selected' : ''}>${escapeHtml(user.displayName)} · ${escapeHtml(user.role)}</option>`).join('')}</select></label><label class="p0-field"><span>Motif factuel (facultatif)</span><input name="reason" placeholder="Indiquer le motif de la passation"></label><button class="secondary-button" type="submit">Enregistrer la passation</button></form></details>` : ''}
     <article class="p0-audit-card"><span class="p0-counter">Élément ${observations.length + 1}</span><h2>${escapeHtml(current.label)}</h2><p>Quantité attendue : <strong>${current.expectedQuantity}</strong></p>
       <button class="p0-conform-button" data-observe-conforme="${audit.id}" data-item-id="${current.id}">${icon('check', 20)} Conforme · quantité attendue présente</button>
       <form id="observation-form" class="p0-form compact">
@@ -340,13 +431,178 @@ function renderAuditDetail(state, auditId) {
     <button class="text-button p0-full" data-pause-audit="${audit.id}">Mettre en pause et revenir plus tard</button>`;
 }
 
-function renderExpiry(state, ui) {
-  const horizon = Number(ui.expiryHorizon || 90);
-  const lots = filterLotsByHorizon(state.lots, horizon);
-  return `${header('Péremptions', 'Lots synthétiques de démonstration. Les dates historiques des fichiers source ne sont jamais reprises.', 'Anticipation')}
-    ${demoBanner()}
-    <div class="p0-tabs">${EXPIRY_HORIZONS.map((days) => `<button data-expiry-horizon="${days}" class="${horizon === days ? 'active' : ''}">${days} j</button>`).join('')}</div>
-    <div class="card">${lots.map((lot) => { const item = findReferenceItem(lot.itemId); const planned = state.actions.some((action) => action.lotId === lot.id && !['cancelled'].includes(action.status)); return `<article class="p0-expiry-row"><span class="expiry-accent ${lot.daysRemaining <= 30 ? 'red' : ''}"></span><div><strong>${escapeHtml(item?.label)}</strong><small>${escapeHtml(item?.containerLabel)} › ${escapeHtml(item?.sectionLabel)}</small><small>Lot ${escapeHtml(lot.lotNumber)} · échéance ${escapeHtml(formatDate(lot.expiryDate))}</small></div><span class="p0-days ${lot.daysRemaining <= 30 ? 'danger' : ''}">${lot.daysRemaining} j</span><button class="small-button" data-plan-expiry="${lot.id}" ${planned ? 'disabled' : ''}>${planned ? 'Planifié' : 'Planifier'}</button></article>`; }).join('') || '<div class="card-pad">Aucun lot actif dans cet horizon.</div>'}</div>`;
+function productVisualKind(item) {
+  const text = normalizeSearch(`${item?.label || ''} ${item?.category || ''}`);
+  if (/nacl|serum|solut|perfusion|gelofusine|bicarbonate|glucose/.test(text)) return 'infusion';
+  if (/compresse|pansement|sparadrap|tegaderm|bande|meche/.test(text)) return 'dressing';
+  if (/masque|oxygene|respir|intub|canule|ventoline|aerosol/.test(text)) return 'respiratory';
+  if (item?.category === 'medicament' || /ampoule|inject|seringue pre-remplie/.test(text)) return 'injectable';
+  if (['dispositif', 'equipement'].includes(item?.category)) return 'device';
+  return 'initials';
+}
+
+function itemHasSourceAmbiguity(item) {
+  return item?.sourceStatus === 'source-ambiguity-to-validate' || Boolean(item?.validationIssues?.length);
+}
+
+function productInitials(label) {
+  return String(label || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
+}
+
+function expiryPictogram(item) {
+  const kind = productVisualKind(item);
+  if (kind === 'initials') return `<span class="expiry-product-initials" aria-hidden="true">${escapeHtml(productInitials(item?.label))}</span>`;
+  const paths = {
+    injectable: '<path d="m7 17 9-9M14 6l4 4M5 19l2-2M9 10l5 5M15 5l4-2 2 2-2 4"/>',
+    infusion: '<path d="M8 3h8v4l2 3v10H6V10l2-3V3ZM8 8h8M9 13h6M12 13v4"/>',
+    dressing: '<rect x="4" y="7" width="16" height="10" rx="3"/><path d="M9 7v10M15 7v10M10.5 12h3"/>',
+    respiratory: '<path d="M5 9c2-3 12-3 14 0v7c-2 3-5 4-7 4s-5-1-7-4V9Z"/><path d="M8 11h8M8 14h8M5 10 2 8M19 10l3-2"/>',
+    device: '<rect x="4" y="5" width="16" height="14" rx="3"/><path d="M8 9h8M8 13h5M8 17h8"/>'
+  };
+  return `<svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[kind]}</svg>`;
+}
+
+function daysLabel(daysRemaining) {
+  if (!Number.isFinite(daysRemaining)) return 'Date à vérifier';
+  if (daysRemaining < 0) return `Périmé depuis ${Math.abs(daysRemaining)} j`;
+  if (daysRemaining === 0) return 'Échéance aujourd’hui';
+  return `${daysRemaining} j restants`;
+}
+
+function lotLocation(lot, item) {
+  const container = findContainer(lot.containerId || item?.containerId);
+  const section = findContainerSection(container, lot.sectionId || item?.sectionId);
+  return {
+    container,
+    section,
+    containerLabel: lot.containerLabel || container?.label || item?.containerLabel || 'Contenant à confirmer',
+    sectionLabel: lot.locationLabel || lot.sectionLabel || section?.label || item?.sectionLabel || 'Zone à préciser'
+  };
+}
+
+function renderExpiryPanel({ id, tone, iconName, label, count, subtitle }, activeFilter) {
+  const selected = activeFilter === id;
+  return `<button type="button" class="expiry-panel ${tone} ${selected ? 'is-active' : ''}" data-expiry-filter="${id}" aria-pressed="${selected}" aria-label="Filtrer : ${escapeHtml(label)}, ${count}">
+    <span class="expiry-panel-icon">${icon(iconName, 23)}</span><span class="expiry-panel-count">${count}</span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(subtitle)}</small>
+  </button>`;
+}
+
+function renderExpiryProductCard(lot) {
+  const item = lot.item || findReferenceItem(lot.itemId);
+  const location = lotLocation(lot, item);
+  const tone = lot.bucket === 'urgent' ? 'red' : lot.bucket === 'soon' ? 'orange' : lot.bucket === 'anticipate' ? 'violet' : lot.bucket === 'treated' ? 'green' : 'neutral';
+  const actionLabel = lot.bucket === 'treated' ? 'Voir' : lot.bucket === 'monitor' ? 'Consulter' : 'Traiter';
+  return `<article class="expiry-product-card ${tone}" data-expiry-bucket="${escapeHtml(lot.bucket)}">
+    <span class="expiry-product-icon">${expiryPictogram(item)}</span>
+    <div class="expiry-product-copy"><strong>${escapeHtml(item?.label || 'Produit du référentiel')}</strong><small>${escapeHtml(item?.category || 'Catégorie à déterminer')}</small><span>${escapeHtml(location.containerLabel)} › ${escapeHtml(location.sectionLabel)}</span><span>Lot ${escapeHtml(lot.lotNumber)} · ${escapeHtml(formatDate(lot.expiryDate, { month: '2-digit', year: 'numeric' }))}</span></div>
+    <div class="expiry-product-status"><strong>${escapeHtml(lot.bucket === 'treated' ? 'Traité ce mois' : daysLabel(lot.daysRemaining))}</strong><small>${escapeHtml(lot.bucket === 'urgent' ? 'Action prioritaire' : lot.bucket === 'soon' ? 'Remplacement rapide' : lot.bucket === 'anticipate' ? 'À anticiper' : lot.bucket === 'treated' ? 'Historique conservé' : 'Surveillance simple')}</small></div>
+    <button type="button" class="expiry-product-action" data-nav="expiry/lot/${encodeURIComponent(lot.id)}">${actionLabel}${icon('chevron', 16)}</button>
+  </article>`;
+}
+
+function renderExpiryDashboard(state, ui) {
+  const { active, workflow, treated, thresholds } = expiryModels(state);
+  const tracked = [...workflow, ...active];
+  const groups = {
+    urgent: tracked.filter((lot) => lot.bucket === 'urgent'),
+    soon: tracked.filter((lot) => lot.bucket === 'soon'),
+    anticipate: tracked.filter((lot) => lot.bucket === 'anticipate'),
+    treated
+  };
+  const filter = ['urgent', 'soon', 'anticipate', 'treated'].includes(ui.expiryFilter) ? ui.expiryFilter : 'all';
+  const shown = filter === 'all' ? tracked : groups[filter];
+  const panels = [
+    { id: 'urgent', tone: 'red', iconName: 'alert', label: 'À traiter', count: distinctProductCount(groups.urgent), subtitle: 'Actions prioritaires' },
+    { id: 'soon', tone: 'orange', iconName: 'clock', label: '≤ 30 jours', count: distinctProductCount(groups.soon), subtitle: 'Remplacement rapide' },
+    { id: 'anticipate', tone: 'violet', iconName: 'calendar', label: '31–90 jours', count: distinctProductCount(groups.anticipate), subtitle: 'À anticiper' },
+    { id: 'treated', tone: 'green', iconName: 'check', label: 'Traité ce mois', count: distinctProductCount(groups.treated), subtitle: 'Conformité retrouvée' }
+  ];
+  return `${header('Péremptions', 'Suivi des lots réellement saisis dans les sacs et réserves.', 'Stock vivant')}
+    <section class="expiry-panel-grid" aria-label="Filtres de suivi des péremptions">${panels.map((panel) => renderExpiryPanel(panel, filter)).join('')}</section>
+    <p class="expiry-logistics-note">Seuils logistiques configurables : action immédiate ≤ ${thresholds.urgentDays} j, remplacement rapide ≤ ${thresholds.rapidReplacementDays} j, anticipation ≤ ${thresholds.anticipationDays} j. Ces paramètres ne constituent pas une règle médicale.</p>
+    <details class="expiry-threshold-settings"><summary>${icon('settings', 17)} Paramètres logistiques</summary><form id="expiry-thresholds-form" class="p0-form"><div class="expiry-threshold-grid"><label class="p0-field"><span>Action immédiate</span><input type="number" name="urgentDays" min="0" step="1" inputmode="numeric" value="${thresholds.urgentDays}" required><small>jours</small></label><label class="p0-field"><span>Remplacement rapide</span><input type="number" name="rapidReplacementDays" min="0" step="1" inputmode="numeric" value="${thresholds.rapidReplacementDays}" required><small>jours</small></label><label class="p0-field"><span>Anticipation</span><input type="number" name="anticipationDays" min="0" step="1" inputmode="numeric" value="${thresholds.anticipationDays}" required><small>jours</small></label><label class="p0-field"><span>Surveillance simple</span><input type="number" name="monitoringDays" min="0" step="1" inputmode="numeric" value="${thresholds.monitoringDays}" required><small>jours</small></label></div><p>Paramètres logistiques locaux, sans portée médicale ou pharmaceutique officielle.</p><button type="submit" class="secondary-button">Enregistrer les seuils</button></form></details>
+    ${!tracked.length && !treated.length ? `<section class="expiry-empty-state"><span>${icon('calendar', 34)}</span><h2>Aucun lot enregistré</h2><p>Les inventaires sont disponibles. Ajoutez les lots et les dates réellement présents dans les sacs et réserves pour activer le suivi des péremptions.</p><div><button type="button" class="primary-button" data-nav="expiry/add">Commencer la saisie</button><button type="button" class="secondary-button" data-nav="expiry/add" data-focus-expiry-search="true">Scanner ou rechercher un produit</button><button type="button" class="text-button" data-nav="inventory">Voir les inventaires</button></div></section>` : `<section class="section expiry-results"><div class="section-head"><h2>${filter === 'all' ? 'Lots suivis' : panels.find((panel) => panel.id === filter)?.label}</h2><span class="section-count">${shown.length}</span></div><div class="expiry-product-list">${shown.map(renderExpiryProductCard).join('') || '<div class="empty-state"><h3>Aucun lot dans ce filtre</h3><p>Les autres lots suivis restent disponibles.</p><button type="button" class="small-button" data-expiry-filter="all">Afficher tous les lots</button></div>'}</div></section>`}
+    <button type="button" class="primary-button expiry-add-button" data-nav="expiry/add">${icon('plus', 18)} Ajouter un lot</button>`;
+}
+
+function renderExpiryAdd(state, ui) {
+  const query = normalizeSearch(ui.expirySearch || '');
+  const expiryItems = activeReferenceItems(state);
+  const selectedItem = expiryItems.find((item) => item.id === ui.expiryItemId || item.rawItemId === ui.expiryItemId);
+  const results = query
+    ? expiryItems.filter((item) => item.expiryTracked !== false && normalizeSearch(`${item.label} ${item.containerLabel} ${item.sectionLabel} ${item.sourceText || ''} ${item.productCode || ''}`).includes(query)).slice(0, 40)
+    : [];
+  const selectedContainer = findContainer(selectedItem?.containerId);
+  const selectedChariot = selectedItem?.referenceType === 'xlsx'
+    ? state.chariotReference?.references?.find((reference) => reference.id === selectedItem.containerId)
+    : null;
+  const selectedSection = selectedContainer?.sections.find((section) => section.id === selectedItem?.sectionId)
+    || selectedChariot?.containers?.find((section) => section.id === selectedItem?.sectionId);
+  const selectedSource = SOURCE_DOCUMENTS.find((source) => source.id === (selectedItem?.sourceId || selectedContainer?.sourceId));
+  const selectedContainerLabel = selectedContainer?.label || selectedChariot?.label || selectedItem?.containerLabel;
+  const selectedLayoutStatus = selectedContainer?.physicalLayoutStatus || selectedChariot?.physicalLayoutStatus || selectedItem?.physicalLayoutStatus || 'physical-layout-provisional';
+  return `${header('Ajouter un lot', 'Recherchez le produit dans le référentiel puis saisissez uniquement les données constatées.', 'Péremptions', 'expiry')}
+    <ol class="expiry-entry-steps" aria-label="Étapes de saisie"><li class="active"><span>1</span>Produit</li><li class="${selectedItem ? 'active' : ''}"><span>2</span>Emplacement</li><li class="${selectedItem ? 'active' : ''}"><span>3</span>Lot et date</li><li class="${selectedItem ? 'active' : ''}"><span>4</span>Enregistrer</li></ol>
+    <label class="p0-search expiry-reference-search">${icon('search', 19)}<span class="sr-only">Rechercher un produit</span><input id="expiry-reference-search" type="search" value="${escapeHtml(ui.expirySearch || '')}" placeholder="Nom, dosage, format ou contenant…" autocomplete="off" autofocus></label>
+    ${query && !selectedItem ? `<section class="section"><div class="section-head"><h2>Produits du référentiel</h2><span class="section-count">${results.length}</span></div><div class="expiry-reference-results">${results.map((item) => `<button type="button" data-select-expiry-item="${escapeHtml(item.id)}"><span class="expiry-product-icon">${expiryPictogram(item)}</span><span><strong>${escapeHtml(item.label)}</strong>${itemHasSourceAmbiguity(item) ? '<small class="inventory-validation-issue">Libellé source à valider</small>' : ''}<small>${escapeHtml(item.containerLabel)} › ${escapeHtml(item.sectionLabel)}</small><small>Quantité théorique : ${Number(item.expectedQuantity)} · ${escapeHtml(item.unit)}</small></span>${icon('chevron', 17)}</button>`).join('') || '<div class="empty-state"><h3>Aucun produit trouvé</h3><p>Vérifiez le libellé ou consultez tous les inventaires.</p><button type="button" class="small-button" data-nav="inventory">Voir les inventaires</button></div>'}</div></section>` : ''}
+    ${selectedItem ? `<form id="expiry-lot-form" class="p0-form card card-pad expiry-lot-form">
+      <input type="hidden" name="itemId" value="${escapeHtml(selectedItem.id)}"><input type="hidden" name="containerId" value="${escapeHtml(selectedItem.containerId)}"><input type="hidden" name="sectionId" value="${escapeHtml(selectedItem.sectionId)}"><input type="hidden" name="locationStatus" value="${escapeHtml(selectedLayoutStatus)}">
+      <section class="expiry-selected-reference"><span class="expiry-product-icon">${expiryPictogram(selectedItem)}</span><div><p>Produit sélectionné</p><strong>${escapeHtml(selectedItem.label)}</strong>${itemHasSourceAmbiguity(selectedItem) ? '<small class="inventory-validation-issue">Libellé source à valider</small>' : ''}<small>Quantité théorique : ${Number(selectedItem.expectedQuantity)} · ${escapeHtml(selectedItem.unit)}</small><small>Source : ${escapeHtml(selectedSource?.documentRef || selectedItem.sourceReference || selectedItem.sourceId || 'document importé')} · ${escapeHtml(selectedSource?.revision || selectedItem.sourceRevision || 'version source')}</small></div><button type="button" class="text-button" data-clear-expiry-item="true">Changer</button></section>
+      <label class="p0-field"><span>2. Choisir son emplacement</span><select name="locationId" required><option value="${escapeHtml(selectedItem.sectionId)}">${escapeHtml(selectedContainerLabel)} › ${escapeHtml(selectedSection?.label || selectedItem.sectionLabel || 'Zone à préciser')}</option></select><small class="field-help">${selectedLayoutStatus === 'physical-layout-validated' ? 'Organisation visuelle validée' : 'Organisation visuelle à préciser'}</small></label>
+      <label class="p0-field"><span>3. Numéro de lot</span><input name="lotNumber" required autocomplete="off" autocapitalize="characters"></label>
+      <label class="p0-field"><span>4. Mois / année de péremption</span><input type="month" name="expiryMonth" required></label>
+      <label class="p0-field"><span>5. Quantité réellement présente</span><input type="number" name="quantity" min="1" step="1" inputmode="numeric" required></label>
+      <p class="expiry-data-separation">La quantité théorique reste dans le référentiel. Ce formulaire enregistre uniquement le lot, la date et la quantité réellement constatés.</p>
+      <button type="submit" class="primary-button">Enregistrer</button>
+    </form>` : !query ? '<div class="schema-guidance"><span aria-hidden="true">1</span><div><strong>Rechercher le produit</strong><span>Le nom, le dosage et la quantité théorique seront repris du référentiel sans ressaisie.</span></div></div>' : ''}`;
+}
+
+function workflowStage(action) {
+  if (action?.status === 'done' || action?.stage === 'done') return 4;
+  if (!action) return 0;
+  const stage = action.expiryStage || action.stage;
+  if (['validated', 'valide'].includes(stage)) return 4;
+  if (['valider', 'replacement-recorded', 'remplacement_enregistre', 'remise_en_place'].includes(stage)) return 3;
+  if (['remplacer', 'removed', 'retrait_enregistre', 'verification'].includes(stage)) return 2;
+  if (['retirer', 'collecte'].includes(stage)) return 1;
+  return 0;
+}
+
+function renderExpiryWorkflow(state, lot) {
+  const item = lot.item || activeReferenceItem(state, lot.itemId, lot);
+  const location = lotLocation(lot, item);
+  const action = state.actions.find((candidate) => candidate.lotId === lot.id && !['cancelled'].includes(candidate.status));
+  const stage = lot.bucket === 'treated' ? 4 : workflowStage(action);
+  const chariot = item?.referenceType === 'xlsx'
+    ? state.chariotReference?.references?.find((reference) => reference.id === item.containerId)
+    : null;
+  const diagram = location.container ? getContainerDiagram(location.container) : chariot ? getChariotDiagram(chariot) : null;
+  const removal = action?.expiryRemoval || action?.removal || {};
+  const replacement = action?.expiryReplacement || action?.replacement || {};
+  const step = (index, title, description, content) => `<section class="expiry-workflow-step ${index < stage ? 'is-done' : index === stage ? 'is-current' : 'is-pending'}"><header><span>${index < stage || stage === 4 ? icon('check', 17) : index + 1}</span><div><h2>${title}</h2><p>${description}</p></div></header>${index === 0 || index === stage || (stage === 4 && index === 3) ? `<div class="expiry-workflow-body">${content}</div>` : ''}</section>`;
+  const localizeContent = `<dl class="expiry-location-path"><div><dt>Contenant</dt><dd>${escapeHtml(location.containerLabel)}</dd></div><div><dt>Kit ou compartiment</dt><dd>${escapeHtml(location.sectionLabel)}</dd></div><div><dt>Réserve éventuelle</dt><dd>${escapeHtml(findZone(location.container?.stockZoneId)?.label || 'Emplacement physique à confirmer')}</dd></div></dl>${diagram ? renderVisualSchema(diagram, { kind: chariot ? 'chariot' : 'container', label: location.containerLabel, color: location.container?.color, selectedTargetId: item?.sectionId }) : ''}<p class="expiry-local-note">${isPhysicalLayoutValidated(diagram, location.container || chariot) ? 'Organisation visuelle validée' : 'Organisation visuelle à préciser'}</p>${stage === 0 ? action ? `<button type="button" class="primary-button" data-localize-expiry-action="${escapeHtml(action.id)}" data-advance-action="${escapeHtml(action.id)}">Emplacement confirmé · Continuer</button>` : `<button type="button" class="primary-button" data-plan-expiry="${escapeHtml(lot.id)}" data-start-expiry-treatment="${escapeHtml(lot.id)}">Localiser et commencer</button>` : ''}`;
+  const presentQuantity = Number(lot.quantityPresent ?? lot.quantity) || '';
+  const removeContent = `<form id="expiry-removal-form" class="p0-form"><input type="hidden" name="lotId" value="${escapeHtml(lot.id)}"><input type="hidden" name="actionId" value="${escapeHtml(action?.id || '')}"><input type="hidden" name="oldLotNumber" value="${escapeHtml(lot.lotNumber)}"><div class="expiry-old-lot"><span>Ancien lot</span><strong>${escapeHtml(lot.lotNumber)}</strong><small>${escapeHtml(formatDate(lot.expiryDate, { month: '2-digit', year: 'numeric' }))}</small></div><label class="p0-field"><span>Quantité retirée</span><input type="number" name="quantity" min="1" max="${presentQuantity}" step="1" inputmode="numeric" value="${escapeHtml(removal.quantity || '')}" required></label><label class="p0-field"><span>Motif</span><select name="reason" required><option value="">Sélectionner…</option><option value="expired">Périmé</option><option value="logistics-threshold">Échéance logistique atteinte</option><option value="packaging-damage">Emballage altéré</option><option value="other-observation">Autre constat</option></select></label><button type="submit" class="primary-button">Enregistrer le retrait</button></form>`;
+  const replaceContent = `<form id="expiry-replacement-form" class="p0-form"><input type="hidden" name="lotId" value="${escapeHtml(lot.id)}"><input type="hidden" name="actionId" value="${escapeHtml(action?.id || '')}"><input type="hidden" name="itemId" value="${escapeHtml(lot.itemId)}"><label class="p0-field"><span>Nouveau numéro de lot</span><input name="lotNumber" value="${escapeHtml(replacement.lotNumber || '')}" required autocomplete="off" autocapitalize="characters"></label><label class="p0-field"><span>Nouvelle péremption</span><input type="month" name="expiryMonth" value="${escapeHtml(replacement.expiryMonth || '')}" required></label><label class="p0-field"><span>Quantité installée</span><input type="number" name="quantity" min="1" step="1" inputmode="numeric" value="${escapeHtml(replacement.quantity || '')}" required></label><button type="submit" class="primary-button">Enregistrer le remplacement</button></form>`;
+  const validateContent = stage === 4 ? '<div class="success-banner">Action clôturée. L’ancien lot est archivé et le nouveau lot reste actif dans le stock vivant.</div>' : `<form id="expiry-validation-form" class="p0-form"><input type="hidden" name="lotId" value="${escapeHtml(lot.id)}"><input type="hidden" name="actionId" value="${escapeHtml(action?.id || '')}"><fieldset class="expiry-validation-list"><legend>Vérification finale</legend><label><input type="checkbox" name="removed" required> Ancien produit retiré</label><label><input type="checkbox" name="replaced" required> Nouveau produit replacé</label><label><input type="checkbox" name="quantityConform" required> Quantité conforme</label><label><input type="checkbox" name="dateRecorded" required> Nouvelle date enregistrée</label><label><input type="checkbox" name="containerAvailable" required> Contenant disponible</label></fieldset><button type="submit" class="primary-button">Valider et clôturer</button></form>`;
+  return `${step(0, 'Localiser', 'Repérer le contenant et son organisation.', localizeContent)}${step(1, 'Retirer', 'Tracer le retrait de l’ancien lot.', removeContent)}${step(2, 'Remplacer', 'Enregistrer uniquement le nouveau lot réellement installé.', replaceContent)}${step(3, 'Valider', 'Contrôler la remise en place et clôturer.', validateContent)}`;
+}
+
+function renderExpiryDetail(state, lotId) {
+  const { active, workflow, treated } = expiryModels(state);
+  const lot = [...active, ...workflow, ...treated].find((candidate) => candidate.id === safeDecode(lotId));
+  if (!lot) return `${header('Lot introuvable', 'Ce lot n’est pas présent dans le stock vivant.', 'Péremptions', 'expiry')}<div class="empty-state"><button type="button" class="primary-button" data-nav="expiry">Revenir aux péremptions</button></div>`;
+  const item = lot.item || findReferenceItem(lot.itemId);
+  const location = lotLocation(lot, item);
+  return `${header(item?.label || 'Lot suivi', `${location.containerLabel} › ${location.sectionLabel}`, 'Traitement d’une péremption', 'expiry')}
+    <article class="expiry-detail-hero ${lot.bucket === 'urgent' ? 'red' : lot.bucket === 'soon' ? 'orange' : lot.bucket === 'anticipate' ? 'violet' : lot.bucket === 'treated' ? 'green' : 'neutral'}"><span class="expiry-product-icon">${expiryPictogram(item)}</span><div><strong>Lot ${escapeHtml(lot.lotNumber)}</strong><span>${escapeHtml(formatDate(lot.expiryDate, { month: 'long', year: 'numeric' }))} · quantité ${Number(lot.quantityPresent ?? lot.quantity)}</span></div><strong>${escapeHtml(lot.bucket === 'treated' ? 'Traité' : daysLabel(lot.daysRemaining))}</strong></article>
+    <div class="expiry-workflow">${renderExpiryWorkflow(state, lot)}</div>`;
+}
+
+function renderExpiry(state, ui, view, lotId) {
+  if (view === 'add') return renderExpiryAdd(state, ui);
+  if (view === 'lot') return renderExpiryDetail(state, lotId);
+  return renderExpiryDashboard(state, ui);
 }
 
 function renderDefect(state, ui) {
@@ -356,7 +612,7 @@ function renderDefect(state, ui) {
     <form id="defect-form" class="p0-form card card-pad">
       <label class="p0-field"><span>Contenant</span><select id="defect-container" name="containerId">${SMUR_CONTAINERS.map((container) => `<option value="${container.id}" ${container.id === selected.id ? 'selected' : ''}>${escapeHtml(container.label)}</option>`).join('')}</select></label>
       <label class="p0-field"><span>Élément (facultatif)</span><select name="itemId"><option value="">Tout le contenant</option>${items.map((item) => `<option value="${item.id}">${escapeHtml(item.label)}</option>`).join('')}</select></label>
-      <label class="p0-field"><span>Description factuelle</span><textarea name="note" rows="4" required placeholder="Ex. ne s’allume pas lors du contrôle local"></textarea></label>
+      <label class="p0-field"><span>Description factuelle</span><textarea name="note" rows="4" required placeholder="Décrire le défaut constaté lors du contrôle"></textarea></label>
       <label class="p0-checkbox"><input type="checkbox" name="blocking"><span><strong>Marquer comme bloquant</strong><small>Ce choix rendra le contenant indisponible jusqu’à résolution.</small></span></label>
       <button class="primary-button" type="submit">Créer l’anomalie et l’action</button>
     </form>`;
@@ -395,42 +651,43 @@ function renderStats(state) {
 function renderHistory(state) {
   const events = state.events.slice(0, 100);
   return `${header('Historique', 'Journal local append-only des faits opérationnels. Les données patient ne font pas partie du modèle.', 'Traçabilité', 'profile')}
-    <div class="p0-event-list">${events.map((event) => `<article class="p0-event-row"><span class="p0-event-icon">${icon(event.type.includes('DEFECT') ? 'activity' : event.type.includes('AUDIT') ? 'clipboard' : 'clock', 17)}</span><div><strong>${escapeHtml(event.type.replaceAll('_', ' '))}</strong><p>${escapeHtml(event.subject || 'Événement local')}</p><small>${escapeHtml(formatDate(event.at, { dateStyle: 'short', timeStyle: 'short' }))} · ${escapeHtml(event.userId)} · ${event.connectivity === 'offline' ? 'créé hors ligne' : 'local'}</small></div><span class="status-pill ${event.syncStatus === 'pending' || event.source === 'demo-synthetic' ? 'plan' : 'ready'}">${event.source === 'demo-synthetic' ? 'Démo' : event.syncStatus === 'pending' ? 'En attente' : 'Local'}</span></article>`).join('') || '<div class="empty-state"><h3>Aucun événement</h3></div>'}</div>`;
+    <div class="p0-event-list">${events.map((event) => `<article class="p0-event-row"><span class="p0-event-icon">${icon(event.type.includes('DEFECT') ? 'activity' : event.type.includes('AUDIT') ? 'clipboard' : 'clock', 17)}</span><div><strong>${escapeHtml(event.type.replaceAll('_', ' '))}</strong><p>${escapeHtml(event.subject || 'Événement local')}</p><small>${escapeHtml(formatDate(event.at, { dateStyle: 'short', timeStyle: 'short' }))} · ${escapeHtml(event.userId)} · ${event.connectivity === 'offline' ? 'créé hors ligne' : 'local'}</small></div><span class="status-pill ${event.syncStatus === 'pending' ? 'plan' : 'ready'}">${event.syncStatus === 'pending' ? 'En attente' : 'Local'}</span></article>`).join('') || '<div class="empty-state"><h3>Aucun événement</h3></div>'}</div>`;
 }
 
 function renderProfile(state) {
-  const imported = SOURCE_DOCUMENTS.filter((source) => source.status === 'draft-to-validate').length;
+  const imported = SOURCE_DOCUMENTS.filter((source) => String(source.fileName || '').toLowerCase().endsWith('.pdf')).length;
   const loadedChariots = state.chariotReference?.references?.length || 0;
   const loadedChariotLines = flattenChariotReference(state.chariotReference).length;
   return `${header('Profil et système', 'Paramètres locaux, traçabilité et état du référentiel.', 'Configuration')}
-    <section class="card card-pad p0-profile-card"><div class="p0-avatar">${icon('user', 28)}</div><div><h2>${escapeHtml(state.user.displayName)}</h2><p>Mode local de démonstration · aucune authentification serveur · ${state.users.filter((user) => user.active).length} profils démo</p></div></section>
-    <form id="role-form" class="p0-form card card-pad"><label class="p0-field"><span>Rôle simulé pour préparer les droits futurs</span><select name="role"><option value="soignant" ${state.user.role === 'soignant' ? 'selected' : ''}>Soignant</option><option value="referent" ${state.user.role === 'referent' ? 'selected' : ''}>Référent matériel</option><option value="pharmacie" ${state.user.role === 'pharmacie' ? 'selected' : ''}>Pharmacie</option><option value="biomedical" ${state.user.role === 'biomedical' ? 'selected' : ''}>Biomédical</option><option value="administrateur" ${state.user.role === 'administrateur' ? 'selected' : ''}>Administrateur</option></select></label><button class="secondary-button" type="submit">Enregistrer le rôle local</button></form>
+    <section class="card card-pad p0-profile-card"><div class="p0-avatar">${icon('user', 28)}</div><div><h2>${escapeHtml(state.user.displayName)}</h2><p>Profil de cet appareil · stockage local · ${state.users.filter((user) => user.active).length} utilisateur${state.users.filter((user) => user.active).length > 1 ? 's' : ''} actif${state.users.filter((user) => user.active).length > 1 ? 's' : ''}</p></div></section>
+    <form id="role-form" class="p0-form card card-pad"><label class="p0-field"><span>Rôle local</span><select name="role"><option value="soignant" ${state.user.role === 'soignant' ? 'selected' : ''}>Soignant</option><option value="referent" ${state.user.role === 'referent' ? 'selected' : ''}>Référent matériel</option><option value="pharmacie" ${state.user.role === 'pharmacie' ? 'selected' : ''}>Pharmacie</option><option value="biomedical" ${state.user.role === 'biomedical' ? 'selected' : ''}>Biomédical</option><option value="administrateur" ${state.user.role === 'administrateur' ? 'selected' : ''}>Administrateur</option></select></label><button class="secondary-button" type="submit">Enregistrer le rôle local</button></form>
     <section class="section"><div class="section-head"><h2>État technique</h2></div><div class="card"><div class="p0-list-row"><span><strong>Stockage</strong><small>${state.persistent ? 'IndexedDB persistant' : 'Mémoire temporaire — IndexedDB indisponible'}</small></span>${statusPill(state.persistent ? 'pret' : 'indisponible', state.persistent ? 'Actif' : 'Dégradé')}</div><div class="p0-list-row"><span><strong>Synchronisation</strong><small>Aucun serveur configuré</small></span><strong>${state.sync.pending} en attente</strong></div><div class="p0-list-row"><span><strong>Version</strong><small>${APP_RELEASE.date}</small></span><strong>${APP_RELEASE.version}</strong></div></div></section>
-    <section class="section"><div class="section-head"><h2>Référentiel et sources</h2></div>${demoBanner()}<div class="card"><div class="p0-list-row"><span><strong>${imported} compositions PDF</strong><small>361 lignes structurées</small></span></div><div class="p0-list-row"><span><strong>${loadedChariots}/3 classeurs historiques chargés</strong><small>${loadedChariots ? `${loadedChariotLines} lignes sans péremptions ni signatures` : 'Données chariots indisponibles dans cette session'}</small></span></div></div></section>
+    <section class="section"><div class="section-head"><h2>Référentiel et sources</h2></div><div class="card"><div class="p0-list-row"><span><strong>${imported} compositions PDF</strong><small>361 lignes structurées depuis les documents sources</small></span></div><div class="p0-list-row"><span><strong>${loadedChariots}/3 inventaires XLSX chargés</strong><small>${loadedChariots ? `${loadedChariotLines} lignes actives · URG.ENR.007 V4` : 'Données chariots indisponibles dans cette session'}</small></span></div></div></section>
     <details class="p0-details"><summary>Sources intégrées et exclusions</summary><div>${SOURCE_DOCUMENTS.map((source) => `<p><strong>${escapeHtml(source.documentRef || source.id)}</strong> · ${escapeHtml(source.fileName)}<br><small>${escapeHtml(source.status)}${source.revision ? ` · ${escapeHtml(source.revision)}` : ''}</small></p>`).join('')}<h3>Contenus volontairement exclus</h3>${EXCLUDED_SOURCE_CONTENT.map((entry) => `<p><strong>${escapeHtml(entry.label)}</strong><br><small>${escapeHtml(entry.reason)}</small></p>`).join('')}</div></details>
     <div class="p0-quick-grid"><button class="p0-quick" data-nav="history">${icon('clock')}<span><strong>Historique</strong><small>Événements et attente de synchronisation</small></span></button><button class="p0-quick" data-nav="stats">${icon('chart')}<span><strong>Analyse locale</strong><small>Indicateurs du journal</small></span></button><button class="p0-quick" data-nav="map">${icon('map')}<span><strong>Plan du service</strong><small>Parcours dynamique</small></span></button></div>`;
 }
 
 export function renderApp(state, ui, routeParts) {
+  const viewState = operationalViewState(state);
   const [route = 'home', id, subId] = routeParts;
   let content;
   switch (route) {
-    case 'return': content = renderReturn(state, ui); break;
-    case 'inventory': content = renderInventory(state, ui); break;
-    case 'container': content = renderContainerDetail(state, id, subId); break;
-    case 'reserve': content = renderReserveDetail(state, id); break;
-    case 'chariot': content = renderChariotDetail(state, id, subId); break;
-    case 'actions': content = renderActions(state, ui); break;
-    case 'action': content = renderActionDetail(state, id); break;
-    case 'audits': content = renderAudits(state); break;
-    case 'audit': content = renderAuditDetail(state, id); break;
-    case 'expiry': content = renderExpiry(state, ui); break;
-    case 'defect': content = renderDefect(state, ui); break;
-    case 'map': content = renderMap(state, ui); break;
-    case 'stats': content = renderStats(state); break;
-    case 'history': content = renderHistory(state); break;
-    case 'profile': content = renderProfile(state); break;
-    default: content = renderHome(state);
+    case 'return': content = renderReturn(viewState, ui); break;
+    case 'inventory': content = renderInventory(viewState, ui); break;
+    case 'container': content = renderContainerDetail(viewState, id, subId); break;
+    case 'reserve': content = renderReserveDetail(viewState, id); break;
+    case 'chariot': content = renderChariotDetail(viewState, id, subId); break;
+    case 'actions': content = renderActions(viewState, ui); break;
+    case 'action': content = renderActionDetail(viewState, id); break;
+    case 'audits': content = renderAudits(viewState); break;
+    case 'audit': content = renderAuditDetail(viewState, id); break;
+    case 'expiry': content = renderExpiry(viewState, ui, id, subId); break;
+    case 'defect': content = renderDefect(viewState, ui); break;
+    case 'map': content = renderMap(viewState, ui); break;
+    case 'stats': content = renderStats(viewState); break;
+    case 'history': content = renderHistory(viewState); break;
+    case 'profile': content = renderProfile(viewState); break;
+    default: content = renderHome(viewState);
   }
-  return `<div class="app-shell">${topbar(state, ui)}<main class="page">${content}</main>${bottomNav(route)}</div>`;
+  return `<div class="app-shell">${topbar(viewState, ui)}<main class="page">${content}</main>${bottomNav(route)}</div>`;
 }

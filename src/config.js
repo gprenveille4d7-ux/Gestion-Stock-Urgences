@@ -1,31 +1,41 @@
 export const APP_RELEASE = Object.freeze({
-  version: '0.6.0-p0',
+  version: '1.0.0',
   date: '17/07/2026',
   name: 'Relève SMUR / Urgences'
 });
 
 export const DATABASE = Object.freeze({
   name: 'releve-smur-operational',
-  version: 2,
+  version: 3,
   legacyLocalStorageKey: 'releve-smur-operational-v1'
 });
 
 export const REFERENCE_STATUS = Object.freeze({
-  id: 'ref-smur-falaise-2026-07-visual-p0',
-  version: '2026.07-visual-p0',
-  status: 'demo-draft-needs-hospital-validation',
-  label: 'Référentiel de démonstration — validation hospitalière requise',
-  activatedAt: null
+  id: 'ref-smur-falaise-2026-07-source-v1',
+  version: '2026.07-source-v1',
+  status: 'imported-from-source',
+  label: 'Référentiel importé depuis les documents sources',
+  physicalLayoutStatus: 'physical-layout-provisional',
+  activatedAt: '2026-07-17'
 });
 
 export const DEFAULT_USER = Object.freeze({
-  id: 'local-demo-user',
+  id: 'local-user',
   displayName: 'Utilisateur local',
   role: 'soignant',
-  authentication: 'local-demo'
+  authentication: 'local-device'
 });
 
 export const EXPIRY_HORIZONS = Object.freeze([30, 60, 90, 180]);
+
+// Paramètres logistiques initiaux. Ils restent modifiables par configuration et
+// ne constituent pas une règle médicale ou pharmaceutique officielle.
+export const DEFAULT_EXPIRY_THRESHOLDS = Object.freeze({
+  urgentDays: 0,
+  rapidReplacementDays: 30,
+  anticipationDays: 90,
+  monitoringDays: 180
+});
 
 export const RESULT_TYPES = Object.freeze([
   'conforme',

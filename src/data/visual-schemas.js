@@ -1,5 +1,5 @@
-export const VISUAL_SCHEMA_VERSION = '2026.07-draft.1';
-export const VISUAL_SCHEMA_STATUS = 'draft-to-validate';
+export const VISUAL_SCHEMA_VERSION = '2026.07.1';
+export const VISUAL_SCHEMA_STATUS = 'physical-layout-provisional';
 
 export function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
@@ -7,11 +7,11 @@ export function deepFreeze(value) {
   return Object.freeze(value);
 }
 
-const GENERATED_STATUS = 'generated-to-validate';
-const CONFIGURED_STATUS = 'configured-from-labels-to-validate';
+const GENERATED_STATUS = 'physical-layout-provisional';
+const CONFIGURED_STATUS = 'physical-layout-provisional';
 const HISTORICAL_STATUS = 'historical-reference-only';
-const MISSING_STATUS = 'missing-to-validate';
-const VALIDATED_STATUS = 'validated';
+const MISSING_STATUS = 'physical-layout-provisional';
+const VALIDATED_STATUS = 'physical-layout-validated';
 
 export const VISUAL_SCHEMA_META = deepFreeze({
   version: VISUAL_SCHEMA_VERSION,
@@ -111,7 +111,7 @@ function gridLayout(count, {
 function missingImage(label) {
   return {
     src: null,
-    alt: 'PHOTO À AJOUTER — ' + label,
+    alt: 'Organisation visuelle à préciser — ' + label,
     status: MISSING_STATUS
   };
 }
@@ -173,13 +173,14 @@ function mergeDraftZone(zone, draft, diagram) {
   for (const field of ['x', 'y', 'w', 'h']) {
     if (draft[field] !== undefined) geometry[field] = Number(draft[field]);
   }
+  const normalizedStatus = draft.status === 'validated' ? VALIDATED_STATUS : (draft.status || zone.status);
   const merged = {
     ...zone,
     ...geometry,
     label: draft.label || zone.label,
-    status: draft.status || zone.status,
-    physical: draft.status === 'validated' && draft.physical === true,
-    location: zone.location ? { ...zone.location, ...(draft.location || {}), roomId: zone.location.roomId, status: draft.status || zone.location.status } : zone.location
+    status: normalizedStatus,
+    physical: ['validated', VALIDATED_STATUS].includes(draft.status) && draft.physical === true,
+    location: zone.location ? { ...zone.location, ...(draft.location || {}), roomId: zone.location.roomId, status: normalizedStatus || zone.location.status } : zone.location
   };
   if (![merged.x, merged.y, merged.w, merged.h].every(Number.isFinite) || merged.x < 0 || merged.y < 0 || merged.w <= 0 || merged.h <= 0 || merged.x + merged.w > 100.001 || merged.y + merged.h > 100.001) {
     throw new RangeError('Coordonnées invalides pour ' + zone.targetId + ' dans ' + diagramId);
@@ -210,12 +211,12 @@ export function applyVisualSchemaDraft(diagram, draft = null) {
   const image = draft.image?.src ? {
     src: draft.image.src,
     alt: draft.image.alt || diagram.image?.alt || diagram.label,
-    status: draft.status || 'draft-to-validate'
+    status: draft.status === 'validated' ? VALIDATED_STATUS : (draft.status || VISUAL_SCHEMA_STATUS)
   } : diagram.image;
   const zones = diagram.zones.map((zone) => mergeDraftZone(zone, zoneDrafts[zone.targetId], diagram));
-  const requestedStatus = draft.status || 'draft-to-validate';
+  const requestedStatus = draft.status === 'validated' ? VALIDATED_STATUS : (draft.status || VISUAL_SCHEMA_STATUS);
   const status = requestedStatus === VALIDATED_STATUS && (!zones.length || !zones.every((zone) => zone.status === VALIDATED_STATUS))
-    ? 'draft-to-validate'
+    ? VISUAL_SCHEMA_STATUS
     : requestedStatus;
   return deepFreeze({
     ...diagram,

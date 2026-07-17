@@ -107,7 +107,7 @@ test('le contrat visuel expose une version, un statut et des coordonnées en pou
     status: 'validated',
     zones: { [targetId]: { status: 'validated', physical: true } }
   });
-  assert.equal(partlyValidated.status, 'draft-to-validate');
+  assert.equal(partlyValidated.status, 'physical-layout-provisional');
   assert.equal(partlyValidated.zones.find((zone) => zone.targetId === targetId).physical, true);
 
   const singleSectionContainer = SMUR_CONTAINERS.find((candidate) => candidate.sections.length === 1);
@@ -117,7 +117,7 @@ test('le contrat visuel expose une version, un statut et des coordonnées en pou
     status: 'validated',
     zones: { [singleTargetId]: { status: 'validated', physical: true } }
   });
-  assert.equal(validated.status, 'validated');
+  assert.equal(validated.status, 'physical-layout-validated');
   assert.equal(validated.zones[0].physical, true);
   assert.throws(
     () => getContainerDiagram(container, { version: 'schema-invalide', zones: { inconnue: { x: 1 } } }),
@@ -176,7 +176,7 @@ test('chaque section de chaque contenant SMUR possède exactement un hotspot', (
       container.id === 'valise-intra-osseuse' ? 'inventory-placeholder' : 'generated-grid'
     );
     assert.equal(diagram.image.src, null);
-    assert.equal(diagram.image.status, 'missing-to-validate');
+    assert.equal(diagram.image.status, 'physical-layout-provisional');
     assert.equal(diagram.minimumZoneHeightPercent, 18);
     sectionCount += container.sections.length;
     hotspotCount += diagram.zones.length;
@@ -195,8 +195,8 @@ test('les propositions Pédia et Respi restent désactivées sans source d’ori
   assert.equal(CONTAINER_LAYOUT_OVERRIDES['sac-bleu-respi'].enabled, false);
   assert.equal(pediaDiagram.layoutMode, 'generated-grid');
   assert.equal(respiDiagram.layoutMode, 'generated-grid');
-  assert.equal(pediaDiagram.status, 'generated-to-validate');
-  assert.equal(respiDiagram.status, 'generated-to-validate');
+  assert.equal(pediaDiagram.status, 'physical-layout-provisional');
+  assert.equal(respiDiagram.status, 'physical-layout-provisional');
   assert.ok(pediaDiagram.zones.every((zone) => zone.physical === false));
   assert.ok(respiDiagram.zones.every((zone) => zone.physical === false));
   assert.equal(
@@ -210,13 +210,13 @@ test('les propositions Pédia et Respi restent désactivées sans source d’ori
 
 });
 
-test('les trois références historiques de chariots produisent un schéma complet', () => {
+test('les trois références actives de chariots produisent un schéma complet', () => {
   assert.equal(chariotReference.references.length, 3);
   for (const reference of chariotReference.references) {
     const diagram = getChariotDiagram(reference);
     assertDiagramContract(diagram);
     assert.equal(diagram.entityId, reference.id);
-    assert.equal(diagram.status, 'historical-reference-only');
+    assert.equal(diagram.status, 'physical-layout-provisional');
     assert.equal(diagram.layoutMode, 'generated-section-index');
     assert.equal(diagram.minimumZoneHeightPercent, 12);
     assert.equal(diagram.zones.length, reference.containers.length);
@@ -250,13 +250,13 @@ test('les réserves dérivent seulement les entités connues et ne valident aucu
     ];
     const diagram = getReserveDiagram(zoneId, SMUR_CONTAINERS, OPERATIONAL_ASSETS);
     assertDiagramContract(diagram);
-    assert.equal(diagram.status, 'missing-to-validate');
+    assert.equal(diagram.status, 'physical-layout-provisional');
     assert.equal(diagram.image.src, null);
-    assert.equal(diagram.image.status, 'missing-to-validate');
+    assert.equal(diagram.image.status, 'physical-layout-provisional');
     assert.equal(diagram.minimumZoneHeightPercent, diagram.aspectRatio === '3 / 4' ? 12 : 18);
     assert.deepEqual(
       Object.values(diagram.missingLocationLevels),
-      Array(4).fill('missing-to-validate')
+      Array(4).fill('physical-layout-provisional')
     );
     assert.deepEqual(
       diagram.zones.map((zone) => zone.targetId).sort(),
@@ -264,7 +264,7 @@ test('les réserves dérivent seulement les entités connues et ne valident aucu
     );
 
     for (const zone of diagram.zones) {
-      assert.equal(zone.status, 'missing-to-validate');
+      assert.equal(zone.status, 'physical-layout-provisional');
       assert.equal(zone.location.roomId, zoneId);
       assert.equal(zone.location.cabinet, null);
       assert.equal(zone.location.shelf, null);
@@ -278,10 +278,10 @@ test('les réserves dérivent seulement les entités connues et ne valident aucu
   const reserveTargetId = reserveBase.zones[0].targetId;
   const reserveDraft = getReserveDiagram('reserve-smur', SMUR_CONTAINERS, OPERATIONAL_ASSETS, {
     version: 'reserve-releve-1',
-    status: 'draft-to-validate',
+    status: 'physical-layout-provisional',
     zones: {
       [reserveTargetId]: {
-        status: 'draft-to-validate',
+        status: 'physical-layout-provisional',
         location: { roomId: 'reserve-smur', cabinet: 'ARMOIRE À CONFIRMER', shelf: null, bin: null }
       }
     }
