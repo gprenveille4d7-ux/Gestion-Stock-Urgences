@@ -16,6 +16,7 @@ Chaque PDF possède une empreinte SHA-256, une référence, une révision et une
 - aucune criticité clinique n’est inventée ;
 - les noms/dosages figurent comme caractéristiques de stock, jamais comme conseil ;
 - les erreurs ou ambiguïtés visibles dans les sources sont signalées dans le libellé au lieu d’être corrigées silencieusement ;
+- pour la valise intra-osseuse, les 12 libellés bruts sont conservés dans `sourceText`, notamment `45GA`, les deux mentions `15GA` et la seringue « de 50 » sans unité ;
 - les codes produits XLSX sont conservés, mais pas les anciennes péremptions.
 
 ## Exclusions

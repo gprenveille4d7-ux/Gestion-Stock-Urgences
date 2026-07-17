@@ -1,6 +1,6 @@
 export const APP_RELEASE = Object.freeze({
-  version: '0.5.0-p0',
-  date: '16/07/2026',
+  version: '0.6.0-p0',
+  date: '17/07/2026',
   name: 'Relève SMUR / Urgences'
 });
 
@@ -11,8 +11,8 @@ export const DATABASE = Object.freeze({
 });
 
 export const REFERENCE_STATUS = Object.freeze({
-  id: 'ref-smur-falaise-2026-07-p0',
-  version: '2026.07-p0',
+  id: 'ref-smur-falaise-2026-07-visual-p0',
+  version: '2026.07-visual-p0',
   status: 'demo-draft-needs-hospital-validation',
   label: 'Référentiel de démonstration — validation hospitalière requise',
   activatedAt: null

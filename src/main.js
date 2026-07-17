@@ -40,10 +40,13 @@ function showToast(message, tone = 'saved', action = null) {
   window.setTimeout(() => toast.remove(), action ? 12000 : 3600);
 }
 
-function render() {
+function render(focusHeading = false) {
   if (!store?.state.ready) return;
+  const currentRoute = routeParts()[0];
+  const routeTitles = { home: 'Relève', return: 'Retour', actions: 'Actions', action: 'Action', inventory: 'Matériel', container: 'Contenant', reserve: 'Réserve', chariot: 'Chariot', audits: 'Contrôles', audit: 'Contrôle', expiry: 'Péremptions', defect: 'Défaut', map: 'Carte', stats: 'Analyse', history: 'Historique', profile: 'Profil' };
   appRoot.innerHTML = renderApp(store.state, ui, routeParts());
-  document.title = `${routeParts()[0] === 'home' ? 'Relève' : 'Relève · ' + routeParts()[0]} — SMUR / Urgences`;
+  document.title = `${routeTitles[currentRoute] || 'Relève'} — SMUR / Urgences`;
+  if (focusHeading === true) appRoot.querySelector('.page-title')?.focus();
 }
 
 async function loadChariotReference() {
@@ -81,8 +84,24 @@ appRoot.addEventListener('click', async (event) => {
   if (!target || target.disabled) return;
   if (target.dataset.nav) return navigate(target.dataset.nav);
 
+  if (target.dataset.schemaAction === 'select-usage-section') {
+    const selectedSectionId = target.dataset.schemaValue;
+    ui.usageSection = selectedSectionId;
+    ui.usageItem = '';
+    render();
+    [...document.querySelectorAll('[data-schema-action="select-usage-section"]')].find((button) => button.dataset.schemaValue === selectedSectionId)?.focus();
+    return;
+  }
+  if (target.dataset.returnContainer) {
+    ui.usageContainer = target.dataset.returnContainer;
+    ui.usageSection = target.dataset.returnSection || '';
+    ui.usageItem = '';
+    ui.usageDeclaration = 'ouvert';
+    navigate('return');
+    return;
+  }
   if (target.dataset.startAudit) {
-    const audit = await perform(() => store.startAudit(target.dataset.startAudit, target.dataset.originAction || null), 'Contrôle démarré');
+    const audit = await perform(() => store.startAudit(target.dataset.startAudit, target.dataset.originAction || null, target.dataset.auditSection || null), 'Contrôle démarré');
     if (audit) navigate(`audit/${audit.id}`);
     return;
   }
@@ -174,32 +193,37 @@ appRoot.addEventListener('input', (event) => {
   input?.setSelectionRange(position, position);
 });
 
+function renderAndRestoreFocus(elementId) {
+  render();
+  document.getElementById(elementId)?.focus();
+}
+
 appRoot.addEventListener('change', (event) => {
   if (event.target.id === 'usage-container') {
     ui.usageContainer = event.target.value;
     ui.usageSection = '';
     ui.usageItem = '';
-    render();
+    renderAndRestoreFocus('usage-container');
   } else if (event.target.id === 'usage-section') {
     ui.usageSection = event.target.value;
     ui.usageItem = '';
-    render();
+    renderAndRestoreFocus('usage-section');
   } else if (event.target.id === 'usage-item') {
     ui.usageItem = event.target.value;
-    render();
+    renderAndRestoreFocus('usage-item');
   } else if (event.target.id === 'usage-declaration') {
     ui.usageDeclaration = event.target.value;
-    render();
+    renderAndRestoreFocus('usage-declaration');
   } else if (event.target.id === 'defect-container') {
     ui.defectContainer = event.target.value;
-    render();
+    renderAndRestoreFocus('defect-container');
   } else if (event.target.id === 'map-origin') {
     ui.mapOrigin = event.target.value;
-    render();
+    renderAndRestoreFocus('map-origin');
   }
 });
 
-window.addEventListener('hashchange', render);
+window.addEventListener('hashchange', () => render(true));
 window.addEventListener('online', () => { ui.online = true; render(); });
 window.addEventListener('offline', () => { ui.online = false; render(); });
 channel?.addEventListener('message', (event) => {
@@ -210,11 +234,26 @@ async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   try {
     const registration = await navigator.serviceWorker.register('./sw.js');
+    const offerUpdate = (worker) => {
+      showToast('Une mise à jour est prête.', 'saved', {
+        label: 'Actualiser',
+        onClick: () => {
+          let reloading = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (reloading) return;
+            reloading = true;
+            location.reload();
+          }, { once: true });
+          worker.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    };
+    if (registration.waiting && navigator.serviceWorker.controller) offerUpdate(registration.waiting);
     registration.addEventListener('updatefound', () => {
       const worker = registration.installing;
       worker?.addEventListener('statechange', () => {
         if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-          showToast('Une mise à jour est prête.', 'saved', { label: 'Actualiser', onClick: () => { worker.postMessage({ type: 'SKIP_WAITING' }); location.reload(); } });
+          offerUpdate(worker);
         }
       });
     });

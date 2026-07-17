@@ -16,10 +16,14 @@ export function deriveAvailability(containerId, state) {
   const openAnomalies = (state.anomalies || []).filter((anomaly) => anomaly.containerId === containerId && anomaly.status === 'open');
   const openActions = (state.actions || []).filter((action) => action.containerId === containerId && !['done', 'cancelled'].includes(action.status));
   const blocking = openAnomalies.filter((anomaly) => anomaly.severity === 'bloquant');
-  const reasons = openAnomalies.map((anomaly) => {
+  const referenceUnvalidated = container.validationRequired || container.sourceStatus !== 'validated';
+  const reasons = [
+    ...(referenceUnvalidated ? ['Référentiel non validé par l’établissement'] : []),
+    ...openAnomalies.map((anomaly) => {
     const item = findReferenceItem(anomaly.subjectId);
     return `${item?.label || container.label} · ${labelAnomaly(anomaly.type)}`;
-  });
+    })
+  ];
 
   if (blocking.length) return { status: AVAILABILITY.UNAVAILABLE, label: 'Indisponible', reasons, blockingCount: blocking.length, openActionCount: openActions.length };
   const toCheck = openAnomalies.some((anomaly) => ['controle_requis', 'defectueux', 'defaut_fonctionnel', 'donnee_a_confirmer', 'scelle_rompu'].includes(anomaly.type));
@@ -27,8 +31,10 @@ export function deriveAvailability(containerId, state) {
   const toRestock = openAnomalies.some((anomaly) => ['usage_restock_required', 'manquant', 'quantite_incorrecte', 'perime', 'equipement_absent'].includes(anomaly.type)) || openActions.some((action) => action.type === 'rearmement');
   if (toRestock) return { status: AVAILABILITY.TO_RESTOCK, label: 'À réarmer', reasons, blockingCount: 0, openActionCount: openActions.length };
   const anticipation = openActions.some((action) => action.type === 'remplacement_peremption');
+  if (anticipation && referenceUnvalidated) return { status: AVAILABILITY.TO_CHECK, label: 'À vérifier · péremption', reasons: [...reasons, 'Péremption planifiée'], blockingCount: 0, openActionCount: openActions.length };
   if (anticipation) return { status: AVAILABILITY.READY_WITH_ANTICIPATION, label: 'Prêt · action à anticiper', reasons: ['Péremption planifiée'], blockingCount: 0, openActionCount: openActions.length };
   if (openActions.length) return { status: AVAILABILITY.TO_CHECK, label: 'À vérifier', reasons: ['Action ouverte'], blockingCount: 0, openActionCount: openActions.length };
+  if (referenceUnvalidated) return { status: AVAILABILITY.TO_CHECK, label: 'À vérifier · référentiel', reasons, blockingCount: 0, openActionCount: 0 };
   return { status: AVAILABILITY.READY, label: 'Prêt', reasons: [], blockingCount: 0, openActionCount: 0 };
 }
 

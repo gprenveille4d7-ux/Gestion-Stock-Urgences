@@ -1,5 +1,5 @@
 import { DEFAULT_USER, REFERENCE_STATUS } from '../config.js';
-import { COMPOSITIONS, findContainer, findReferenceItem } from '../data/reference.js';
+import { COMPOSITIONS, findContainer, findReferenceItem, findZone } from '../data/reference.js';
 import { deriveConsequences } from '../domain/action-engine.js';
 import { createId } from '../domain/ids.js';
 import { computePriority } from '../domain/priority.js';
@@ -9,6 +9,23 @@ import { LocalOnlySyncAdapter } from '../infrastructure/sync-adapter.js';
 
 function sortByDateDescending(values, key = 'at') {
   return [...values].sort((a, b) => new Date(b[key] || 0) - new Date(a[key] || 0));
+}
+
+function validatedStockZoneId(container) {
+  return container?.stockZoneStatus === 'validated' ? container.stockZoneId : null;
+}
+
+function validatedLocationContext(targetZoneId = null, finalZoneId = null) {
+  return {
+    targetZoneId,
+    targetZoneStatus: targetZoneId ? 'validated' : 'missing-to-validate',
+    finalZoneId,
+    finalZoneStatus: finalZoneId ? 'validated' : 'missing-to-validate'
+  };
+}
+
+function hasValidatedActionZone(zoneId, status) {
+  return status === 'validated' && Boolean(findZone(zoneId));
 }
 
 export class OperationalStore {
@@ -89,10 +106,10 @@ export class OperationalStore {
 
   targetZoneFor(itemId, containerId) {
     const item = findReferenceItem(itemId);
-    const container = findContainer(containerId || item?.containerId);
-    if (item?.category === 'medicament') return 'pc-ide';
-    if (container?.stockZoneId === 'reserve-respi') return 'reserve-respi';
-    return 'reserve-1';
+    if (containerId && item?.containerId !== containerId) return null;
+    // La réserve de réarmement ne peut être déduite ni de la catégorie du
+    // produit ni de l'emplacement du sac. Elle reste vide jusqu'au relevé validé.
+    return item?.supplyZoneStatus === 'validated' ? item.supplyZoneId || null : null;
   }
 
   async declareUsage(containerId, note = '') {
@@ -106,6 +123,7 @@ export class OperationalStore {
     const item = itemId ? findReferenceItem(itemId) : null;
     if (item && item.containerId !== containerId) throw new Error('Élément hors du contenant sélectionné');
     if (['utilise', 'manquant'].includes(declaration) && !item) throw new Error('Sélectionnez l’élément utilisé ou manquant');
+    if (['utilise', 'manquant'].includes(declaration) && item?.operationalUseAllowed === false) throw new Error('Élément insuffisamment documenté : validation humaine requise avant un réarmement ciblé');
     if (declaration === 'defectueux') return this.reportDefect({ containerId, itemId, note: note || 'Défaut constaté au retour', blocking: false });
     const eventType = declaration === 'utilise' ? 'ITEM_USAGE_DECLARED' : declaration === 'manquant' ? 'ITEM_MISSING_DECLARED' : 'USAGE_DECLARED';
     const subject = item?.label || section?.label || container.label;
@@ -120,9 +138,13 @@ export class OperationalStore {
       note,
       actionTitle: item ? `${declaration === 'utilise' ? 'Remplacer' : 'Ajouter'} ${Math.max(1, Number(quantity) || 1)} × ${item.label}` : null
     }, subject);
-    const consequences = deriveConsequences(event, { targetZoneId: container.stockZoneId, finalZoneId: 'garage-smur' });
+    const confirmedContainerZoneId = validatedStockZoneId(container);
+    const consequences = deriveConsequences(event, validatedLocationContext(confirmedContainerZoneId, confirmedContainerZoneId));
     if (item) {
-      for (const action of consequences.actions) action.targetZoneId = this.targetZoneFor(item.id, containerId);
+      for (const action of consequences.actions) {
+        action.targetZoneId = this.targetZoneFor(item.id, containerId);
+        action.targetZoneStatus = action.targetZoneId ? 'validated' : 'missing-to-validate';
+      }
     }
     await this.repository.commitEvent(event, consequences);
     await this.reload();
@@ -170,9 +192,10 @@ export class OperationalStore {
     const event = this.createEvent('AUDIT_OBSERVATION_RECORDED', {
       auditId, itemId, containerId: audit.containerId, result, observedQuantity: observation.observedQuantity, missingQuantity, note, severity
     }, item.label);
+    const originAction = this.state.actions.find((action) => action.id === audit.originActionId);
+    const finalZoneId = originAction?.finalZoneStatus === 'validated' ? originAction.finalZoneId : validatedStockZoneId(container);
     const consequences = deriveConsequences(event, {
-      targetZoneId: this.targetZoneFor(itemId, audit.containerId),
-      finalZoneId: this.state.actions.find((action) => action.id === audit.originActionId)?.finalZoneId || container?.stockZoneId || null,
+      ...validatedLocationContext(this.targetZoneFor(itemId, audit.containerId), finalZoneId),
       actionTitle: `${result === 'defectueux' ? 'Traiter' : 'Réarmer'} · ${item.label}`
     });
     const updatedAudit = { ...audit, updatedAt: at, lastItemId: itemId };
@@ -251,7 +274,7 @@ export class OperationalStore {
     if (!container || !note?.trim()) throw new Error('Contenant et description requis');
     const item = itemId ? findReferenceItem(itemId) : null;
     const event = this.createEvent('DEFECT_REPORTED', { containerId, itemId, note: note.trim(), blocking, title: `Défaut · ${item?.label || container.label}` }, item?.label || container.label);
-    const consequences = deriveConsequences(event, { targetZoneId: container.stockZoneId, finalZoneId: container.stockZoneId });
+    const consequences = deriveConsequences(event, validatedLocationContext(null, validatedStockZoneId(container)));
     await this.repository.commitEvent(event, consequences);
     await this.reload();
     return consequences.actions[0];
@@ -266,7 +289,8 @@ export class OperationalStore {
     const event = this.createEvent('EXPIRY_REPLACEMENT_PLANNED', { lotId, itemId: item.id, containerId: item.containerId }, item.label);
     const action = {
       id: createId('action'), type: 'remplacement_peremption', title: `Remplacer avant péremption · ${item.label}`,
-      status: 'open', priority: computePriority({ severity: 'attention', type: 'remplacement_peremption', dueAt: lot.expiryDate, createdAt: event.at }, new Date(event.at)).level, containerId: item.containerId, targetZoneId: this.targetZoneFor(item.id, item.containerId), finalZoneId: findContainer(item.containerId)?.stockZoneId || null,
+      status: 'open', priority: computePriority({ severity: 'attention', type: 'remplacement_peremption', dueAt: lot.expiryDate, createdAt: event.at }, new Date(event.at)).level, containerId: item.containerId,
+      ...validatedLocationContext(this.targetZoneFor(item.id, item.containerId), validatedStockZoneId(findContainer(item.containerId))),
       lotId, lines: [{ itemId: item.id, quantity: lot.quantity || 1, done: false }], createdAt: event.at, dueAt: lot.expiryDate, originEventId: event.id
     };
     await this.repository.commitEvent(event, { actions: [action], anomalies: [] });
@@ -277,6 +301,7 @@ export class OperationalStore {
   async toggleActionLine(actionId, itemId) {
     const action = this.state.actions.find((candidate) => candidate.id === actionId);
     if (!action || ['done', 'cancelled'].includes(action.status)) throw new Error('Action non modifiable');
+    if (action.type !== 'controle' && !hasValidatedActionZone(action.targetZoneId, action.targetZoneStatus)) throw new Error('Emplacement de prélèvement à confirmer avant la collecte');
     const lines = action.lines.map((line) => line.itemId === itemId ? { ...line, done: !line.done } : line);
     const updated = { ...action, status: 'in_progress', stage: action.stage || 'collecte', startedAt: action.startedAt || new Date().toISOString(), assignedUserId: action.assignedUserId || this.state.user.id, lines, updatedAt: new Date().toISOString() };
     const toggledLine = lines.find((line) => line.itemId === itemId);
@@ -288,8 +313,12 @@ export class OperationalStore {
   async advanceAction(actionId) {
     const action = this.state.actions.find((candidate) => candidate.id === actionId);
     if (!action || ['done', 'cancelled'].includes(action.status)) throw new Error('Action non modifiable');
+    if (action.type === 'controle') throw new Error('Démarrez le contrôle associé pour traiter cette action');
     const allLinesDone = !action.lines?.length || action.lines.every((line) => line.done);
     if (!allLinesDone) throw new Error('Toutes les lignes doivent être confirmées');
+    const currentStage = action.stage || 'collecte';
+    if (action.type !== 'controle' && currentStage === 'collecte' && !hasValidatedActionZone(action.targetZoneId, action.targetZoneStatus)) throw new Error('Emplacement de prélèvement à confirmer avant la collecte');
+    if (action.type !== 'controle' && currentStage !== 'collecte' && !hasValidatedActionZone(action.finalZoneId, action.finalZoneStatus)) throw new Error('Destination finale à confirmer avant la remise en place');
     const nextStage = !action.stage || action.stage === 'collecte' ? 'verification' : action.stage === 'verification' ? 'remise_en_place' : 'done';
     if (nextStage === 'done' && action.type === 'remplacement_peremption') throw new Error('Enregistrez le nouveau lot et sa péremption pour clôturer');
     if (nextStage === 'done') return this.completeAction(actionId);
@@ -305,6 +334,7 @@ export class OperationalStore {
     const oldLot = this.state.lots.find((candidate) => candidate.id === action?.lotId);
     const itemId = action?.lines?.[0]?.itemId;
     if (!action || action.type !== 'remplacement_peremption' || action.stage !== 'remise_en_place') throw new Error('Action de péremption non clôturable');
+    if (!hasValidatedActionZone(action.finalZoneId, action.finalZoneStatus)) throw new Error('Destination finale à confirmer avant la clôture');
     if (!/^\d{4}-\d{2}$/.test(expiryMonth || '')) throw new Error('Mois et année de péremption requis');
     if (!lotNumber?.trim()) throw new Error('Numéro de lot requis');
     const [year, month] = expiryMonth.split('-').map(Number);
@@ -328,6 +358,11 @@ export class OperationalStore {
   async completeAction(actionId) {
     const action = this.state.actions.find((candidate) => candidate.id === actionId);
     if (!action || ['done', 'cancelled'].includes(action.status)) throw new Error('Action déjà clôturée');
+    if (action.type === 'controle') throw new Error('Clôturez le contrôle associé pour terminer cette action');
+    if (action.type === 'remplacement_peremption') throw new Error('Enregistrez le nouveau lot et sa péremption pour clôturer');
+    if (action.stage !== 'remise_en_place') throw new Error('Les étapes de collecte et de vérification doivent précéder la clôture');
+    if (!hasValidatedActionZone(action.targetZoneId, action.targetZoneStatus)) throw new Error('Emplacement de prélèvement à confirmer avant la clôture');
+    if (!hasValidatedActionZone(action.finalZoneId, action.finalZoneStatus)) throw new Error('Destination finale à confirmer avant la clôture');
     const completedAt = new Date().toISOString();
     const event = this.createEvent('ACTION_COMPLETED', { actionId, actionType: action.type, containerId: action.containerId }, action.title);
     const operations = [{ store: 'actions', type: 'put', value: { ...action, status: 'done', stage: 'done', completedAt, completionEventId: event.id } }];

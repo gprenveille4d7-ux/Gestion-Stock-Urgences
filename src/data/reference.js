@@ -2,10 +2,10 @@ import { REFERENCE_STATUS } from '../config.js';
 import { OPERATIONAL_ASSETS } from './operational-assets.js';
 import { SOURCE_DOCUMENTS } from './source-manifest.js';
 
-const m = (quantity, label) => [quantity, label, 'medicament'];
-const d = (quantity, label) => [quantity, label, 'dispositif'];
-const e = (quantity, label) => [quantity, label, 'equipement'];
-const c = (quantity, label) => [quantity, label, 'consommable'];
+const m = (quantity, label, sourceText = null, metadata = {}) => [quantity, label, 'medicament', sourceText, metadata];
+const d = (quantity, label, sourceText = null, metadata = {}) => [quantity, label, 'dispositif', sourceText, metadata];
+const e = (quantity, label, sourceText = null, metadata = {}) => [quantity, label, 'equipement', sourceText, metadata];
+const c = (quantity, label, sourceText = null, metadata = {}) => [quantity, label, 'consommable', sourceText, metadata];
 
 export const CONTAINER_KINDS = Object.freeze(['sac', 'valise', 'pochette', 'kit', 'armoire', 'chariot', 'tiroir', 'plateau', 'compartiment']);
 
@@ -18,22 +18,29 @@ function makeSection(containerId, id, label, entries) {
   return Object.freeze({
     id: `${containerId}:${id}`,
     label,
-    items: Object.freeze(entries.map(([expectedQuantity, itemLabel, category], index) => Object.freeze({
+    items: Object.freeze(entries.map(([expectedQuantity, itemLabel, category, sourceText, metadata = {}], index) => Object.freeze({
       id: `${containerId}:${id}:${String(index + 1).padStart(2, '0')}`,
       containerId,
       sectionId: `${containerId}:${id}`,
       label: itemLabel,
       productId: productIdFor(itemLabel),
       expectedQuantity,
-      unit: 'unite',
+      unit: metadata.unit || 'unite',
+      packSize: metadata.packSize || null,
       category,
+      sourceText: sourceText || null,
+      dataQuality: metadata.dataQuality || 'source-normalized-to-validate',
+      validationIssues: Object.freeze(metadata.validationIssues || []),
+      operationalUseAllowed: metadata.operationalUseAllowed !== false,
       expiryTracked: category !== 'equipement',
-      criticality: 'non_evaluee'
+      criticality: 'non_evaluee',
+      supplyZoneId: null,
+      supplyZoneStatus: 'missing-to-validate'
     })))
   });
 }
 
-function makeContainer({ id, label, shortLabel, color, sourceId, stockZoneId, sections }) {
+function makeContainer({ id, label, shortLabel, color, sourceId, stockZoneId, stockZoneStatus = 'provisional-to-validate', sections }) {
   const kind = id.startsWith('valise-') ? 'valise' : id.startsWith('pochette-') ? 'pochette' : id.startsWith('kit-') ? 'kit' : id === 'frigo-medicaments' ? 'armoire' : 'sac';
   return Object.freeze({
     id,
@@ -43,6 +50,7 @@ function makeContainer({ id, label, shortLabel, color, sourceId, stockZoneId, se
     kind,
     sourceId,
     stockZoneId,
+    stockZoneStatus,
     sourceStatus: 'demo-draft-needs-hospital-validation',
     validationRequired: true,
     sections: Object.freeze(sections.map(([sectionId, sectionLabel, entries]) => makeSection(id, sectionId, sectionLabel, entries)))
@@ -81,11 +89,20 @@ export const SERVICE_ZONES = Object.freeze([
 
 export const SMUR_CONTAINERS = Object.freeze([
   makeContainer({
-    id: 'valise-intra-osseuse', label: 'Valise intra-osseuse', shortLabel: 'IO', color: 'violet', sourceId: 'src-io', stockZoneId: 'reserve-smur',
-    sections: [['principal', 'Compartiment principal', [
-      e(1, 'Perceuse intra-osseuse'), d(2, 'Aiguille intra-osseuse jaune 45 mm avec kit de fixation'), d(2, 'Aiguille intra-osseuse rose 15 mm avec kit de fixation'),
-      d(2, 'Aiguille intra-osseuse bleue 25 mm avec kit de fixation'), c(4, 'Tegaderm'), d(1, 'Tubulure 3 voies'), d(2, 'Seringue pré-remplie'),
-      c(1, 'Sérum physiologique 50 mL'), c(2, 'Paquet de 5 compresses stériles'), c(1, 'Biseptine'), c(2, 'Bande extensible 7 cm × 3 m'), d(1, 'Seringue 50 mL Luer Lock')
+    id: 'valise-intra-osseuse', label: 'Valise intra-osseuse', shortLabel: 'IO', color: 'non-renseignee', sourceId: 'src-io', stockZoneId: 'reserve-smur',
+    sections: [['principal', 'Inventaire source · rangement non documenté', [
+      e(1, 'Perceuse intra-osseuse', 'PERCEUSE'),
+      d(2, 'Aiguille intra-osseuse jaune 45 mm / 45GA (calibre source à confirmer) avec kit de fixation', 'INTRA OSSEUX JAUNES 45 mm / 45GA AVEC KIT DE FIXATIONS', { dataQuality: 'ambiguous-source', validationIssues: ['Calibre 45GA à confirmer'], operationalUseAllowed: false }),
+      d(2, 'Aiguille intra-osseuse rose 15 mm / 15GA (calibre source à confirmer) avec kit de fixation', 'INTRA OSSEUX ROSES 15 mm / 15GA AVEC KIT DE FIXATIONS', { dataQuality: 'ambiguous-source', validationIssues: ['Calibre 15GA à confirmer'], operationalUseAllowed: false }),
+      d(2, 'Aiguille intra-osseuse bleue 25 mm / 15GA (calibre source à confirmer) avec kit de fixation', 'INTRA OSSEUX BLEUS 25 mm / 15GA AVEC KIT DE FIXATIONS', { dataQuality: 'ambiguous-source', validationIssues: ['Calibre 15GA à confirmer'], operationalUseAllowed: false }),
+      c(4, 'Tegaderm', 'TEGADERMS', { dataQuality: 'incomplete-source', validationIssues: ['Format non précisé'], operationalUseAllowed: false }),
+      d(1, 'Tubulure 3 voies', 'TUBULURES 3 VOIES', { unit: 'tubulure' }),
+      d(2, 'Seringue pré-remplie', 'SERINGUES PRE-REMPLIES', { dataQuality: 'incomplete-source', validationIssues: ['Contenu et volume non précisés'], operationalUseAllowed: false }),
+      c(1, 'Sérum physiologique 50 mL', 'SERUM PHY 50 ML', { dataQuality: 'incomplete-source', validationIssues: ['Présentation et concentration non précisées'], operationalUseAllowed: false }),
+      c(2, 'Paquet de 5 compresses stériles', 'PAQUETS DE 5 COMPRESSES STERILES', { unit: 'paquet', packSize: 5 }),
+      c(1, 'Biseptine', 'BISEPTINE', { dataQuality: 'incomplete-source', validationIssues: ['Volume et présentation non précisés'], operationalUseAllowed: false }),
+      c(2, 'Bande extensible 7 cm × 3 m', 'BANDES EXTENSIBLES 7 CM * 3M', { unit: 'bande' }),
+      d(1, 'Seringue de 50 Luer Lock (unité source absente)', 'SERINGUE DE 50 LUER LOCK.', { unit: 'non_renseignee', dataQuality: 'ambiguous-source', validationIssues: ['Unité après 50 absente'], operationalUseAllowed: false })
     ]]]
   }),
   makeContainer({
@@ -151,7 +168,8 @@ export const REFERENCE_ITEMS = Object.freeze(SMUR_CONTAINERS.flatMap((container)
     containerLabel: container.label,
     sectionLabel: section.label,
     sourceId: container.sourceId,
-    stockZoneId: container.stockZoneId
+    stockZoneId: container.stockZoneId,
+    stockZoneStatus: container.stockZoneStatus
   })))
 ));
 
@@ -187,7 +205,17 @@ export const REFERENCE_NODES = Object.freeze([
   Object.freeze({ id: 'service:urgences-falaise', kind: 'service', label: 'Urgences — Centre Hospitalier de Falaise', parentId: null, active: true }),
   ...SERVICE_ZONES.map((zone) => Object.freeze({ ...zone, id: `zone:${zone.id}`, externalId: zone.id, kind: 'zone', parentId: 'service:urgences-falaise', active: true })),
   ...SMUR_CONTAINERS.flatMap((container) => [
-    Object.freeze({ id: container.id, kind: container.kind, label: container.label, parentId: `zone:${container.stockZoneId}`, mobile: container.kind !== 'armoire', order: 0, active: true }),
+    Object.freeze({
+      id: container.id,
+      kind: container.kind,
+      label: container.label,
+      parentId: container.stockZoneStatus === 'validated' ? `zone:${container.stockZoneId}` : 'service:urgences-falaise',
+      proposedParentId: container.stockZoneStatus === 'validated' ? null : `zone:${container.stockZoneId}`,
+      locationStatus: container.stockZoneStatus,
+      mobile: container.kind !== 'armoire',
+      order: 0,
+      active: true
+    }),
     ...container.sections.flatMap((section, sectionIndex) => [
       Object.freeze({ id: section.id, kind: 'compartiment', label: section.label, parentId: container.id, mobile: false, order: sectionIndex, active: true }),
       ...section.items.map((item, itemIndex) => Object.freeze({ id: `node:${item.id}`, kind: 'element', label: item.label, parentId: section.id, productId: item.productId, order: itemIndex, active: true }))

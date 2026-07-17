@@ -7,11 +7,20 @@ function distance(a, b) {
 export function groupActionsByZone(actions) {
   const groups = new Map();
   for (const action of actions.filter((item) => !['done', 'cancelled'].includes(item.status))) {
-    const zoneId = action.stage === 'remise_en_place' && action.finalZoneId ? action.finalZoneId : action.targetZoneId || 'reserve-smur';
+    const zoneId = actionZoneId(action);
+    if (!zoneId || !findZone(zoneId)) continue;
     if (!groups.has(zoneId)) groups.set(zoneId, []);
     groups.get(zoneId).push(action);
   }
   return groups;
+}
+
+export function actionZoneId(action) {
+  if (!action) return null;
+  if (action.stage === 'remise_en_place') {
+    return action.finalZoneStatus === 'validated' ? action.finalZoneId || null : null;
+  }
+  return action.targetZoneStatus === 'validated' ? action.targetZoneId || null : null;
 }
 
 export function planRoute(actions, originZoneId = 'pc-ide') {
@@ -20,6 +29,8 @@ export function planRoute(actions, originZoneId = 'pc-ide') {
   const finalGroups = new Map();
   for (const action of openActions) {
     if (!action.finalZoneId || action.finalZoneId === action.targetZoneId || action.stage === 'remise_en_place') continue;
+    if (action.targetZoneStatus !== 'validated' || action.finalZoneStatus !== 'validated') continue;
+    if (!action.targetZoneId || !findZone(action.targetZoneId) || !findZone(action.finalZoneId)) continue;
     if (!finalGroups.has(action.finalZoneId)) finalGroups.set(action.finalZoneId, []);
     finalGroups.get(action.finalZoneId).push(action);
   }

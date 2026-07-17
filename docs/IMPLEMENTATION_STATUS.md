@@ -2,9 +2,9 @@
 
 ## P0 — opérationnel local et vérifiable
 
-Réalisé : architecture modulaire, référentiel sourcé, IndexedDB, migration, événements, outbox, disponibilité dérivée, retour d’intervention, contrôle atomique/reprise, réarmement par étapes, péremptions, défauts, carte dynamique, rôles préparatoires, PWA hors ligne, sécurité de base, tests et documentation.
+Réalisé : architecture modulaire, référentiel sourcé, IndexedDB avec repli explicite en mémoire temporaire, migration, événements, outbox, disponibilité dérivée, retour d’intervention, contrôle atomique/reprise, réarmement par étapes, péremptions, défauts, carte dynamique, rôles préparatoires, PWA hors ligne, sécurité de base, tests et documentation. Les 13 inventaires PDF et les 3 inventaires de chariots sont désormais consultables dans des vues visuelles dédiées ; les trois réserves possèdent une vue provisoire dérivée uniquement des rattachements de zone connus.
 
-À valider avant pilote : validation hospitalière de chaque composition, criticité des produits, emplacements exacts, matrice de responsabilités, tests visuels multi-appareils et procédure de reprise/sauvegarde locale.
+À valider avant pilote : validation hospitalière de chaque composition, criticité des produits, photos des contenants et réserves, dispositions réelles des sacs, armoires/étagères/bacs, emplacements exacts, matrice de responsabilités, tests visuels multi-appareils et procédure de reprise/sauvegarde locale. Les grilles et silhouettes actuelles restent explicitement des repères fonctionnels modifiables, jamais une preuve du rangement réel.
 
 ## P1 — pilote connecté
 
