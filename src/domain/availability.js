@@ -15,10 +15,16 @@ export function deriveAvailability(containerId, state) {
 
   const openAnomalies = (state.anomalies || []).filter((anomaly) => anomaly.containerId === containerId && anomaly.status === 'open');
   const openActions = (state.actions || []).filter((action) => action.containerId === containerId && !['done', 'cancelled'].includes(action.status));
+  const hasCompletedFullAudit = (state.audits || []).some((audit) =>
+    audit.containerId === containerId && audit.status === 'completed' && !audit.sectionId
+  );
   const blocking = openAnomalies.filter((anomaly) => anomaly.severity === 'bloquant');
-  const referenceUnvalidated = container.validationRequired || container.sourceStatus !== 'validated';
+  // Une ambiguïté de libellé ou de quantité reste portée par la ligne concernée.
+  // Elle ne rend pas indisponible tout le contenant dont la composition est sourcée.
+  const referenceUnavailable = !['imported-from-source', 'source-validated'].includes(container.sourceStatus);
   const reasons = [
-    ...(referenceUnvalidated ? ['Référentiel non validé par l’établissement'] : []),
+    ...(referenceUnavailable ? ['Référentiel du contenant indisponible'] : []),
+    ...(!hasCompletedFullAudit ? ['Aucun contrôle complet enregistré'] : []),
     ...openAnomalies.map((anomaly) => {
     const item = findReferenceItem(anomaly.subjectId);
     return `${item?.label || container.label} · ${labelAnomaly(anomaly.type)}`;
@@ -31,10 +37,11 @@ export function deriveAvailability(containerId, state) {
   const toRestock = openAnomalies.some((anomaly) => ['usage_restock_required', 'manquant', 'quantite_incorrecte', 'perime', 'equipement_absent'].includes(anomaly.type)) || openActions.some((action) => action.type === 'rearmement');
   if (toRestock) return { status: AVAILABILITY.TO_RESTOCK, label: 'À réarmer', reasons, blockingCount: 0, openActionCount: openActions.length };
   const anticipation = openActions.some((action) => action.type === 'remplacement_peremption');
-  if (anticipation && referenceUnvalidated) return { status: AVAILABILITY.TO_CHECK, label: 'À vérifier · péremption', reasons: [...reasons, 'Péremption planifiée'], blockingCount: 0, openActionCount: openActions.length };
+  if (anticipation && referenceUnavailable) return { status: AVAILABILITY.TO_CHECK, label: 'À vérifier · péremption', reasons: [...reasons, 'Péremption planifiée'], blockingCount: 0, openActionCount: openActions.length };
   if (anticipation) return { status: AVAILABILITY.READY_WITH_ANTICIPATION, label: 'Prêt · action à anticiper', reasons: ['Péremption planifiée'], blockingCount: 0, openActionCount: openActions.length };
   if (openActions.length) return { status: AVAILABILITY.TO_CHECK, label: 'À vérifier', reasons: ['Action ouverte'], blockingCount: 0, openActionCount: openActions.length };
-  if (referenceUnvalidated) return { status: AVAILABILITY.TO_CHECK, label: 'À vérifier · référentiel', reasons, blockingCount: 0, openActionCount: 0 };
+  if (referenceUnavailable) return { status: AVAILABILITY.TO_CHECK, label: 'À vérifier · référentiel', reasons, blockingCount: 0, openActionCount: 0 };
+  if (!hasCompletedFullAudit) return { status: AVAILABILITY.TO_CHECK, label: 'Non contrôlé', reasons, blockingCount: 0, openActionCount: 0 };
   return { status: AVAILABILITY.READY, label: 'Prêt', reasons: [], blockingCount: 0, openActionCount: 0 };
 }
 

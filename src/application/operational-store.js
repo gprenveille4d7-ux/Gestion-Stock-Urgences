@@ -1,6 +1,8 @@
-import { DEFAULT_USER, REFERENCE_STATUS } from '../config.js';
+import { DEFAULT_EXPIRY_THRESHOLDS, DEFAULT_USER, REFERENCE_STATUS } from '../config.js';
+import { findActiveChariotItem, findActiveChariotSection } from '../data/chariot-adapter.js';
 import { COMPOSITIONS, findContainer, findReferenceItem, findZone } from '../data/reference.js';
 import { deriveConsequences } from '../domain/action-engine.js';
+import { computeExpiryDashboard, expiryDateFromMonth, normalizeExpiryThresholds } from '../domain/expiry.js';
 import { createId } from '../domain/ids.js';
 import { computePriority } from '../domain/priority.js';
 import { validateEvent } from '../domain/validation.js';
@@ -12,7 +14,7 @@ function sortByDateDescending(values, key = 'at') {
 }
 
 function validatedStockZoneId(container) {
-  return container?.stockZoneStatus === 'validated' ? container.stockZoneId : null;
+  return [container?.stockZoneStatus, container?.physicalLayoutStatus].some((status) => ['validated', 'physical-layout-validated'].includes(status)) ? container.stockZoneId : null;
 }
 
 function validatedLocationContext(targetZoneId = null, finalZoneId = null) {
@@ -25,7 +27,54 @@ function validatedLocationContext(targetZoneId = null, finalZoneId = null) {
 }
 
 function hasValidatedActionZone(zoneId, status) {
-  return status === 'validated' && Boolean(findZone(zoneId));
+  return ['validated', 'physical-layout-validated'].includes(status) && Boolean(findZone(zoneId));
+}
+
+function positiveInteger(value, fieldLabel) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number <= 0) throw new Error(`${fieldLabel} doit être un entier positif`);
+  return number;
+}
+
+function appendLotHistory(lot, entry) {
+  return [...(lot.history || []), entry];
+}
+
+function assertExpiryAction(action, expectedStage = null) {
+  if (!action || action.type !== 'remplacement_peremption' || ['done', 'cancelled'].includes(action.status)) throw new Error('Action de péremption non modifiable');
+  if (expectedStage && action.stage !== expectedStage) throw new Error(`Étape attendue : ${expectedStage}`);
+  return action;
+}
+
+function observedLocationForItem(item, { containerId = null, sectionId = null, locationId = null, locationLabel = '', locationStatus = 'physical-layout-provisional' } = {}, chariotReference = null) {
+  const chariotContext = item?.referenceType === 'xlsx'
+    ? findActiveChariotSection(chariotReference, item.containerId, item.sectionId)
+    : null;
+  const resolvedContainer = findContainer(containerId || item?.containerId);
+  const resolvedSectionId = sectionId || item?.sectionId;
+  const resolvedSection = resolvedContainer?.sections.find((section) => section.id === resolvedSectionId);
+  if (!item) throw new Error('Produit absent du référentiel actif');
+  if (item.referenceType === 'xlsx') {
+    if (!chariotContext || (containerId && containerId !== item.containerId) || (sectionId && sectionId !== item.sectionId)) throw new Error('Emplacement incompatible avec le produit');
+  } else {
+    if (!resolvedContainer || resolvedContainer.id !== item.containerId) throw new Error('Contenant incompatible avec le produit');
+    if (!resolvedSection) throw new Error('Section introuvable dans le contenant');
+  }
+  const normalizedStatus = locationStatus === 'validated'
+    ? 'physical-layout-validated'
+    : ['provisional', 'provisional-to-validate', 'missing-to-validate'].includes(locationStatus)
+      ? 'physical-layout-provisional'
+      : locationStatus;
+  if (!['physical-layout-provisional', 'physical-layout-validated'].includes(normalizedStatus)) throw new Error('État de l’emplacement invalide');
+  return Object.freeze({
+    containerId: item.referenceType === 'xlsx' ? chariotContext.reference.id : resolvedContainer.id,
+    containerLabel: item.referenceType === 'xlsx' ? chariotContext.reference.label : resolvedContainer.label,
+    sectionId: item.referenceType === 'xlsx' ? chariotContext.section.id : resolvedSection.id,
+    sectionLabel: (item.referenceType === 'xlsx' ? chariotContext.section.label : resolvedSection.label) || 'Zone à préciser',
+    locationId: locationId || (item.referenceType === 'xlsx' ? chariotContext.section.id : resolvedSection.id),
+    locationLabel: String(locationLabel || (item.referenceType === 'xlsx' ? chariotContext.section.label : resolvedSection.label) || 'Zone à préciser').trim(),
+    status: normalizedStatus
+  });
 }
 
 export class OperationalStore {
@@ -41,6 +90,7 @@ export class OperationalStore {
       chariotReference,
       user: DEFAULT_USER,
       events: [], audits: [], observations: [], anomalies: [], actions: [], lots: [], outbox: [], metadata: [], settings: [], users: [],
+      expiryThresholds: DEFAULT_EXPIRY_THRESHOLDS,
       sync: { status: 'local-only', pending: 0, sent: 0 }
     };
   }
@@ -64,11 +114,12 @@ export class OperationalStore {
   async reload(notify = true) {
     const snapshot = await this.repository.snapshot();
     const userSetting = snapshot.settings.find((setting) => setting.id === 'user');
+    const expirySetting = snapshot.settings.find((setting) => setting.id === 'expiry-thresholds');
     this.state = {
       ...this.state,
       ready: true,
       persistent: this.repository.database.persistent,
-      user: userSetting ? { ...DEFAULT_USER, ...userSetting } : DEFAULT_USER,
+      user: userSetting ? { ...DEFAULT_USER, ...userSetting, id: userSetting.userId || DEFAULT_USER.id } : DEFAULT_USER,
       events: sortByDateDescending(snapshot.events),
       audits: sortByDateDescending(snapshot.audits, 'startedAt'),
       observations: sortByDateDescending(snapshot.observations),
@@ -78,7 +129,8 @@ export class OperationalStore {
       outbox: snapshot.outbox,
       metadata: snapshot.metadata,
       settings: snapshot.settings,
-      users: snapshot.users
+      users: snapshot.users,
+      expiryThresholds: normalizeExpiryThresholds(expirySetting || DEFAULT_EXPIRY_THRESHOLDS)
     };
     this.state.sync = await this.syncAdapter.synchronize(this.state.outbox);
     if (notify) this.notify();
@@ -97,7 +149,8 @@ export class OperationalStore {
       syncStatus: 'pending',
       correlationId: payload.correlationId || createId('correlation'),
       referenceVersion: REFERENCE_STATUS.version,
-      payload
+      payload,
+      source: 'user-entry'
     };
     const validation = validateEvent(event);
     if (!validation.valid) throw new Error(validation.errors.join(', '));
@@ -109,7 +162,7 @@ export class OperationalStore {
     if (containerId && item?.containerId !== containerId) return null;
     // La réserve de réarmement ne peut être déduite ni de la catégorie du
     // produit ni de l'emplacement du sac. Elle reste vide jusqu'au relevé validé.
-    return item?.supplyZoneStatus === 'validated' ? item.supplyZoneId || null : null;
+    return ['validated', 'physical-layout-validated'].includes(item?.supplyZoneStatus) ? item.supplyZoneId || null : null;
   }
 
   async declareUsage(containerId, note = '') {
@@ -193,7 +246,7 @@ export class OperationalStore {
       auditId, itemId, containerId: audit.containerId, result, observedQuantity: observation.observedQuantity, missingQuantity, note, severity
     }, item.label);
     const originAction = this.state.actions.find((action) => action.id === audit.originActionId);
-    const finalZoneId = originAction?.finalZoneStatus === 'validated' ? originAction.finalZoneId : validatedStockZoneId(container);
+    const finalZoneId = hasValidatedActionZone(originAction?.finalZoneId, originAction?.finalZoneStatus) ? originAction.finalZoneId : validatedStockZoneId(container);
     const consequences = deriveConsequences(event, {
       ...validatedLocationContext(this.targetZoneFor(itemId, audit.containerId), finalZoneId),
       actionTitle: `${result === 'defectueux' ? 'Traiter' : 'Réarmer'} · ${item.label}`
@@ -280,27 +333,289 @@ export class OperationalStore {
     return consequences.actions[0];
   }
 
+  findTrackedReferenceItem(itemId) {
+    return findReferenceItem(itemId) || findActiveChariotItem(this.chariotReference, itemId);
+  }
+
+  getExpiryDashboard(now = new Date()) {
+    return computeExpiryDashboard(this.state.lots, now, this.state.expiryThresholds);
+  }
+
+  async setExpiryThresholds(thresholds) {
+    const normalized = normalizeExpiryThresholds(thresholds);
+    await this.repository.put('settings', { id: 'expiry-thresholds', ...normalized, source: 'user-setting', updatedAt: new Date().toISOString(), updatedBy: this.state.user.id });
+    await this.reload();
+    return this.state.expiryThresholds;
+  }
+
+  async addTrackedLot({ itemId, containerId = null, sectionId = null, locationId = null, locationLabel = '', locationStatus = 'physical-layout-provisional', lotNumber, expiryMonth, quantity = 1 }) {
+    const item = this.findTrackedReferenceItem(itemId);
+    if (!item) throw new Error('Produit absent du référentiel actif');
+    if (!lotNumber?.trim()) throw new Error('Numéro de lot requis');
+    const quantityPresent = positiveInteger(quantity, 'La quantité');
+    const expiryDate = expiryDateFromMonth(expiryMonth);
+    const observedLocation = observedLocationForItem(item, { containerId, sectionId, locationId, locationLabel, locationStatus }, this.chariotReference);
+    const recordedAt = new Date().toISOString();
+    const lot = {
+      id: createId('lot'),
+      itemId: item.id,
+      productId: item.productId,
+      lotNumber: lotNumber.trim(),
+      expiryMonth,
+      expiryDate,
+      quantity: quantityPresent,
+      quantityPresent,
+      status: 'active',
+      state: 'active',
+      recordedAt,
+      enteredAt: recordedAt,
+      recordedBy: this.state.user.id,
+      enteredBy: this.state.user.id,
+      observedLocation,
+      containerId: observedLocation.containerId,
+      containerLabel: observedLocation.containerLabel,
+      sectionId: observedLocation.sectionId,
+      sectionLabel: observedLocation.sectionLabel,
+      locationId: observedLocation.locationId,
+      locationLabel: observedLocation.locationLabel,
+      locationStatus: observedLocation.status,
+      referenceSnapshot: {
+        referenceVersion: REFERENCE_STATUS.version,
+        sourceId: item.sourceId,
+        itemLabel: item.label,
+        expectedQuantity: item.expectedQuantity,
+        containerId: item.containerId,
+        sectionId: item.sectionId,
+        ambiguities: [...(item.validationIssues || [])]
+      },
+      history: [{ type: 'recorded', at: recordedAt, userId: this.state.user.id, quantity: quantityPresent, observedLocation }],
+      source: 'user-entry'
+    };
+    const event = this.createEvent('LOT_RECORDED', {
+      lotId: lot.id,
+      itemId: item.id,
+      containerId: observedLocation.containerId,
+      sectionId: observedLocation.sectionId,
+      lotNumber: lot.lotNumber,
+      expiryMonth,
+      quantity: quantityPresent
+    }, item.label);
+    await this.repository.commitEvent(event, {}, [{ store: 'lots', type: 'put', value: lot }]);
+    await this.reload();
+    return lot;
+  }
+
   async planExpiryReplacement(lotId) {
     const lot = this.state.lots.find((candidate) => candidate.id === lotId);
-    const item = findReferenceItem(lot?.itemId);
-    if (!lot || !item) throw new Error('Lot inconnu');
+    const item = this.findTrackedReferenceItem(lot?.itemId);
+    if (!lot || !item || (lot.status || lot.state) !== 'active') throw new Error('Lot actif inconnu');
     const duplicate = this.state.actions.find((action) => action.lotId === lotId && !['done', 'cancelled'].includes(action.status));
     if (duplicate) return duplicate;
     const event = this.createEvent('EXPIRY_REPLACEMENT_PLANNED', { lotId, itemId: item.id, containerId: item.containerId }, item.label);
     const action = {
       id: createId('action'), type: 'remplacement_peremption', title: `Remplacer avant péremption · ${item.label}`,
-      status: 'open', priority: computePriority({ severity: 'attention', type: 'remplacement_peremption', dueAt: lot.expiryDate, createdAt: event.at }, new Date(event.at)).level, containerId: item.containerId,
-      ...validatedLocationContext(this.targetZoneFor(item.id, item.containerId), validatedStockZoneId(findContainer(item.containerId))),
-      lotId, lines: [{ itemId: item.id, quantity: lot.quantity || 1, done: false }], createdAt: event.at, dueAt: lot.expiryDate, originEventId: event.id
+      status: 'open',
+      workflow: 'expiry-replacement-v1',
+      stage: 'localiser',
+      priority: computePriority({ severity: 'attention', type: 'remplacement_peremption', dueAt: lot.expiryDate, createdAt: event.at }, new Date(event.at)).level,
+      containerId: item.containerId,
+      sectionId: item.sectionId,
+      observedLocation: lot.observedLocation || null,
+      targetZoneId: null,
+      targetZoneStatus: 'not-required-user-observed-location',
+      finalZoneId: null,
+      finalZoneStatus: 'not-required-user-observed-location',
+      lotId,
+      lines: [{ itemId: item.id, quantity: lot.quantityPresent || lot.quantity || 1, done: false }],
+      createdAt: event.at,
+      dueAt: lot.expiryDate,
+      originEventId: event.id,
+      source: 'user-entry'
     };
     await this.repository.commitEvent(event, { actions: [action], anomalies: [] });
     await this.reload();
     return action;
   }
 
+  async localizeExpiryAction(actionId, location = null) {
+    const action = assertExpiryAction(this.state.actions.find((candidate) => candidate.id === actionId), 'localiser');
+    const lot = this.state.lots.find((candidate) => candidate.id === action.lotId);
+    const item = this.findTrackedReferenceItem(lot?.itemId);
+    if (!lot || !item) throw new Error('Lot ou produit introuvable');
+    const confirmedLocation = location
+      ? observedLocationForItem(item, location, this.chariotReference)
+      : lot.observedLocation;
+    if (!confirmedLocation) throw new Error('Emplacement constaté requis');
+    const at = new Date().toISOString();
+    const updated = {
+      ...action,
+      status: 'in_progress',
+      stage: 'retirer',
+      confirmedLocation,
+      locatedAt: at,
+      startedAt: action.startedAt || at,
+      assignedUserId: action.assignedUserId || this.state.user.id,
+      updatedAt: at
+    };
+    const event = this.createEvent('EXPIRY_ITEM_LOCATED', { actionId, lotId: lot.id, itemId: item.id, confirmedLocation }, item.label);
+    await this.repository.commitEvent(event, {}, [{ store: 'actions', type: 'put', value: updated }]);
+    await this.reload();
+    return updated;
+  }
+
+  async removeExpiryLot(actionId, { quantity, reason = '', motif = '', withdrawalReason = '' }) {
+    const action = assertExpiryAction(this.state.actions.find((candidate) => candidate.id === actionId), 'retirer');
+    const oldLot = this.state.lots.find((candidate) => candidate.id === action.lotId);
+    if (!oldLot || (oldLot.status || oldLot.state) !== 'active') throw new Error('Ancien lot actif introuvable');
+    const quantityRemoved = positiveInteger(quantity, 'La quantité retirée');
+    const quantityPresent = positiveInteger(oldLot.quantityPresent || oldLot.quantity, 'La quantité présente');
+    if (quantityRemoved !== quantityPresent) throw new Error('La totalité du lot sélectionné doit être retirée');
+    const normalizedReason = String(reason || motif || withdrawalReason).trim();
+    if (!normalizedReason) throw new Error('Motif du retrait requis');
+    const at = new Date().toISOString();
+    const oldLotUpdate = {
+      ...oldLot,
+      quantityPresent: 0,
+      status: 'withdrawn',
+      state: 'withdrawn',
+      withdrawnAt: at,
+      withdrawnBy: this.state.user.id,
+      withdrawalReason: normalizedReason,
+      history: appendLotHistory(oldLot, { type: 'withdrawn', at, userId: this.state.user.id, quantity: quantityRemoved, reason: normalizedReason, actionId })
+    };
+    const updated = {
+      ...action,
+      stage: 'remplacer',
+      removal: { quantity: quantityRemoved, reason: normalizedReason, oldLotNumber: oldLot.lotNumber, recordedAt: at, recordedBy: this.state.user.id },
+      lines: action.lines.map((line) => ({ ...line, done: true })),
+      updatedAt: at
+    };
+    const event = this.createEvent('EXPIRY_LOT_WITHDRAWN', { actionId, oldLotId: oldLot.id, itemId: oldLot.itemId, quantity: quantityRemoved, reason: normalizedReason }, action.title);
+    await this.repository.commitEvent(event, {}, [
+      { store: 'lots', type: 'put', value: oldLotUpdate },
+      { store: 'actions', type: 'put', value: updated }
+    ]);
+    await this.reload();
+    return oldLotUpdate;
+  }
+
+  async replaceExpiryLot(actionId, { lotNumber, expiryMonth, quantity }) {
+    const action = assertExpiryAction(this.state.actions.find((candidate) => candidate.id === actionId), 'remplacer');
+    const oldLot = this.state.lots.find((candidate) => candidate.id === action.lotId);
+    const item = this.findTrackedReferenceItem(oldLot?.itemId);
+    if (!oldLot || !item || (oldLot.status || oldLot.state) !== 'withdrawn') throw new Error('Retrait de l’ancien lot non enregistré');
+    if (!lotNumber?.trim()) throw new Error('Nouveau numéro de lot requis');
+    const installedQuantity = positiveInteger(quantity, 'La quantité installée');
+    const expiryDate = expiryDateFromMonth(expiryMonth);
+    const at = new Date().toISOString();
+    const replacementLot = {
+      id: createId('lot'),
+      itemId: item.id,
+      productId: item.productId,
+      lotNumber: lotNumber.trim(),
+      expiryMonth,
+      expiryDate,
+      quantity: installedQuantity,
+      quantityPresent: installedQuantity,
+      status: 'pending-validation',
+      state: 'pending-validation',
+      recordedAt: at,
+      enteredAt: at,
+      recordedBy: this.state.user.id,
+      enteredBy: this.state.user.id,
+      observedLocation: action.confirmedLocation || oldLot.observedLocation,
+      containerId: (action.confirmedLocation || oldLot.observedLocation)?.containerId || item.containerId,
+      containerLabel: (action.confirmedLocation || oldLot.observedLocation)?.containerLabel || item.containerLabel,
+      sectionId: (action.confirmedLocation || oldLot.observedLocation)?.sectionId || item.sectionId,
+      sectionLabel: (action.confirmedLocation || oldLot.observedLocation)?.sectionLabel || item.sectionLabel,
+      locationId: (action.confirmedLocation || oldLot.observedLocation)?.locationId || item.sectionId,
+      locationLabel: (action.confirmedLocation || oldLot.observedLocation)?.locationLabel || item.sectionLabel || 'Zone à préciser',
+      locationStatus: (action.confirmedLocation || oldLot.observedLocation)?.status || 'physical-layout-provisional',
+      replacesLotId: oldLot.id,
+      referenceSnapshot: oldLot.referenceSnapshot || {
+        referenceVersion: REFERENCE_STATUS.version,
+        sourceId: item.sourceId,
+        itemLabel: item.label,
+        expectedQuantity: item.expectedQuantity,
+        containerId: item.containerId,
+        sectionId: item.sectionId,
+        ambiguities: [...(item.validationIssues || [])]
+      },
+      history: [{ type: 'replacement-recorded', at, userId: this.state.user.id, quantity: installedQuantity, actionId }],
+      source: 'user-entry'
+    };
+    const updated = { ...action, stage: 'valider', replacementLotId: replacementLot.id, replacementRecordedAt: at, updatedAt: at };
+    const event = this.createEvent('EXPIRY_REPLACEMENT_RECORDED', { actionId, oldLotId: oldLot.id, newLotId: replacementLot.id, itemId: item.id, expiryMonth, quantity: installedQuantity }, item.label);
+    await this.repository.commitEvent(event, {}, [
+      { store: 'lots', type: 'put', value: replacementLot },
+      { store: 'actions', type: 'put', value: updated }
+    ]);
+    await this.reload();
+    return replacementLot;
+  }
+
+  async validateExpiryReplacement(actionId, {
+    oldProductRemoved = false,
+    newProductInstalled = false,
+    quantityCompliant = false,
+    removed = false,
+    replaced = false,
+    quantityConform = false,
+    dateRecorded = false,
+    containerAvailable = false
+  } = {}) {
+    const action = assertExpiryAction(this.state.actions.find((candidate) => candidate.id === actionId), 'valider');
+    const oldLot = this.state.lots.find((candidate) => candidate.id === action.lotId);
+    const newLot = this.state.lots.find((candidate) => candidate.id === action.replacementLotId);
+    if (!oldLot || (oldLot.status || oldLot.state) !== 'withdrawn') throw new Error('Ancien produit non retiré');
+    if (!newLot || (newLot.status || newLot.state) !== 'pending-validation') throw new Error('Nouveau produit non enregistré');
+    const checks = {
+      oldProductRemoved: Boolean(oldProductRemoved || removed),
+      newProductInstalled: Boolean(newProductInstalled || replaced),
+      quantityCompliant: Boolean(quantityCompliant || quantityConform),
+      dateRecorded: Boolean(dateRecorded),
+      containerAvailable: Boolean(containerAvailable)
+    };
+    if (!Object.values(checks).every(Boolean)) throw new Error('Toutes les vérifications finales doivent être confirmées');
+    const completedAt = new Date().toISOString();
+    const event = this.createEvent('EXPIRY_REPLACED', {
+      actionId,
+      oldLotId: oldLot.id,
+      newLotId: newLot.id,
+      itemId: newLot.itemId,
+      checks
+    }, action.title);
+    const archivedOldLot = {
+      ...oldLot,
+      status: 'archived',
+      state: 'archived',
+      archivedAt: completedAt,
+      replacedAt: completedAt,
+      replacementLotId: newLot.id,
+      history: appendLotHistory(oldLot, { type: 'replacement-validated', at: completedAt, userId: this.state.user.id, replacementLotId: newLot.id, actionId })
+    };
+    const activeNewLot = {
+      ...newLot,
+      status: 'active',
+      state: 'active',
+      installedAt: completedAt,
+      installedBy: this.state.user.id,
+      history: appendLotHistory(newLot, { type: 'installed-and-validated', at: completedAt, userId: this.state.user.id, actionId })
+    };
+    const completedAction = { ...action, status: 'done', stage: 'done', completedAt, completionEventId: event.id, validationChecks: event.payload.checks, updatedAt: completedAt };
+    await this.repository.commitEvent(event, {}, [
+      { store: 'lots', type: 'put', value: archivedOldLot },
+      { store: 'lots', type: 'put', value: activeNewLot },
+      { store: 'actions', type: 'put', value: completedAction }
+    ]);
+    await this.reload();
+    return activeNewLot;
+  }
+
   async toggleActionLine(actionId, itemId) {
     const action = this.state.actions.find((candidate) => candidate.id === actionId);
     if (!action || ['done', 'cancelled'].includes(action.status)) throw new Error('Action non modifiable');
+    if (action.workflow === 'expiry-replacement-v1') throw new Error('Utilisez l’étape Retirer pour enregistrer la quantité et le motif');
     if (action.type !== 'controle' && !hasValidatedActionZone(action.targetZoneId, action.targetZoneStatus)) throw new Error('Emplacement de prélèvement à confirmer avant la collecte');
     const lines = action.lines.map((line) => line.itemId === itemId ? { ...line, done: !line.done } : line);
     const updated = { ...action, status: 'in_progress', stage: action.stage || 'collecte', startedAt: action.startedAt || new Date().toISOString(), assignedUserId: action.assignedUserId || this.state.user.id, lines, updatedAt: new Date().toISOString() };
@@ -313,6 +628,12 @@ export class OperationalStore {
   async advanceAction(actionId) {
     const action = this.state.actions.find((candidate) => candidate.id === actionId);
     if (!action || ['done', 'cancelled'].includes(action.status)) throw new Error('Action non modifiable');
+    if (action.workflow === 'expiry-replacement-v1') {
+      if (action.stage === 'localiser') return this.localizeExpiryAction(actionId);
+      if (action.stage === 'retirer') throw new Error('Enregistrez la quantité retirée et son motif');
+      if (action.stage === 'remplacer') throw new Error('Enregistrez le nouveau lot et sa péremption');
+      if (action.stage === 'valider') throw new Error('Confirmez les quatre vérifications finales');
+    }
     if (action.type === 'controle') throw new Error('Démarrez le contrôle associé pour traiter cette action');
     const allLinesDone = !action.lines?.length || action.lines.every((line) => line.done);
     if (!allLinesDone) throw new Error('Toutes les lignes doivent être confirmées');
@@ -333,23 +654,34 @@ export class OperationalStore {
     const action = this.state.actions.find((candidate) => candidate.id === actionId);
     const oldLot = this.state.lots.find((candidate) => candidate.id === action?.lotId);
     const itemId = action?.lines?.[0]?.itemId;
+    if (action?.workflow === 'expiry-replacement-v1') throw new Error('Suivez les étapes Retirer, Remplacer puis Valider');
     if (!action || action.type !== 'remplacement_peremption' || action.stage !== 'remise_en_place') throw new Error('Action de péremption non clôturable');
     if (!hasValidatedActionZone(action.finalZoneId, action.finalZoneStatus)) throw new Error('Destination finale à confirmer avant la clôture');
-    if (!/^\d{4}-\d{2}$/.test(expiryMonth || '')) throw new Error('Mois et année de péremption requis');
     if (!lotNumber?.trim()) throw new Error('Numéro de lot requis');
-    const [year, month] = expiryMonth.split('-').map(Number);
-    const expiryDate = new Date(Date.UTC(year, month, 0, 23, 59, 59)).toISOString();
+    const expiryDate = expiryDateFromMonth(expiryMonth);
+    const quantityPresent = positiveInteger(quantity, 'La quantité');
     const completedAt = new Date().toISOString();
     const newLot = {
-      id: createId('lot'), itemId, lotNumber: lotNumber.trim(), expiryDate,
-      quantity: Math.max(1, Number(quantity) || 1), status: 'active', enteredAt: completedAt, enteredBy: this.state.user.id, source: 'user-entry'
+      id: createId('lot'), itemId, lotNumber: lotNumber.trim(), expiryMonth, expiryDate,
+      quantity: quantityPresent, quantityPresent, status: 'active', state: 'active', enteredAt: completedAt, recordedAt: completedAt,
+      enteredBy: this.state.user.id, recordedBy: this.state.user.id, observedLocation: oldLot?.observedLocation || null,
+      replacesLotId: oldLot?.id || null, history: [{ type: 'installed-and-validated', at: completedAt, userId: this.state.user.id, actionId }], source: 'user-entry'
     };
     const event = this.createEvent('EXPIRY_REPLACED', { actionId, oldLotId: oldLot?.id || null, newLotId: newLot.id, itemId, expiryMonth }, action.title);
     const operations = [
       { store: 'actions', type: 'put', value: { ...action, status: 'done', stage: 'done', completedAt, completionEventId: event.id } },
       { store: 'lots', type: 'put', value: newLot }
     ];
-    if (oldLot) operations.push({ store: 'lots', type: 'put', value: { ...oldLot, status: 'replaced', replacedAt: completedAt, replacementLotId: newLot.id } });
+    if (oldLot) operations.push({ store: 'lots', type: 'put', value: {
+      ...oldLot,
+      quantityPresent: 0,
+      status: 'archived',
+      state: 'archived',
+      archivedAt: completedAt,
+      replacedAt: completedAt,
+      replacementLotId: newLot.id,
+      history: appendLotHistory(oldLot, { type: 'replacement-validated', at: completedAt, userId: this.state.user.id, replacementLotId: newLot.id, actionId })
+    } });
     await this.repository.commitEvent(event, {}, operations);
     await this.reload();
     return newLot;
@@ -379,7 +711,7 @@ export class OperationalStore {
   }
 
   async setUserRole(role) {
-    await this.repository.put('settings', { ...this.state.user, id: 'user', role });
+    await this.repository.put('settings', { ...this.state.user, id: 'user', userId: this.state.user.id, role, source: 'user-setting' });
     await this.reload();
   }
 }

@@ -1,33 +1,31 @@
 # Intégration et gouvernance des sources
 
-## Résultat
+## Référentiel actif
 
-- 13 PDF rendus et contrôlés visuellement, puis structurés en 13 contenants, 39 sections et 361 lignes ;
-- 3 classeurs OOXML lus en lecture seule, produisant 150 lignes pédiatriques, 103 lignes Box 4 et 104 lignes Box 3 ;
-- document Word historique et 15 pièces jointes d’e-mail inspectés pour comprendre la hiérarchie physique ;
-- carte PNG existante conservée et dotée de 7 points opérationnels.
+- 13 PDF contrôlés visuellement : 13 contenants et 39 sections ;
+- 3 classeurs OOXML : 150 lignes positives pour le chariot pédiatrique, 103 pour le Box 4 et 104 pour le Box 3 ;
+- 6 lignes pédiatriques dont la quantité source vaut zéro, conservées comme annotations visibles à confirmer ;
+- empreinte SHA-256, référence documentaire, révision et date conservées dans le manifeste.
 
-Chaque PDF possède une empreinte SHA-256, une référence, une révision et une date source lorsqu’elles sont présentes. Les compositions restent `draft-to-validate`. Les classeurs de mars 2024 restent `historical-reference-only`.
+Les 16 inventaires portent `imported-from-source`. Les lignes sans ambiguïté portent `source-validated`; les avertissements restent limités aux lignes `source-ambiguity-to-validate`. Les schémas non certifiés portent `physical-layout-provisional`.
 
 ## Règles de normalisation
 
-- le libellé source et la quantité sont conservés ;
-- les regroupements « une de chaque taille » restent explicitement décrits lorsqu’une séparation fiable n’était pas possible ;
-- aucune criticité clinique n’est inventée ;
-- les noms/dosages figurent comme caractéristiques de stock, jamais comme conseil ;
-- les erreurs ou ambiguïtés visibles dans les sources sont signalées dans le libellé au lieu d’être corrigées silencieusement ;
-- pour la valise intra-osseuse, les 12 libellés bruts sont conservés dans `sourceText`, notamment `45GA`, les deux mentions `15GA` et la seringue « de 50 » sans unité ;
-- les codes produits XLSX sont conservés, mais pas les anciennes péremptions.
+- conserver le produit, le format, la quantité et la provenance du document ;
+- conserver un regroupement lorsque la répartition entre tailles n’est pas déterminable ;
+- ne jamais produire de lot ou de péremption depuis une composition théorique ;
+- ne jamais inventer une criticité, un emplacement, une correction de dosage ou une quantité ;
+- conserver le texte brut et l’ambiguïté lorsqu’une source est inhabituelle ou incomplète ;
+- conserver les codes produits et cellules XLSX, sans importer les péremptions historiques.
 
-## Exclusions
+Ambiguïtés actuellement localisées : deux libellés source « Bicarbonate 42 % », répartition de sondes pédiatriques, lignes groupant plusieurs dosages ou tailles, quantité absente sur certains libellés, références OAL rattachées aux pansements israéliens, et doublon documentaire des aiguilles roses. Elles restent visibles jusqu’à décision tracée.
 
-- texte de dilutions anesthésiques : contenu clinique/posologique ;
-- procédure détaillée Osiris : document technique ancien non validé ;
-- planning `COMMANDES.doc` : organisation ancienne non validée ;
+## Contenu non opérationnel
+
+- instructions cliniques ou posologiques ;
+- procédure technique ancienne Osiris ;
+- planning historique `COMMANDES.doc` ;
 - identités, visas, coordonnées et signatures ;
-- photos de lots et de dates anciennes ;
-- toutes les anciennes dates de péremption et alertes calculées des classeurs.
+- photos, lots, dates et alertes historiques.
 
-## Activation future
-
-Une version de référence devra être revue par les responsables désignés, comparée aux procédures en vigueur, signée, datée et activée. Les contrôles déjà démarrés conserveront la version avec laquelle ils ont été créés.
+Ces exclusions ne retirent aucune ligne de composition active. Toute décision ultérieure conserve le texte source, le motif, l’auteur et la date de validation.

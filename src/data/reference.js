@@ -15,11 +15,11 @@ function productIdFor(label) {
 }
 
 function makeSection(containerId, id, label, entries) {
-  return Object.freeze({
-    id: `${containerId}:${id}`,
-    label,
-    items: Object.freeze(entries.map(([expectedQuantity, itemLabel, category, sourceText, metadata = {}], index) => Object.freeze({
-      id: `${containerId}:${id}:${String(index + 1).padStart(2, '0')}`,
+  const items = entries.map(([expectedQuantity, itemLabel, category, sourceText, metadata = {}], index) => {
+    const sourceStatus = metadata.sourceStatus
+      || (['ambiguous-source', 'incomplete-source'].includes(metadata.dataQuality) ? 'source-ambiguity-to-validate' : 'source-validated');
+    return Object.freeze({
+      id: metadata.stableId || `${containerId}:${id}:${String(index + 1).padStart(2, '0')}`,
       containerId,
       sectionId: `${containerId}:${id}`,
       label: itemLabel,
@@ -29,19 +29,36 @@ function makeSection(containerId, id, label, entries) {
       packSize: metadata.packSize || null,
       category,
       sourceText: sourceText || null,
-      dataQuality: metadata.dataQuality || 'source-normalized-to-validate',
+      sourceStatus,
+      expectedQuantitySource: metadata.expectedQuantitySource ?? expectedQuantity,
+      quantityStatus: metadata.quantityStatus || (sourceStatus === 'source-ambiguity-to-validate' ? 'source-ambiguity-to-validate' : 'source-validated'),
+      sourceLocator: metadata.sourceLocator || null,
+      sizes: Object.freeze(metadata.sizes || []),
+      legacyIds: Object.freeze(metadata.legacyIds || []),
+      dataQuality: metadata.dataQuality || 'source-validated',
       validationIssues: Object.freeze(metadata.validationIssues || []),
       operationalUseAllowed: metadata.operationalUseAllowed !== false,
       expiryTracked: category !== 'equipement',
       criticality: 'non_evaluee',
       supplyZoneId: null,
-      supplyZoneStatus: 'missing-to-validate'
-    })))
+      supplyZoneStatus: 'physical-layout-provisional'
+    });
+  });
+  return Object.freeze({
+    id: `${containerId}:${id}`,
+    label,
+    sourceStatus: items.some((item) => item.sourceStatus === 'source-ambiguity-to-validate')
+      ? 'source-ambiguity-to-validate'
+      : 'source-validated',
+    physicalLayoutStatus: 'physical-layout-provisional',
+    items: Object.freeze(items)
   });
 }
 
-function makeContainer({ id, label, shortLabel, color, sourceId, stockZoneId, stockZoneStatus = 'provisional-to-validate', sections }) {
+function makeContainer({ id, label, shortLabel, color, sourceId, stockZoneId, stockZoneStatus = 'physical-layout-provisional', physicalLayoutStatus = 'physical-layout-provisional', sections }) {
   const kind = id.startsWith('valise-') ? 'valise' : id.startsWith('pochette-') ? 'pochette' : id.startsWith('kit-') ? 'kit' : id === 'frigo-medicaments' ? 'armoire' : 'sac';
+  const source = SOURCE_DOCUMENTS.find((candidate) => candidate.id === sourceId);
+  const normalizedSections = sections.map(([sectionId, sectionLabel, entries]) => makeSection(id, sectionId, sectionLabel, entries));
   return Object.freeze({
     id,
     label,
@@ -49,11 +66,15 @@ function makeContainer({ id, label, shortLabel, color, sourceId, stockZoneId, st
     color,
     kind,
     sourceId,
+    sourceReference: source?.documentRef || null,
+    sourceRevision: source?.revision || null,
+    sourceDate: source?.sourceDate || null,
     stockZoneId,
     stockZoneStatus,
-    sourceStatus: 'demo-draft-needs-hospital-validation',
-    validationRequired: true,
-    sections: Object.freeze(sections.map(([sectionId, sectionLabel, entries]) => makeSection(id, sectionId, sectionLabel, entries)))
+    sourceStatus: 'imported-from-source',
+    physicalLayoutStatus,
+    validationRequired: normalizedSections.some((section) => section.sourceStatus === 'source-ambiguity-to-validate'),
+    sections: Object.freeze(normalizedSections)
   });
 }
 
@@ -108,8 +129,8 @@ export const SMUR_CONTAINERS = Object.freeze([
   makeContainer({
     id: 'sac-vert-pedia', label: 'Sac vert n°1 — Pédia', shortLabel: 'PÉDIA', color: 'vert', sourceId: 'src-pedia', stockZoneId: 'reserve-smur',
     sections: [
-      ['ampoulier', 'Sac amovible vert · Ampoulier', [m(2, 'Atropine 0,5 mg'), m(2, 'Adrénaline 1 mg'), m(1, 'Rivotril 1 mg'), m(2, 'Valium 10 mg'), m(3, 'Glucose 10 % 10 mL'), m(2, 'Nalbufine'), m(3, 'Bicarbonate 4,2 %'), m(2, 'Solumédrol 40 mg'), m(1, 'Lidocaïne 1 %'), m(1, 'EPPI 10 mL'), m(2, 'Ceftriaxone 1 g')]],
-      ['kit-perfusion', 'Sac rouge · Kit perfusion', [e(1, 'Garrot petit'), e(1, 'Garrot grand'), c(2, 'Paquet de 5 compresses stériles'), c(2, 'Biseptine'), c(1, 'Sparadrap'), c(2, 'Bande Nilex 5 cm'), e(1, 'Planchette rembourrée'), c(1, 'Sac poubelle'), c(1, 'Tegaderm grand'), c(4, 'Tegaderm petit'), c(1, 'NaCl 0,9 % 250 mL'), c(1, 'NaCl 0,9 % 10 mL'), d(1, 'Perfuseur 3 voies'), d(2, 'Cathéter 22 G bleu'), d(2, 'Cathéter 24 G jaune'), d(1, 'Seringue 10 mL'), d(1, 'Aiguille rose'), d(1, 'Prolongateur pédiatrique'), d(1, 'Bionecteur')]],
+      ['ampoulier', 'Sac amovible vert · Ampoulier', [m(2, 'Atropine 0,5 mg'), m(2, 'Adrénaline 1 mg'), m(1, 'Rivotril 1 mg'), m(2, 'Valium 10 mg'), m(3, 'Glucose 10 % 10 mL'), m(2, 'Nalbufine'), m(3, 'Bicarbonate 42 %', 'BICARBONATE 42%', { dataQuality: 'ambiguous-source', validationIssues: ['Concentration inhabituelle conservée telle qu’écrite dans la source'], operationalUseAllowed: false }), m(2, 'Solumédrol 40 mg'), m(1, 'Lidocaïne 1 %'), m(1, 'EPPI 10 mL'), m(2, 'Ceftriaxone 1 g')]],
+      ['kit-perfusion', 'Sac rouge · Kit perfusion', [e(1, 'Garrot petit'), e(1, 'Garrot grand'), c(2, 'Paquet de 5 compresses stériles', null, { unit: 'paquet', packSize: 5 }), c(2, 'Biseptine'), c(1, 'Sparadrap'), c(2, 'Bande Nilex 5 cm'), e(1, 'Planchette rembourrée'), c(1, 'Sac poubelle'), c(1, 'Tegaderm grand'), c(4, 'Tegaderm petit'), c(1, 'NaCl 0,9 % 250 mL'), c(1, 'NaCl 0,9 % 10 mL'), d(1, 'Perfuseur 3 voies'), d(2, 'Cathéter 22 G bleu'), d(2, 'Cathéter 24 G jaune'), d(1, 'Seringue 10 mL'), d(1, 'Aiguille rose'), d(1, 'Prolongateur pédiatrique'), d(1, 'Bionecteur')]],
       ['kit-paracetamol', 'Kit paracétamol', [m(1, 'Paracétamol 500 mg'), d(1, 'Tubulure 3 voies')]],
       ['oxygene-aerosol', 'Sac vert · Kit oxygène et aérosol', [m(1, 'Célestène 0,05 % gouttes'), d(1, 'Masque haute concentration pédiatrique'), d(1, 'Prolongateur oxygène'), d(1, 'Lunettes à oxygène pédiatriques'), d(1, 'Lunettes à oxygène adultes'), d(2, 'Raccord SIM'), d(1, 'Masque aérosol pédiatrique'), m(3, 'Ventoline dosette 2,50 mg'), m(3, 'Ipratropium dosette 0,25 mg'), m(3, 'Pulmicort dosette 0,5 mg'), c(3, 'NaCl dosette 0,9 %')]],
       ['plaque-a', 'Plaque centrale · Face A', [d(5, 'Aiguille orange'), d(5, 'Aiguille bleue'), d(5, 'Aiguille rose'), d(2, 'Seringue 2 mL'), d(2, 'Seringue 5 mL'), d(2, 'Seringue 10 mL'), c(5, 'EPPI 20 mL'), m(2, 'Tube Emla avec Tegaderm'), m(3, 'Suppositoire Doliprane 100 mg rose'), m(3, 'Suppositoire Doliprane 200 mg orange'), m(3, 'Suppositoire Doliprane 300 mg vert')]],
@@ -124,14 +145,14 @@ export const SMUR_CONTAINERS = Object.freeze([
   makeContainer({
     id: 'sac-rouge-solutes', label: 'Sac rouge n°1 — Solutés', shortLabel: 'SOLUTÉS', color: 'rouge', sourceId: 'src-solutes', stockZoneId: 'reserve-smur',
     sections: [
-      ['kit-perfusion', 'Sac amovible rouge · Kit perfusion', [c(1, 'NaCl 500 mL'), d(1, 'Perfuseur 3 voies'), c(5, 'Tegaderm'), d(2, 'Cathéter 18 G'), d(2, 'Cathéter 20 G'), c(2, 'Paquet de 5 compresses stériles'), c(1, 'Biseptine'), c(1, 'Dosette Bétadine alcoolique')]],
+      ['kit-perfusion', 'Sac amovible rouge · Kit perfusion', [c(1, 'NaCl 500 mL'), d(1, 'Perfuseur 3 voies'), c(5, 'Tegaderm'), d(2, 'Cathéter 18 G'), d(2, 'Cathéter 20 G'), c(2, 'Paquet de 5 compresses stériles', null, { unit: 'paquet', packSize: 5 }), c(1, 'Biseptine'), c(1, 'Dosette Bétadine alcoolique')]],
       ['kit-paracetamol', 'Kit paracétamol', [d(1, 'Perfuseur'), m(1, 'Paracétamol 1 g')]],
       ['kit-atb', 'Kit ATB', [c(2, 'NaCl 50 mL'), d(2, 'Perfuseur 3 voies'), d(2, 'Dispositif de transfert'), m(2, 'Rocephine'), m(2, 'Augmentin')]],
       ['aiguilles', 'Boîte à aiguilles', [e(1, 'Boîte à aiguilles')]],
       ['plaque-a', 'Plaque centrale · Face A', [d(2, 'Cathéter gris 16 G'), d(2, 'Cathéter vert 18 G'), d(2, 'Cathéter rose 20 G'), d(2, 'Cathéter bleu 22 G'), d(2, 'Cathéter jaune 24 G'), d(2, 'Épicrânienne 21 G'), c(5, 'EPPI 20 mL'), e(1, 'Garrot'), c(1, 'Sparadrap'), d(5, 'Bionecteur')]],
       ['plaque-b', 'Plaque centrale · Face B', [d(2, 'Seringue 20 mL'), d(5, 'Seringue 10 mL'), d(3, 'Seringue 5 mL'), d(2, 'Seringue 2 mL'), d(5, 'Aiguille verte'), d(5, 'Aiguille rose'), d(5, 'Aiguille bleue'), d(5, 'Aiguille orange'), d(5, 'Bouchon')]],
       ['ampoulier-gauche', 'Ampoulier · Côté gauche cardio-pneumo-réa', [m(2, 'Dobutamine'), m(2, 'Noradrénaline'), m(2, 'Salbutamol'), m(2, 'Loxen'), m(2, 'Solumédrol 120 mg'), m(2, 'Solumédrol 40 mg'), m(3, 'Atropine 0,5 mg'), m(2, 'Risordan'), m(5, 'Lasilix 20 mg'), m(2, 'Bricanyl'), m(2, 'Adrénaline 1 mg'), m(5, 'Adrénaline 5 mg'), m(3, 'Cordarone 150 mg'), m(2, 'Dopamine 200 mg'), m(2, 'Tildiem'), m(2, 'Digoxine')]],
-      ['ampoulier-droit', 'Ampoulier · Côté droit', [m(3, 'Loxapac'), m(2, 'Tranxène 20 mg avec solvant'), m(3, 'Valium 10 mg'), m(3, 'Rivotril 1 mg avec solvant'), m(5, 'Nubain'), m(2, 'Polaramine'), m(2, 'Primpéran'), m(5, 'Narcan 0,4 mg'), m(2, 'Anexate (flumazénil)'), m(2, 'Gluconate de calcium'), m(2, 'Bicarbonate de sodium 4,2 %'), m(6, 'Glucose 30 % 10 mL (ampoule plastique)'), m(2, 'IPP 40 mg')]],
+      ['ampoulier-droit', 'Ampoulier · Côté droit', [m(3, 'Loxapac'), m(2, 'Tranxène 20 mg avec solvant'), m(3, 'Valium 10 mg'), m(3, 'Rivotril 1 mg avec solvant'), m(5, 'Nubain'), m(2, 'Polaramine'), m(2, 'Primpéran'), m(5, 'Narcan 0,4 mg'), m(2, 'Anexate (flumazénil)'), m(2, 'Gluconate de calcium'), m(2, 'Bicarbonate de sodium 42 %', '2 X BICARBONATES 42%', { dataQuality: 'ambiguous-source', validationIssues: ['Concentration inhabituelle conservée telle qu’écrite dans la source'], operationalUseAllowed: false }), m(6, 'Glucose 30 % 10 mL (ampoule plastique)'), m(2, 'IPP 40 mg')]],
       ['ampoulier-interne', 'Ampoulier · Compartiment interne', [c(2, 'NaCl 50 mL'), d(2, 'Perfuseur 3 voies'), d(1, 'Perfuseur Volumed'), d(2, 'Dispositif de transfert'), m(1, 'Penthrox'), m(4, 'Lidocaïne 200 mg'), m(5, 'Exacyl (acide tranexamique)'), m(4, 'Dépakine 400 mg'), m(5, 'Xanax 0,5'), m(2, 'Éphédrine 30 mg/10 mL IV en seringue pré-remplie')]],
       ['lateral-droit', 'Compartiment latéral droit', [e(1, 'Nécessaire dextro (appareil, 5 Unistix, 1 boîte de bandelettes)'), e(1, 'Brassard'), e(1, 'Stéthoscope'), e(1, 'Lampe'), e(1, 'Couverture de survie'), e(1, 'Thermomètre'), e(1, 'Ciseau')]]
     ]
@@ -140,10 +161,10 @@ export const SMUR_CONTAINERS = Object.freeze([
   makeContainer({ id: 'sac-plaies', label: 'Sac plaies, sutures et épistaxis', shortLabel: 'PLAIES', color: 'rose', sourceId: 'src-plaies', stockZoneId: 'reserve-smur', sections: [
     ['principal', 'Compartiment principal', [d(2, 'Agrafeuse'), c(1, 'Eau stérile 500 mL'), d(2, 'Paire de gants stériles taille 6'), d(2, 'Paire de gants stériles taille 6,5'), d(2, 'Paire de gants stériles taille 7'), d(2, 'Paire de gants stériles taille 7,5'), d(2, 'Paire de gants stériles taille 8'), d(2, 'Paire de gants stériles taille 8,5')]],
     ['epistaxis', 'Kit épistaxis', [d(2, 'Merocel 8 cm'), d(2, 'Rapid Rhino'), d(1, 'Seringue 10 mL')]],
-    ['sutures', 'Kit pansement sutures', [d(1, 'Set suture'), c(6, 'Paquet de 5 compresses stériles'), d(2, 'Filapeau 3/0'), d(2, 'Prolène 4/0'), d(2, 'Pansement US 20 × 40 cm'), d(2, 'Pansement US 15 × 20 cm'), c(2, 'Biseptine'), c(1, 'Bétadine dermique'), c(2, 'Bande de crêpe 4 × 10 cm'), c(1, 'Leucoplast')]
+    ['sutures', 'Kit pansement sutures', [d(1, 'Set suture'), c(6, 'Paquet de 5 compresses stériles', null, { unit: 'paquet', packSize: 5 }), d(2, 'Filapeau 3/0'), d(2, 'Prolène 4/0'), d(2, 'Pansement US 20 × 40 cm'), d(2, 'Pansement US 15 × 20 cm'), c(2, 'Biseptine'), c(1, 'Bétadine dermique'), c(2, 'Bande de crêpe 4 × 10 cm'), c(1, 'Leucoplast')]
   ]] }),
   makeContainer({ id: 'sac-orange-damage-control', label: 'Sac orange — Damage Control', shortLabel: 'DAMAGE CONTROL', color: 'orange', sourceId: 'src-damage-control', stockZoneId: 'reserve-smur', sections: [['principal', 'Compartiment principal', [e(2, 'Garrot tourniquet adulte'), e(2, 'Garrot tourniquet pédiatrique'), d(2, 'Kit pansement'), c(2, 'Champ de table'), c(2, 'Américain petit modèle'), c(2, 'Américain grand modèle'), d(1, 'Pansement israélien 13 × 18 cm'), d(1, 'Pansement israélien 10 × 15 cm'), d(1, 'Référence OAL 4'), d(1, 'Référence OAL 6'), d(5, 'QuickClot réf. 200 7,5 × 3,5'), c(4, 'Bande crêpe 4 × 10'), c(1, 'Sparadrap'), d(2, 'Agrafeuse'), d(2, 'Fil 3/0'), e(2, 'Pince hémostatique de Kelly'), d(2, 'Paire de gants stériles taille 6'), d(2, 'Paire de gants stériles taille 7'), d(2, 'Paire de gants stériles taille 8'), d(4, 'Masque de protection'), c(1, 'Flacon de Bétadine jaune')]]] }),
-  makeContainer({ id: 'sac-noir-mater', label: 'Sac noir — Mater', shortLabel: 'MATER', color: 'noir', sourceId: 'src-mater', stockZoneId: 'reserve-smur', sections: [['principal', 'Sac amovible mater', [d(1, 'Champ accueil bébé réf. 714641'), d(1, 'Pack accouchement stérile'), d(1, 'Pack réfection épisiotomie'), d(1, 'Aspirateur de mucosités'), c(4, 'Coussin stérile'), c(1, 'Slip à usage unique'), d(1, 'Set soin de cordon ombilical'), d(1, 'Clamp ombilical hors set'), d(1, 'Paire de gants stériles n°7'), d(1, 'Paire de gants stériles n°7,5'), d(1, 'Paire de gants stériles n°8'), c(2, 'Paquet de 5 compresses stériles'), c(2, 'Biseptine'), c(1, 'Couche bébé'), c(1, 'Bonnet')]]] }),
+  makeContainer({ id: 'sac-noir-mater', label: 'Sac noir — Mater', shortLabel: 'MATER', color: 'noir', sourceId: 'src-mater', stockZoneId: 'reserve-smur', sections: [['principal', 'Sac amovible mater', [d(1, 'Champ accueil bébé réf. 714641'), d(1, 'Pack accouchement stérile'), d(1, 'Pack réfection épisiotomie'), d(1, 'Aspirateur de mucosités'), c(4, 'Coussin stérile'), c(1, 'Slip à usage unique'), d(1, 'Set soin de cordon ombilical'), d(1, 'Clamp ombilical hors set'), d(1, 'Paire de gants stériles n°7'), d(1, 'Paire de gants stériles n°7,5'), d(1, 'Paire de gants stériles n°8'), c(2, 'Paquet de 5 compresses stériles', null, { unit: 'paquet', packSize: 5 }), c(2, 'Biseptine'), c(1, 'Couche bébé'), c(1, 'Bonnet')]]] }),
   makeContainer({ id: 'sac-jaune-fibrinolyse', label: 'Sac jaune — Fibrinolyse', shortLabel: 'FIBRINOLYSE', color: 'jaune', sourceId: 'src-fibrinolyse', stockZoneId: 'reserve-smur', sections: [['principal', 'Compartiment principal', [m(2, 'Actilyse 50 mg'), m(2, 'Aspégic 500 mg IV'), m(1, 'Aspégic 1000 mg IV'), m(2, 'Héparine 25 000 UI'), d(2, 'Seringue 5 mL'), d(4, 'Aiguille rose'), m(2, 'Arixtra 2,5 mg'), m(2, 'Lovenox 1 mL / 10 000 UI'), m(1, 'Lovenox 0,6 mL / 6 000 UI'), m(1, 'Lovenox 0,4 mL / 4 000 UI'), d(2, 'Bionecteur'), d(2, 'Seringue 1 mL'), m(1, 'Flacon de sulfate de protamine'), m(4, 'Plavix 75 mg'), m(4, 'Plavix 300 mg'), m(12, 'Efient 10 mg'), m(4, 'Brilique 90 mg'), e(2, 'Rasoir'), d(1, 'Perfuseur'), c(3, 'NaCl 50 mL')]]] }),
   makeContainer({
     id: 'sac-bleu-respi', label: 'Sac bleu n°1 — Respi', shortLabel: 'RESPI', color: 'bleu', sourceId: 'src-respi', stockZoneId: 'reserve-respi',
@@ -168,21 +189,31 @@ export const REFERENCE_ITEMS = Object.freeze(SMUR_CONTAINERS.flatMap((container)
     containerLabel: container.label,
     sectionLabel: section.label,
     sourceId: container.sourceId,
+    sourceReference: container.sourceReference,
+    sourceRevision: container.sourceRevision,
+    sourceDate: container.sourceDate,
     stockZoneId: container.stockZoneId,
-    stockZoneStatus: container.stockZoneStatus
+    stockZoneStatus: container.stockZoneStatus,
+    physicalLayoutStatus: section.physicalLayoutStatus
   })))
 ));
 
-export const PRODUCTS = Object.freeze([...new Map(REFERENCE_ITEMS.map((item) => [item.productId, Object.freeze({
-  id: item.productId,
-  label: item.label,
-  category: item.category,
-  expiryTracked: item.expiryTracked,
-  criticality: item.criticality,
-  synonyms: Object.freeze([]),
-  attributes: Object.freeze({ size: null, dosage: null, concentration: null, volume: null, functionalTestRequired: null, lotTrackingRequired: item.expiryTracked }),
-  sourceStatus: 'demo-draft-needs-hospital-validation'
-})])).values()]);
+export const PRODUCTS = Object.freeze([...new Set(REFERENCE_ITEMS.map((item) => item.productId))].map((productId) => {
+  const occurrences = REFERENCE_ITEMS.filter((item) => item.productId === productId);
+  const item = occurrences[0];
+  return Object.freeze({
+    id: item.productId,
+    label: item.label,
+    category: item.category,
+    expiryTracked: item.expiryTracked,
+    criticality: item.criticality,
+    synonyms: Object.freeze([]),
+    attributes: Object.freeze({ size: null, dosage: null, concentration: null, volume: null, functionalTestRequired: null, lotTrackingRequired: item.expiryTracked }),
+    sourceStatus: occurrences.some((occurrence) => occurrence.sourceStatus === 'source-ambiguity-to-validate')
+      ? 'source-ambiguity-to-validate'
+      : 'source-validated'
+  });
+}));
 
 export const COMPOSITIONS = Object.freeze(SMUR_CONTAINERS.map((container) => {
   const source = SOURCE_DOCUMENTS.find((candidate) => candidate.id === container.sourceId);
@@ -194,7 +225,7 @@ export const COMPOSITIONS = Object.freeze(SMUR_CONTAINERS.map((container) => {
     createdAt: source?.sourceDate || null,
     effectiveFrom: null,
     effectiveTo: null,
-    status: 'draft-to-validate',
+    status: 'imported-from-source',
     expectedItemIds: Object.freeze(container.sections.flatMap((section) => section.items.map((item) => item.id))),
     modifications: Object.freeze([]),
     validatedBy: null
@@ -209,8 +240,8 @@ export const REFERENCE_NODES = Object.freeze([
       id: container.id,
       kind: container.kind,
       label: container.label,
-      parentId: container.stockZoneStatus === 'validated' ? `zone:${container.stockZoneId}` : 'service:urgences-falaise',
-      proposedParentId: container.stockZoneStatus === 'validated' ? null : `zone:${container.stockZoneId}`,
+      parentId: container.stockZoneStatus === 'physical-layout-validated' ? `zone:${container.stockZoneId}` : 'service:urgences-falaise',
+      proposedParentId: container.stockZoneStatus === 'physical-layout-validated' ? null : `zone:${container.stockZoneId}`,
       locationStatus: container.stockZoneStatus,
       mobile: container.kind !== 'armoire',
       order: 0,
@@ -235,7 +266,7 @@ export const REFERENCE = Object.freeze({
 });
 
 export function findReferenceItem(itemId) {
-  return REFERENCE_ITEMS.find((item) => item.id === itemId) || null;
+  return REFERENCE_ITEMS.find((item) => item.id === itemId || item.legacyIds.includes(itemId)) || null;
 }
 
 export function findContainer(containerId) {

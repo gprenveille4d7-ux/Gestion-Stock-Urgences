@@ -6,25 +6,23 @@ function clampPercent(value) {
 
 function zoneStateMeta(status) {
   if (['pret', 'ready'].includes(status)) return { css: 'is-ready', label: 'Prêt', icon: 'check' };
-  if (status === 'validated') return { css: 'is-validated', label: 'Implantation validée', icon: 'check' };
+  if (['validated', 'physical-layout-validated'].includes(status)) return { css: 'is-validated', label: 'Organisation visuelle validée', icon: 'check' };
   if (['indisponible', 'blocked', 'missing'].includes(status)) return { css: 'is-blocked', label: 'Indisponible', icon: 'alert' };
   if (['a_rearmer', 'warning', 'attention'].includes(status)) return { css: 'is-warning', label: 'À réarmer', icon: 'clock' };
-  if (status === 'historical-reference-only') return { css: 'is-review', label: 'Historique', icon: 'clock' };
-  if (String(status).includes('validate') || String(status).includes('generated') || String(status).includes('configured')) return { css: 'is-review', label: 'À valider', icon: 'alert' };
-  return { css: 'is-review', label: 'À vérifier', icon: 'search' };
+  if (status === 'physical-layout-provisional') return { css: 'is-review', label: 'Organisation visuelle à préciser', icon: 'search' };
+  if (status === 'source-ambiguity-to-validate') return { css: 'is-review', label: 'Libellé source à valider', icon: 'alert' };
+  return { css: 'is-review', label: 'Emplacement physique à confirmer', icon: 'search' };
 }
 
 function diagramStateMeta(status) {
-  if (status === 'validated') return { css: 'is-validated', label: 'Implantation validée', icon: 'check' };
-  if (status === 'historical-reference-only') return { css: 'is-review', label: 'Référence historique à valider', icon: 'clock' };
-  if (status === 'missing-to-validate') return { css: 'is-review', label: 'Implantation non documentée', icon: 'alert' };
-  return { css: 'is-review', label: 'Implantation à valider', icon: 'alert' };
+  if (['validated', 'physical-layout-validated'].includes(status)) return { css: 'is-validated', label: 'Organisation visuelle validée', icon: 'check' };
+  return { css: 'is-review', label: 'Organisation visuelle à préciser', icon: 'search' };
 }
 
 function placeholderCopy(kind) {
-  if (kind === 'reserve') return ['PHOTO DE LA RÉSERVE À AJOUTER', 'Implantation exacte à valider'];
-  if (kind === 'chariot') return ['PHOTO DU CHARIOT À AJOUTER', 'Tiroirs issus du classeur historique'];
-  return ['PHOTO À AJOUTER', 'Schéma fonctionnel provisoire'];
+  if (kind === 'reserve') return ['Organisation visuelle à préciser', 'Emplacements modifiables ultérieurement'];
+  if (kind === 'chariot') return ['Organisation visuelle à préciser', 'Sections issues du document source'];
+  return ['Organisation visuelle à préciser', 'Zones fonctionnelles modifiables'];
 }
 
 function zoneStyle(zone, options = {}) {
@@ -80,7 +78,7 @@ export function renderVisualSchema(diagram, options = {}) {
   return `<figure class="visual-schema" data-schema-kind="${escapeHtml(schemaKind)}">
     <div class="visual-schema-toolbar">
       <div><span class="visual-schema-kicker">${escapeHtml(diagram.viewKindLabel || diagram.viewKind || 'Vue schématique')}</span><strong>${escapeHtml(schemaLabel)}</strong></div>
-      <span class="visual-schema-version">${escapeHtml(diagram.version || 'brouillon')}</span>
+      <span class="visual-schema-version">${escapeHtml(diagram.version || 'version non renseignée')}</span>
     </div>
     <div class="visual-schema-canvas" style="aspect-ratio:${aspectRatio}" data-color="${escapeHtml(options.color || diagram.color || 'neutre')}">
       ${background}

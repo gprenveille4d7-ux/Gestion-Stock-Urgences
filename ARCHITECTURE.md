@@ -1,56 +1,41 @@
 # Architecture technique
 
-## Choix directeur
-
-L’application reste déployable comme site statique sans chaîne de compilation. Elle utilise des modules JavaScript natifs, IndexedDB et un service worker. Ce choix conserve la simplicité du prototype tout en séparant réellement les responsabilités. TypeScript ou un framework pourront être introduits plus tard sans modifier le modèle métier.
+L’application est une PWA statique fondée sur des modules JavaScript natifs, IndexedDB et un service worker.
 
 ```text
-UI mobile / routes par hash
-        │ commandes utilisateur
-        ▼
-OperationalStore (cas d’usage)
-        │ événements + conséquences
-        ▼
-Moteurs de domaine ──► disponibilité / actions / péremptions / parcours / statistiques
-        │ transactions atomiques
-        ▼
-Repository ──► IndexedDB ──► outbox locale ──► futur adaptateur serveur
-        ▲
-Référentiel versionné PDF/XLSX + fixtures synthétiques séparées
+Interface mobile et routes
+        ↓ commandes
+OperationalStore — cas d’usage et stock vivant
+        ↓ événements et transactions
+Domaines — disponibilité, actions, péremptions, parcours, statistiques
+        ↓
+Repository — IndexedDB, journal de migration et outbox locale
+        ↑
+Référentiel versionné — PDF/XLSX, indépendant du stock vivant
 ```
 
 ## Couches
 
-- `src/data/` : référentiel, provenance, import XLSX généré et fixtures de démonstration ;
-- `src/domain/` : fonctions pures et testables, sans DOM ni stockage ;
-- `src/infrastructure/` : IndexedDB, repository transactionnel et contrat de synchronisation ;
+- `src/data/` : référentiel, provenance, import XLSX et schémas visuels ;
+- `src/domain/` : fonctions pures, sans DOM ni stockage ;
+- `src/infrastructure/` : IndexedDB, transactions et synchronisation locale ;
 - `src/application/` : orchestration des cas d’usage et journalisation ;
-- `src/ui/` : rendu, navigation, accessibilité et événements de l’interface ;
-- `app.js` : point d’entrée minimal ;
-- `sw.js` : cache PWA versionné et stratégie réseau d’abord ;
-- `tests/` : tests unitaires et d’intégration du domaine.
+- `src/ui/` : rendu mobile, navigation et accessibilité ;
+- `sw.js` : cache hors ligne versionné ;
+- `tests/` : domaine, exhaustivité, interface et terrain.
 
-## Règles d’architecture
+## Règles
 
 1. L’interface n’écrit jamais directement dans IndexedDB.
-2. Un fait opérationnel produit un événement immuable.
-3. Une observation non conforme, son anomalie et son action sont enregistrées dans la même transaction.
-4. La disponibilité est une projection calculée ; elle n’est jamais saisie manuellement comme un état isolé.
-5. Une composition source n’est activable qu’après validation institutionnelle explicite.
-6. Les fixtures portent `source: demo-synthetic` et ne sont pas confondues avec les documents sources.
-7. Le rôle local prépare les autorisations futures mais ne constitue pas une authentification.
+2. Le référentiel théorique ne crée aucun lot, date ou numéro opérationnel.
+3. Chaque saisie terrain produit un événement et conserve son auteur local et sa date.
+4. Une ambiguïté reste attachée à sa ligne ; elle ne bloque pas tout le contenant.
+5. La disponibilité et les compteurs sont des projections calculées.
+6. Les changements liés à une action sont écrits de façon atomique.
+7. Les structures physiques provisoires sont distinctes des implantations validées.
 
-## Stockage et évolution
+## Stockage et migration
 
-La base `releve-smur-operational`, version 2, contient des stores distincts, dont les utilisateurs de démonstration. Les migrations futures incrémenteront la version IndexedDB et resteront additives. Au premier démarrage, les événements et actions trouvés dans `releve-smur-operational-v1` sont copiés sans supprimer la clé d’origine.
+La base `releve-smur-operational`, version 3, contient des stores séparés pour événements, contrôles, observations, anomalies, actions, lots, paramètres, utilisateurs locaux, métadonnées et outbox. La migration `synthetic-data-removal-v3` retire uniquement les enregistrements portant une source explicitement synthétique, préserve les saisies utilisateur et journalise les identifiants retirés.
 
-L’outbox conserve chaque événement opérationnel avec un statut `pending`. L’adaptateur actuel est volontairement `local-only` : aucune synchronisation fictive n’est affichée comme réussie. Un futur adaptateur HTTP pourra traiter les événements de manière idempotente grâce à leurs identifiants et corrélations.
-
-## Frontières futures
-
-- authentification OIDC/annuaire et autorisations côté serveur ;
-- API événementielle idempotente et résolution de conflits ;
-- gestion de plusieurs établissements/unités/véhicules ;
-- activation signée et historisée des versions de référentiel ;
-- notifications serveur et tableaux de bord agrégés ;
-- tests end-to-end sur navigateurs mobiles réels.
+L’adaptateur reste `local-only`. Une synchronisation serveur future devra être idempotente, authentifiée et résoudre explicitement les conflits.
