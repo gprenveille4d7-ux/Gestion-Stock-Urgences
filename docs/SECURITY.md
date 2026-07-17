@@ -8,6 +8,7 @@
 - instructions de dilution et procédure respirateur ancienne exclues ;
 - contenu dynamique échappé avant insertion dans les vues ;
 - politique CSP restrictive, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'` ;
+- styles en ligne limités aux coordonnées numériques générées des schémas, progressions et marqueurs ; les scripts en ligne restent interdits ;
 - ressources PWA limitées à la même origine ;
 - contrôles de chemin et en-têtes de sécurité dans le serveur local ;
 - identifiants uniques, corrélations et journal append-only pour les faits métier ;

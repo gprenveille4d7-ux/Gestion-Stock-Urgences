@@ -25,7 +25,7 @@ export function createDemoFixtures(now = new Date()) {
   return Object.freeze({
     metadata: {
       id: 'demo-seed',
-      fixtureVersion: 1,
+      fixtureVersion: 2,
       source: 'demo-synthetic',
       seededAt: new Date(now).toISOString()
     },
@@ -41,12 +41,12 @@ export function createDemoFixtures(now = new Date()) {
       { id: 'anomaly-demo-drill', type: 'defaut_fonctionnel', subjectType: 'item', subjectId: drillId, containerId: 'valise-intra-osseuse', quantity: 1, severity: 'bloquant', status: 'open', note: 'Fixture de démonstration — aucun conseil clinique', createdAt, source: 'demo-synthetic' }
     ].filter((anomaly) => anomaly.subjectId),
     actions: [
-      { id: 'action-demo-biseptine', type: 'rearmement', title: 'Ajouter 1 Biseptine', status: 'open', priority: 'haute', containerId: 'sac-vert-pedia', targetZoneId: 'pc-ide', finalZoneId: 'garage-smur', originAnomalyId: 'anomaly-demo-biseptine', lines: [{ itemId: biseptineId, quantity: 1, done: false }], createdAt, dueAt: isoAtOffset(now, 0, 18), source: 'demo-synthetic' },
-      { id: 'action-demo-kt22', type: 'rearmement', title: 'Ajouter 1 KT 22 G', status: 'open', priority: 'haute', containerId: 'sac-vert-pedia', targetZoneId: 'reserve-1', finalZoneId: 'garage-smur', originAnomalyId: 'anomaly-demo-kt22', lines: [{ itemId: kt22Id, quantity: 1, done: false }], createdAt, dueAt: isoAtOffset(now, 0, 18), source: 'demo-synthetic' },
-      { id: 'action-demo-drill', type: 'traitement_defaut', title: 'Traiter le défaut de la perceuse intra-osseuse', status: 'open', priority: 'critique', containerId: 'valise-intra-osseuse', targetZoneId: 'reserve-smur', finalZoneId: 'garage-smur', originAnomalyId: 'anomaly-demo-drill', lines: [{ itemId: drillId, quantity: 1, done: false }], createdAt, dueAt: isoAtOffset(now, 0, 18), source: 'demo-synthetic' }
+      { id: 'action-demo-biseptine', type: 'rearmement', title: 'Ajouter 1 Biseptine', status: 'open', priority: 'haute', containerId: 'sac-vert-pedia', targetZoneId: null, targetZoneStatus: 'missing-to-validate', finalZoneId: null, finalZoneStatus: 'missing-to-validate', originAnomalyId: 'anomaly-demo-biseptine', lines: [{ itemId: biseptineId, quantity: 1, done: false }], createdAt, dueAt: isoAtOffset(now, 0, 18), source: 'demo-synthetic' },
+      { id: 'action-demo-kt22', type: 'rearmement', title: 'Ajouter 1 KT 22 G', status: 'open', priority: 'haute', containerId: 'sac-vert-pedia', targetZoneId: null, targetZoneStatus: 'missing-to-validate', finalZoneId: null, finalZoneStatus: 'missing-to-validate', originAnomalyId: 'anomaly-demo-kt22', lines: [{ itemId: kt22Id, quantity: 1, done: false }], createdAt, dueAt: isoAtOffset(now, 0, 18), source: 'demo-synthetic' },
+      { id: 'action-demo-drill', type: 'traitement_defaut', title: 'Traiter le défaut de la perceuse intra-osseuse', status: 'open', priority: 'critique', containerId: 'valise-intra-osseuse', targetZoneId: null, targetZoneStatus: 'missing-to-validate', finalZoneId: null, finalZoneStatus: 'missing-to-validate', originAnomalyId: 'anomaly-demo-drill', lines: [{ itemId: drillId, quantity: 1, done: false }], createdAt, dueAt: isoAtOffset(now, 0, 18), source: 'demo-synthetic' }
     ].filter((action) => action.lines.every((line) => line.itemId)),
     events: [
-      { id: 'event-demo-seeded', type: 'DEMO_DATA_SEEDED', subject: 'Jeu de données local', at: createdAt, userId: 'system', correlationId: 'demo-seed', payload: { fixtureVersion: 1 }, source: 'demo-synthetic' }
+      { id: 'event-demo-seeded', type: 'DEMO_DATA_SEEDED', subject: 'Jeu de données local', at: createdAt, userId: 'system', correlationId: 'demo-seed', payload: { fixtureVersion: 2 }, source: 'demo-synthetic' }
     ],
     audits: [],
     observations: [],

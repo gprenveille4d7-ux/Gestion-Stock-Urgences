@@ -16,17 +16,33 @@
 - retour ciblé, contrôle figé au niveau du kit, pause/reprise/passation ;
 - remplacement de péremption avec nouveau lot actif ;
 - politique de conflits et adaptateur local sans faux envoi ;
-- rendu des 13 routes P0 avec état opérationnel et formulaire de retour ciblé.
+- repli en mémoire temporaire lorsque l’ouverture IndexedDB échoue, sans masquer le mode dégradé.
+
+`tests/visual-schemas.test.mjs` couvre :
+
+- un hotspot borné et unique pour chaque section des 13 contenants ;
+- schémas complets des 3 chariots et dérivation prudente des 3 réserves ;
+- remplacement versionné d’une photo et de coordonnées sans modifier le composant ;
+- refus d’une cible inconnue ou d’une géométrie hors limites ;
+- impossibilité de marquer un brouillon comme emplacement physique validé.
+
+`tests/ui.test.mjs` couvre :
+
+- rendu des 17 routes P0 avec état opérationnel et formulaire de retour ciblé ;
+- parcours exhaustif des 13 fiches, 39 sections, 3 chariots, 18 tiroirs, plateaux ou côtés et 3 réserves ;
+- conservation des 361 lignes PDF et 357 lignes XLSX dans leurs vues détaillées ;
+- état explicite lorsque le référentiel des chariots est indisponible.
 
 Commande : `npm test` avec Node.js 20 ou plus.
 
 ## Contrôles statiques réalisés
 
 - chargement de tous les modules ;
-- rendu des 13 routes avec un état opérationnel ;
+- rendu des routes générales et de chaque sous-inventaire avec un état opérationnel ;
 - absence de valeurs `undefined`/`NaN` dans les vues ;
 - parsing du manifeste et du service worker ;
-- réponse HTTP 200 des 31 ressources précachées ;
+- réponse HTTP 200 des 34 ressources précachées ;
+- repli sur le cache après délai réseau, erreur réseau ou réponse HTTP non saine ;
 - recherche de contenu clinique exclu et de données personnelles dans les données publiées.
 
 ## Matrice manuelle avant pilote

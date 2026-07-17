@@ -5,12 +5,49 @@ Les opérations ci-dessous modifient un référentiel de démonstration dans le 
 ## Ajouter un sac ou contenant
 
 1. Ajouter la source et son SHA-256 dans `src/data/source-manifest.js`.
-2. Ajouter un `makeContainer(...)` dans `SMUR_CONTAINERS`, avec identifiant stable, type, couleur, source et `stockZoneId`.
+2. Ajouter un `makeContainer(...)` dans `SMUR_CONTAINERS`, avec identifiant stable, type, couleur, source, `stockZoneId` proposé et `stockZoneStatus`. Laisser ce dernier à `provisional-to-validate` tant que le rattachement n’est pas confirmé sur place.
 3. Décrire les sections dans l’ordre physique et chaque ligne avec quantité, libellé et catégorie.
 4. Vérifier que la composition générée reste `draft-to-validate`.
 5. Ajouter/adapter les tests de nombre, d’unicité et de workflow.
 
 Le tableau `REFERENCE_NODES` dérive automatiquement l’arbre service → zone → contenant → section → élément. Une profondeur supplémentaire se modélise avec un nœud possédant un `parentId` ; l’interface future ne doit pas imposer une profondeur maximale.
+
+## Modifier un schéma de sac, de chariot ou de réserve
+
+Les vues utilisent le composant générique `src/ui/visual-schema.js`. Aucune géométrie propre à un sac ne doit être ajoutée dans ce composant.
+
+Les brouillons sont des données. `VISUAL_SCHEMA_DRAFTS` fournit les trois collections `containers`, `chariots` et `reserves`. Une entrée peut être ajoutée dans cette table ou chargée plus tard depuis IndexedDB/API, puis passée à `getContainerDiagram`, `getChariotDiagram` ou `getReserveDiagram`. Le composant d’écran reste inchangé.
+
+```js
+{
+  version: 'schema-local-2',
+  status: 'draft-to-validate',
+  image: {
+    src: 'assets/photos/sac-vert-pedia-ouvert.webp',
+    alt: 'Sac vert Pédia ouvert'
+  },
+  zones: {
+    'sac-vert-pedia:ampoulier': {
+      x: 8, y: 7, w: 24, h: 20,
+      status: 'draft-to-validate',
+      physical: false
+    }
+  }
+}
+```
+
+L’application conserve automatiquement la version parente, refuse une cible inconnue et bloque toute coordonnée qui sort du canevas. `physical: true` n’est accepté qu’avec un statut de zone `validated` ; ce statut doit être attribué après la validation humaine prévue par l’établissement. Le schéma complet ne devient `validated` que lorsque chacune de ses zones l’est aussi. Dans une réserve, un brouillon peut renseigner `cabinet`, `shelf` et `bin`, mais ne peut jamais déplacer une cible vers un autre `roomId` : ce changement exige un nouveau rattachement de référence validé.
+
+1. Modifier la donnée dans `src/data/visual-schemas.js`.
+2. Conserver des coordonnées `x`, `y`, `w` et `h` en pourcentage, comprises dans le canevas.
+3. Cibler un identifiant stable de section, tiroir, contenant ou équipement avec `targetId`.
+4. Ne créer une disposition explicite que depuis une photo, un schéma ou des libellés suffisamment précis. Sinon, conserver la grille générée et le statut `generated-to-validate`.
+5. Laisser `image.src` à `null` tant qu’aucune vraie photo validée n’est disponible : l’interface affichera `PHOTO À AJOUTER`.
+   Toute photo ajoutée au dépôt doit aussi être ajoutée à `CORE_ASSETS` dans `sw.js` avant le pilote hors ligne.
+6. Pour une réserve, ne renseigner `cabinet`, `shelf` ou `bin` qu’après relevé humain. Une valeur absente reste `null` et `missing-to-validate`.
+7. Incrémenter `VISUAL_SCHEMA_VERSION`, le cache du service worker et ajouter un test de couverture.
+
+Les 13 contenants et les 3 chariots reçoivent automatiquement un schéma, y compris lorsqu’aucune disposition spécifique n’est définie. Les trois réserves dérivent seulement les contenants et équipements déjà rattachés à leur zone ; cette dérivation ne valide pas leur position dans la pièce.
 
 ## Ajouter une zone ou modifier une coordonnée
 

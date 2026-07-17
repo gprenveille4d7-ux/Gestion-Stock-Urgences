@@ -46,6 +46,18 @@ function legacyOperations(legacy) {
   return operations;
 }
 
+export function demoLocationSafetyOperations(actions, migratedAt = new Date().toISOString()) {
+  const operations = (actions || [])
+    .filter((action) => action.source === 'demo-synthetic' && (action.targetZoneId || action.finalZoneId || action.targetZoneStatus !== 'missing-to-validate' || action.finalZoneStatus !== 'missing-to-validate'))
+    .map((action) => ({
+      store: 'actions',
+      type: 'put',
+      value: { ...action, targetZoneId: null, targetZoneStatus: 'missing-to-validate', finalZoneId: null, finalZoneStatus: 'missing-to-validate' }
+    }));
+  operations.push({ store: 'metadata', type: 'put', value: { id: 'demo-location-safety-v2', migratedAt, actionCount: operations.length, source: 'safety-migration' } });
+  return operations;
+}
+
 export class OperationalRepository {
   constructor(database) {
     this.database = database;
@@ -64,6 +76,9 @@ export class OperationalRepository {
       await this.database.apply(fixtureOperations(fixtures));
     }
     if (!(await this.database.get('users', 'local-demo-user'))) await this.database.apply(fixtures.users.map((value) => ({ store: 'users', type: 'put', value })));
+    if (!(await this.database.get('metadata', 'demo-location-safety-v2'))) {
+      await this.database.apply(demoLocationSafetyOperations(await this.database.getAll('actions')));
+    }
     if (!(await this.database.get('metadata', 'legacy-migration'))) await this.migrateLegacyLocalStorage();
     await this.database.apply([
       { store: 'metadata', type: 'put', value: { id: 'reference', ...REFERENCE_STATUS, loadedAt: new Date().toISOString() } },

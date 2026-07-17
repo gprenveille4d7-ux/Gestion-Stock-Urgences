@@ -1,16 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { REFERENCE_STATUS } from '../src/config.js';
 import { COMPOSITIONS, REFERENCE_NODES, SERVICE_ZONES, SMUR_CONTAINERS, REFERENCE_ITEMS } from '../src/data/reference.js';
 import { deriveAvailability } from '../src/domain/availability.js';
 import { deriveConsequences } from '../src/domain/action-engine.js';
 import { resolveConflict } from '../src/domain/conflicts.js';
 import { daysUntil, expiryStatus, filterLotsByHorizon } from '../src/domain/expiry.js';
-import { planRoute } from '../src/domain/route-planner.js';
+import { actionZoneId, planRoute } from '../src/domain/route-planner.js';
 import { computePriority } from '../src/domain/priority.js';
 import { computeStatistics } from '../src/domain/statistics.js';
 import { OperationalStore } from '../src/application/operational-store.js';
 import { LocalOnlySyncAdapter } from '../src/infrastructure/sync-adapter.js';
+import { openOperationalDatabase } from '../src/infrastructure/database.js';
+import { demoLocationSafetyOperations } from '../src/infrastructure/repository.js';
 
 test('le référentiel SMUR est structuré, traçable et sans identifiants dupliqués', () => {
   assert.equal(SMUR_CONTAINERS.length, 13);
@@ -19,10 +22,23 @@ test('le référentiel SMUR est structuré, traçable et sans identifiants dupli
   assert.ok(REFERENCE_ITEMS.every((item) => item.sourceId && item.containerId && item.sectionId));
   assert.ok(REFERENCE_ITEMS.every((item) => item.productId?.startsWith('product:')));
   assert.ok(REFERENCE_ITEMS.every((item) => item.criticality === 'non_evaluee'));
+  assert.ok(REFERENCE_ITEMS.every((item) => item.supplyZoneId === null));
+  assert.ok(SMUR_CONTAINERS.every((container) => container.stockZoneStatus === 'provisional-to-validate'));
+  assert.ok(REFERENCE_NODES.filter((node) => SMUR_CONTAINERS.some((container) => container.id === node.id)).every((node) => node.parentId === 'service:urgences-falaise' && node.proposedParentId?.startsWith('zone:')));
   assert.equal(COMPOSITIONS.length, SMUR_CONTAINERS.length);
   assert.ok(REFERENCE_NODES.some((node) => node.kind === 'service'));
   assert.ok(COMPOSITIONS.every((composition) => composition.status === 'draft-to-validate' && composition.effectiveFrom === null));
   assert.equal(SERVICE_ZONES.filter((zone) => zone.type === 'uhcd').length, 6);
+  const intraOsseousItems = SMUR_CONTAINERS.find((container) => container.id === 'valise-intra-osseuse').sections[0].items;
+  assert.equal(intraOsseousItems.length, 12);
+  assert.ok(intraOsseousItems.every((item) => item.sourceText));
+  assert.ok(intraOsseousItems.find((item) => item.label.includes('jaune')).sourceText.includes('45GA'));
+  assert.ok(intraOsseousItems.filter((item) => ['rose', 'bleue'].some((color) => item.label.includes(color))).every((item) => item.sourceText.includes('15GA')));
+  assert.ok(intraOsseousItems.find((item) => item.sourceText.startsWith('SERINGUE DE 50 LUER LOCK')).label.includes('unité source absente'));
+  assert.equal(intraOsseousItems.find((item) => item.sourceText === 'SERINGUES PRE-REMPLIES').operationalUseAllowed, false);
+  const compressPacks = intraOsseousItems.find((item) => item.sourceText === 'PAQUETS DE 5 COMPRESSES STERILES');
+  assert.equal(compressPacks.unit, 'paquet');
+  assert.equal(compressPacks.packSize, 5);
 });
 
 test('la disponibilité est calculée depuis les anomalies ouvertes', () => {
@@ -31,7 +47,8 @@ test('la disponibilité est calculée depuis les anomalies ouvertes', () => {
   const ready = deriveAvailability('sac-vert-pedia', { anomalies: [{ status: 'resolved', severity: 'bloquant', containerId: 'sac-vert-pedia', subjectId: REFERENCE_ITEMS[0].id, type: 'defectueux' }], actions: [] });
   assert.equal(attention.status, 'a_rearmer');
   assert.equal(blocking.status, 'indisponible');
-  assert.equal(ready.status, 'pret');
+  assert.equal(ready.status, 'a_verifier');
+  assert.ok(ready.reasons.includes('Référentiel non validé par l’établissement'));
 });
 
 test('le moteur transforme une observation non conforme en anomalie et action', () => {
@@ -54,15 +71,20 @@ test('les horizons de péremption sont déterministes', () => {
 
 test('le parcours groupe les actions et part de la zone choisie', () => {
   const route = planRoute([
-    { id: 'a', status: 'open', targetZoneId: 'reserve-smur' },
-    { id: 'b', status: 'open', targetZoneId: 'reserve-smur' },
-    { id: 'c', status: 'open', targetZoneId: 'reserve-1' }
+    { id: 'a', status: 'open', targetZoneId: 'reserve-smur', targetZoneStatus: 'validated' },
+    { id: 'b', status: 'open', targetZoneId: 'reserve-smur', targetZoneStatus: 'validated' },
+    { id: 'c', status: 'open', targetZoneId: 'reserve-1', targetZoneStatus: 'validated' }
   ], 'pc-ide');
   assert.equal(route.length, 2);
   assert.equal(route[0].zone.id, 'reserve-1');
   assert.equal(route.find((step) => step.zone.id === 'reserve-smur').actions.length, 2);
-  const withDestination = planRoute([{ id: 'd', status: 'open', targetZoneId: 'reserve-1', finalZoneId: 'garage-smur' }], 'pc-ide');
+  const withDestination = planRoute([{ id: 'd', status: 'open', targetZoneId: 'reserve-1', targetZoneStatus: 'validated', finalZoneId: 'garage-smur', finalZoneStatus: 'validated' }], 'pc-ide');
   assert.deepEqual(withDestination.map((step) => step.zone.id), ['reserve-1', 'garage-smur']);
+  assert.deepEqual(planRoute([{ id: 'unknown', status: 'open', targetZoneId: null }], 'pc-ide'), []);
+  assert.deepEqual(planRoute([{ id: 'unknown-final', status: 'open', targetZoneId: null, finalZoneId: 'reserve-smur' }], 'pc-ide'), []);
+  assert.deepEqual(planRoute([{ id: 'legacy-location', status: 'open', targetZoneId: 'reserve-1' }], 'pc-ide'), []);
+  assert.equal(actionZoneId({ stage: 'remise_en_place', finalZoneId: 'reserve-smur' }), null);
+  assert.deepEqual(planRoute([{ id: 'known-final-stage', status: 'open', stage: 'remise_en_place', targetZoneId: null, finalZoneId: 'reserve-smur', finalZoneStatus: 'validated' }], 'pc-ide').map((step) => step.zone.id), ['reserve-smur']);
   assert.equal(withDestination.at(-1).role, 'destination_finale');
 });
 
@@ -111,8 +133,13 @@ test('un écart de contrôle est persisté atomiquement avec son action et son �
 
 test('le réarmement complet journalise chaque transition et résout son anomalie', async () => {
   const store = await OperationalStore.create(null);
-  const initial = store.state.actions.find((action) => action.id === 'action-demo-biseptine');
+  let initial = store.state.actions.find((action) => action.id === 'action-demo-biseptine');
   const itemId = initial.lines[0].itemId;
+  await assert.rejects(() => store.toggleActionLine(initial.id, itemId), /Emplacement de prélèvement à confirmer/);
+  await assert.rejects(() => store.completeAction(initial.id), /étapes de collecte et de vérification/);
+  await store.repository.put('actions', { ...initial, targetZoneId: 'reserve-1', targetZoneStatus: 'validated', finalZoneId: 'garage-smur', finalZoneStatus: 'validated' });
+  await store.reload(false);
+  initial = store.state.actions.find((action) => action.id === initial.id);
   await store.toggleActionLine(initial.id, itemId);
   await store.advanceAction(initial.id);
   await store.advanceAction(initial.id);
@@ -133,15 +160,21 @@ test('un retour ciblé crée un réarmement direct et un contrôle de kit fige s
   const item = section.items.find((candidate) => candidate.label.includes('Cathéter 22 G'));
   const action = await store.declareReturn({ containerId: container.id, sectionId: section.id, itemId: item.id, declaration: 'utilise', quantity: 1 });
   assert.equal(action.type, 'rearmement');
+  assert.equal(action.targetZoneId, null);
+  assert.equal(action.finalZoneId, null);
   assert.deepEqual(action.lines, [{ itemId: item.id, quantity: 1, done: false }]);
   assert.equal(store.state.anomalies.find((candidate) => candidate.id === action.originAnomalyId).family, 'usage_normal');
 
   const controlAction = await store.declareReturn({ containerId: container.id, sectionId: section.id, declaration: 'ouvert' });
+  assert.equal(controlAction.finalZoneId, null);
   const audit = await store.startAudit(container.id, controlAction.id);
   assert.equal(audit.sectionId, section.id);
   assert.deepEqual(audit.plannedItemIds, section.items.map((candidate) => candidate.id));
-  assert.equal(audit.referenceVersion, '2026.07-p0');
+  assert.equal(audit.referenceVersion, REFERENCE_STATUS.version);
   assert.ok(audit.compositionId.startsWith('composition:sac-vert-pedia:'));
+  const ioContainer = SMUR_CONTAINERS.find((candidate) => candidate.id === 'valise-intra-osseuse');
+  const ambiguousItem = ioContainer.sections[0].items.find((candidate) => candidate.sourceText === 'SERINGUES PRE-REMPLIES');
+  await assert.rejects(() => store.declareReturn({ containerId: ioContainer.id, sectionId: ioContainer.sections[0].id, itemId: ambiguousItem.id, declaration: 'utilise' }), /validation humaine requise/);
 });
 
 test('un contrôle interrompu conserve sa position, sa passation et sa reprise', async () => {
@@ -164,6 +197,11 @@ test('un remplacement de péremption clôture l’ancien lot et enregistre le no
   const store = await OperationalStore.create(null);
   const oldLot = store.state.lots.find((lot) => lot.id === 'lot-demo-actilyse');
   const action = await store.planExpiryReplacement(oldLot.id);
+  assert.equal(action.targetZoneId, null);
+  assert.equal(action.finalZoneId, null);
+  await assert.rejects(() => store.toggleActionLine(action.id, action.lines[0].itemId), /Emplacement de prélèvement à confirmer/);
+  await store.repository.put('actions', { ...action, targetZoneId: 'reserve-1', targetZoneStatus: 'validated', finalZoneId: 'garage-smur', finalZoneStatus: 'validated' });
+  await store.reload(false);
   await store.toggleActionLine(action.id, action.lines[0].itemId);
   await store.advanceAction(action.id);
   await store.advanceAction(action.id);
@@ -179,6 +217,33 @@ test('l’adaptateur local conserve toute l’outbox sans simuler un envoi', asy
   assert.equal(result.status, 'local-only');
   assert.equal(result.pending, 2);
   assert.equal(result.sent, 0);
+
+  const safetyOperations = demoLocationSafetyOperations([
+    { id: 'demo', source: 'demo-synthetic', targetZoneId: 'reserve-1', finalZoneId: 'garage-smur' },
+    { id: 'user', source: 'local-pwa', targetZoneId: 'reserve-smur', targetZoneStatus: 'validated' }
+  ], '2026-07-17T00:00:00.000Z');
+  assert.equal(safetyOperations.filter((operation) => operation.store === 'actions').length, 1);
+  assert.equal(safetyOperations.find((operation) => operation.store === 'actions').value.id, 'demo');
+  assert.equal(safetyOperations.find((operation) => operation.store === 'actions').value.targetZoneId, null);
+
+  const previousIndexedDB = globalThis.indexedDB;
+  globalThis.indexedDB = {
+    open() {
+      const request = {};
+      queueMicrotask(() => {
+        request.error = new Error('indisponible pour le test');
+        request.onerror();
+      });
+      return request;
+    }
+  };
+  try {
+    const fallbackDatabase = await openOperationalDatabase();
+    assert.equal(fallbackDatabase.persistent, false);
+  } finally {
+    if (previousIndexedDB === undefined) delete globalThis.indexedDB;
+    else globalThis.indexedDB = previousIndexedDB;
+  }
 });
 
 test('un équipement présent mais déclaré défectueux peut rendre son contenant indisponible', async () => {
@@ -186,6 +251,8 @@ test('un équipement présent mais déclaré défectueux peut rendre son contena
   const item = REFERENCE_ITEMS.find((candidate) => candidate.label === 'Perceuse intra-osseuse');
   const action = await store.reportDefect({ containerId: item.containerId, itemId: item.id, note: 'test fonctionnel non conforme', blocking: true });
   assert.equal(action.priority, 'critique');
+  assert.equal(action.targetZoneId, null);
+  assert.equal(action.finalZoneId, null);
   assert.equal(deriveAvailability(item.containerId, store.state).status, 'indisponible');
   assert.ok(REFERENCE_ITEMS.includes(item));
 });

@@ -80,16 +80,26 @@ class MemoryDatabase {
 
 export async function openOperationalDatabase() {
   if (!globalThis.indexedDB) return new MemoryDatabase();
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const request = indexedDB.open(DATABASE.name, DATABASE.version);
+    let fallbackUsed = false;
+    const useMemoryFallback = (error) => {
+      if (fallbackUsed) return;
+      fallbackUsed = true;
+      console.warn('IndexedDB indisponible, passage en mémoire temporaire', error);
+      resolve(new MemoryDatabase());
+    };
     request.onupgradeneeded = () => {
       const database = request.result;
       for (const storeName of STORES) {
         if (!database.objectStoreNames.contains(storeName)) database.createObjectStore(storeName, { keyPath: 'id' });
       }
     };
-    request.onsuccess = () => resolve(new IndexedDatabase(request.result));
-    request.onerror = () => reject(request.error || new Error("Impossible d'ouvrir IndexedDB"));
-    request.onblocked = () => reject(new Error('Mise à niveau IndexedDB bloquée par un autre onglet'));
+    request.onsuccess = () => {
+      if (fallbackUsed) request.result.close();
+      else resolve(new IndexedDatabase(request.result));
+    };
+    request.onerror = () => useMemoryFallback(request.error || new Error("Impossible d'ouvrir IndexedDB"));
+    request.onblocked = () => useMemoryFallback(new Error('Mise à niveau IndexedDB bloquée par un autre onglet'));
   });
 }
