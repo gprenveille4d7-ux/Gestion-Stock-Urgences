@@ -208,6 +208,8 @@ test('les référentiels actifs nécessaires à la consultation restent préchar
     './src/data/source-manifest.js',
     './src/data/chariot-reference.json',
     './src/data/visual-schemas.js',
+    './src/data/sac-visuals.js',
+    './src/ui/dynamic-inventory-viewer.js',
   ]) {
     assert.ok(serviceWorker.includes(`'${asset}'`), `asset hors-ligne absent : ${asset}`);
   }

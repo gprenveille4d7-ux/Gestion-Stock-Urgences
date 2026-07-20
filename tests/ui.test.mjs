@@ -70,7 +70,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
 
   for (const container of SMUR_CONTAINERS) {
     const overview = renderApp(store.state, { ...ui, search: '' }, ['container', container.id]);
-    assert.ok(overview.includes(['sac-rouge-solutes', 'sac-bleu-respi', 'sac-vert-pedia'].includes(container.id) ? 'class="sac-visual-explorer"' : 'class="container-detail-hero"'), container.id);
+    assert.ok(overview.includes(['sac-rouge-solutes', 'sac-bleu-respi', 'sac-vert-pedia'].includes(container.id) ? 'class="dynamic-inventory-viewer"' : 'class="container-detail-hero"'), container.id);
     assert.equal(
       (overview.match(/class="container-compartment-row/g) || []).length,
       container.id === 'sac-rouge-solutes' ? container.sections.length - 3 : container.sections.length,
@@ -165,13 +165,13 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(searchedInventoryHtml.includes('affectation de zone à confirmer'));
 
   const containerHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia']);
-  assert.ok(containerHtml.includes('class="sac-visual-explorer"'));
+  assert.ok(containerHtml.includes('class="dynamic-inventory-viewer"'));
   assert.ok(containerHtml.includes('./assets/sacs/sac-vert/sac-vert-face.png'));
   assert.ok(containerHtml.includes('105 éléments au total'));
   assert.ok(containerHtml.includes('id="container-compartments-title"'));
   assert.ok(containerHtml.includes('Voir l’inventaire complet'));
   assert.equal((containerHtml.match(/class="container-compartment-row/g) || []).length, 11);
-  assert.ok(containerHtml.includes('data-nav="container/sac-vert-pedia/ampoulier"'));
+  assert.ok(containerHtml.includes('data-container-nav="container/sac-vert-pedia/ampoulier"'));
 
   const openedGreenBagHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia', 'ampoulier']);
   assert.ok(openedGreenBagHtml.includes('data-sac-view="ouvert"'));
@@ -182,7 +182,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(leftGreenBagHtml.includes('./assets/sacs/sac-vert/sac-vert-cote-gauche.png'));
 
   const blueBagHtml = renderApp(store.state, ui, ['container', 'sac-bleu-respi']);
-  assert.ok(blueBagHtml.includes('class="sac-visual-explorer"'));
+  assert.ok(blueBagHtml.includes('class="dynamic-inventory-viewer"'));
   assert.ok(blueBagHtml.includes('./assets/sacs/sac-bleu/sac-bleu-face.png'));
   assert.ok(blueBagHtml.includes('alt="Sac bleu vu de face"'));
 
@@ -195,7 +195,10 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(rightBlueBagHtml.includes('./assets/sacs/sac-bleu/sac-bleu-cote-droit.png'));
 
   const redBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes']);
-  assert.ok(redBagHtml.includes('class="sac-visual-explorer__image"'));
+  assert.ok(redBagHtml.includes('class="dynamic-inventory-viewer__image"'));
+  assert.ok(redBagHtml.includes('data-viewer-fullscreen-open'));
+  assert.ok(redBagHtml.includes('data-container-nav="container/sac-rouge-solutes/plaque-a"'));
+  assert.ok(redBagHtml.includes('data-container-nav="container/sac-rouge-solutes/ampoulier-gauche"'));
   assert.ok(redBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-face.png'));
   assert.ok(redBagHtml.includes('alt="Sac rouge vu de face"'));
   assert.ok(redBagHtml.includes('Sac amovible rouge'));
@@ -212,7 +215,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
 
   const perfusionRedBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'kit-perfusion']);
   assert.ok(perfusionRedBagHtml.includes('data-sac-view="amovible"'));
-  assert.ok(perfusionRedBagHtml.includes('data-nav="container/sac-rouge-solutes/amovible" aria-expanded="true"'));
+  assert.ok(perfusionRedBagHtml.includes('data-container-nav="container/sac-rouge-solutes/amovible" aria-expanded="true"'));
   assert.equal((perfusionRedBagHtml.match(/class="inventory-line"/g) || []).length, 8);
 
   const openedRedBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'plaque-a']);
@@ -256,7 +259,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   const selectedCompartmentHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia', 'ampoulier']);
   assert.equal((selectedCompartmentHtml.match(/class="container-compartment-panel"/g) || []).length, 1);
   assert.ok(selectedCompartmentHtml.includes('aria-expanded="true"'));
-  assert.ok(selectedCompartmentHtml.includes('data-nav="container/sac-vert-pedia"'));
+  assert.ok(selectedCompartmentHtml.includes('data-container-nav="container/sac-vert-pedia"'));
   assert.ok(selectedCompartmentHtml.includes('Adrénaline 1 mg'));
   assert.ok(selectedCompartmentHtml.includes('data-audit-section="sac-vert-pedia:ampoulier"'));
 

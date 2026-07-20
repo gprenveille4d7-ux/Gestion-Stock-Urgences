@@ -26,7 +26,93 @@ const ui = {
 
 let store;
 let busy = false;
+let pendingScrollRestore = null;
+let viewerScrollFrame = 0;
+let fullscreenViewerState = null;
 const channel = 'BroadcastChannel' in globalThis ? new BroadcastChannel('releve-smur-updates') : null;
+
+function dynamicViewerCompactAt(viewer) {
+  const pageHeader = viewer.closest('.page')?.querySelector('.page-header');
+  return Math.round(pageHeader ? pageHeader.offsetTop + pageHeader.offsetHeight + 16 : 72);
+}
+
+function syncDynamicInventoryViewer() {
+  viewerScrollFrame = 0;
+  const viewer = document.querySelector('[data-dynamic-inventory-viewer]');
+  if (!viewer) return;
+  if (!viewer.dataset.compactAt) {
+    viewer.dataset.compactAt = String(dynamicViewerCompactAt(viewer));
+  }
+  viewer.classList.toggle('is-compact', window.scrollY > Number(viewer.dataset.compactAt));
+}
+
+function setupDynamicInventoryViewer() {
+  const viewer = document.querySelector('[data-dynamic-inventory-viewer]');
+  if (!viewer) return;
+  viewer.dataset.compactAt = String(dynamicViewerCompactAt(viewer));
+  syncDynamicInventoryViewer();
+}
+
+function scheduleViewerSync() {
+  if (viewerScrollFrame) return;
+  viewerScrollFrame = window.requestAnimationFrame(syncDynamicInventoryViewer);
+}
+
+function navigateContainerWithoutScrollJump(route) {
+  const nextHash = `#/${route}`;
+  if (location.hash === nextHash) return;
+  pendingScrollRestore = { x: window.scrollX, y: window.scrollY };
+  navigate(route);
+}
+
+function restorePendingScroll() {
+  if (!pendingScrollRestore) return;
+  const position = pendingScrollRestore;
+  pendingScrollRestore = null;
+  window.requestAnimationFrame(() => {
+    window.scrollTo(position.x, position.y);
+    setupDynamicInventoryViewer();
+  });
+}
+
+function openInventoryFullscreen(viewer, opener) {
+  const overlay = viewer?.querySelector('[data-viewer-fullscreen]');
+  if (!overlay || fullscreenViewerState) return;
+  const scrollY = window.scrollY;
+  fullscreenViewerState = {
+    scrollY,
+    opener,
+    bodyPosition: document.body.style.position,
+    bodyTop: document.body.style.top,
+    bodyLeft: document.body.style.left,
+    bodyRight: document.body.style.right
+  };
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.classList.add('inventory-viewer-open');
+  overlay.hidden = false;
+  overlay.querySelector('[data-viewer-fullscreen-close]')?.focus({ preventScroll: true });
+}
+
+function closeInventoryFullscreen() {
+  if (!fullscreenViewerState) return;
+  const state = fullscreenViewerState;
+  const overlay = document.querySelector('[data-viewer-fullscreen]:not([hidden])');
+  if (overlay) overlay.hidden = true;
+  document.body.classList.remove('inventory-viewer-open');
+  document.body.style.position = state.bodyPosition;
+  document.body.style.top = state.bodyTop;
+  document.body.style.left = state.bodyLeft;
+  document.body.style.right = state.bodyRight;
+  fullscreenViewerState = null;
+  state.opener?.focus({ preventScroll: true });
+  window.requestAnimationFrame(() => {
+    window.scrollTo(0, state.scrollY);
+    syncDynamicInventoryViewer();
+  });
+}
 
 function showToast(message, tone = 'saved', action = null) {
   const toast = document.createElement('div');
@@ -51,6 +137,7 @@ function render(focusHeading = false) {
   const routeTitles = { home: 'Relève', return: 'Retour', actions: 'Actions', action: 'Action', inventory: 'Matériel', container: 'Contenant', reserve: 'Réserve', chariot: 'Chariot', audits: 'Contrôles', audit: 'Contrôle', expiry: 'Péremptions', defect: 'Défaut', map: 'Carte', stats: 'Analyse', history: 'Historique', profile: 'Profil' };
   appRoot.innerHTML = renderApp(store.state, ui, routeParts());
   document.title = `${routeTitles[currentRoute] || 'Relève'} — SMUR / Urgences`;
+  setupDynamicInventoryViewer();
   if (focusHeading === true) appRoot.querySelector('.page-title')?.focus();
 }
 
@@ -87,6 +174,18 @@ async function perform(operation, successMessage = '') {
 appRoot.addEventListener('click', async (event) => {
   const target = event.target.closest('button, [data-nav]');
   if (!target || target.disabled) return;
+  if (target.dataset.viewerFullscreenOpen !== undefined) {
+    openInventoryFullscreen(target.closest('[data-dynamic-inventory-viewer]'), target);
+    return;
+  }
+  if (target.dataset.viewerFullscreenClose !== undefined) {
+    closeInventoryFullscreen();
+    return;
+  }
+  if (target.dataset.containerNav) {
+    navigateContainerWithoutScrollJump(target.dataset.containerNav);
+    return;
+  }
   if (target.dataset.nav) return navigate(target.dataset.nav);
 
   if (target.dataset.expiryFilter) {
@@ -312,7 +411,15 @@ appRoot.addEventListener('change', (event) => {
   }
 });
 
-window.addEventListener('hashchange', () => render(true));
+window.addEventListener('hashchange', () => {
+  const preserveScroll = Boolean(pendingScrollRestore);
+  render(!preserveScroll);
+  if (preserveScroll) restorePendingScroll();
+});
+window.addEventListener('scroll', scheduleViewerSync, { passive: true });
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && fullscreenViewerState) closeInventoryFullscreen();
+});
 window.addEventListener('online', () => { ui.online = true; render(); });
 window.addEventListener('offline', () => { ui.online = false; render(); });
 channel?.addEventListener('message', (event) => {

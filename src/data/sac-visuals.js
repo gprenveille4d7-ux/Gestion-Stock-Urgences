@@ -68,7 +68,14 @@ export const BAG_PHOTO_CONFIGS = Object.freeze({
     caption: 'Sac rouge · Vue générale',
     views: SAC_ROUGE_VIEWS,
     labels: SAC_ROUGE_VIEW_LABELS,
-    sectionViews: SAC_ROUGE_SECTION_VIEWS
+    sectionViews: SAC_ROUGE_SECTION_VIEWS,
+    navigation: Object.freeze([
+      Object.freeze({ label: 'Vue générale', view: 'face', sectionId: null }),
+      Object.freeze({ label: 'Plaque A', view: 'plaqueFaceA', sectionId: 'plaque-a' }),
+      Object.freeze({ label: 'Plaque B', view: 'plaqueFaceB', sectionId: 'plaque-b' }),
+      Object.freeze({ label: 'Ampoulier', view: 'ampoulier', sectionId: 'ampoulier-gauche' }),
+      Object.freeze({ label: 'Latéral', view: 'droite', sectionId: 'lateral-droit' })
+    ])
   }),
   'sac-bleu-respi': Object.freeze({
     name: 'sac bleu',
@@ -94,7 +101,13 @@ export const BAG_PHOTO_CONFIGS = Object.freeze({
       interne: 'ouvert',
       'lateral-droit': 'droite',
       'lateral-gauche': 'gauche'
-    })
+    }),
+    navigation: Object.freeze([
+      Object.freeze({ label: 'Vue générale', view: 'face', sectionId: null }),
+      Object.freeze({ label: 'Ouvert', view: 'ouvert', sectionId: 'interne' }),
+      Object.freeze({ label: 'Latéral droit', view: 'droite', sectionId: 'lateral-droit' }),
+      Object.freeze({ label: 'Latéral gauche', view: 'gauche', sectionId: 'lateral-gauche' })
+    ])
   }),
   'sac-vert-pedia': Object.freeze({
     name: 'sac vert',
@@ -125,7 +138,13 @@ export const BAG_PHOTO_CONFIGS = Object.freeze({
       'sac-bleu': 'ouvert',
       'lateral-droit': 'droite',
       'lateral-gauche': 'gauche'
-    })
+    }),
+    navigation: Object.freeze([
+      Object.freeze({ label: 'Vue générale', view: 'face', sectionId: null }),
+      Object.freeze({ label: 'Ouvert', view: 'ouvert', sectionId: 'fond' }),
+      Object.freeze({ label: 'Latéral droit', view: 'droite', sectionId: 'lateral-droit' }),
+      Object.freeze({ label: 'Latéral gauche', view: 'gauche', sectionId: 'lateral-gauche' })
+    ])
   })
 });
 
@@ -142,4 +161,8 @@ export function bagViewForSection(containerId, sectionId) {
 export function bagPreloadImages(containerId) {
   const config = bagPhotoConfig(containerId);
   return config ? [...new Set(Object.values(config.views))] : [];
+}
+
+export function bagViewerNavigation(containerId) {
+  return bagPhotoConfig(containerId)?.navigation || [];
 }
