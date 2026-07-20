@@ -46,7 +46,9 @@ const ICONS = {
   wifi: '<path d="M5 9a11 11 0 0 1 14 0M8 13a6 6 0 0 1 8 0M11 17a2 2 0 0 1 2 0M12 20h.01"/>',
   offline: '<path d="m3 3 18 18M5 9a11 11 0 0 1 3-1.7M16 7.4A11 11 0 0 1 19 9M8 13a6 6 0 0 1 4-1.5M15.5 12.5l.5.5M11 17a2 2 0 0 1 2 0M12 20h.01"/>',
   activity: '<path d="M3 12h4l2-7 4 14 2-7h6"/>',
-  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>'
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>',
+  expand: '<path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/>',
+  close: '<path d="m5 5 14 14M19 5 5 19"/>'
 };
 
 export function icon(name, size = 21) {
