@@ -67,7 +67,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
 
   for (const container of SMUR_CONTAINERS) {
     const overview = renderApp(store.state, { ...ui, search: '' }, ['container', container.id]);
-    assert.ok(overview.includes(container.id === 'sac-rouge-solutes' ? 'class="sac-visual-explorer"' : 'class="container-detail-hero"'), container.id);
+    assert.ok(overview.includes(['sac-rouge-solutes', 'sac-bleu-respi', 'sac-vert-pedia'].includes(container.id) ? 'class="sac-visual-explorer"' : 'class="container-detail-hero"'), container.id);
     assert.equal(
       (overview.match(/class="container-compartment-row/g) || []).length,
       container.id === 'sac-rouge-solutes' ? container.sections.length - 3 : container.sections.length,
@@ -158,12 +158,34 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(searchedInventoryHtml.includes('affectation de zone à confirmer'));
 
   const containerHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia']);
-  assert.ok(containerHtml.includes('class="container-detail-hero"'));
+  assert.ok(containerHtml.includes('class="sac-visual-explorer"'));
+  assert.ok(containerHtml.includes('./assets/sacs/sac-vert/sac-vert-face.png'));
   assert.ok(containerHtml.includes('105 éléments au total'));
   assert.ok(containerHtml.includes('id="container-compartments-title"'));
   assert.ok(containerHtml.includes('Voir l’inventaire complet'));
   assert.equal((containerHtml.match(/class="container-compartment-row/g) || []).length, 11);
   assert.ok(containerHtml.includes('data-nav="container/sac-vert-pedia/ampoulier"'));
+
+  const openedGreenBagHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia', 'ampoulier']);
+  assert.ok(openedGreenBagHtml.includes('data-sac-view="ouvert"'));
+  assert.ok(openedGreenBagHtml.includes('./assets/sacs/sac-vert/sac-vert-ouvert.png'));
+
+  const leftGreenBagHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia', 'lateral-gauche']);
+  assert.ok(leftGreenBagHtml.includes('data-sac-view="gauche"'));
+  assert.ok(leftGreenBagHtml.includes('./assets/sacs/sac-vert/sac-vert-cote-gauche.png'));
+
+  const blueBagHtml = renderApp(store.state, ui, ['container', 'sac-bleu-respi']);
+  assert.ok(blueBagHtml.includes('class="sac-visual-explorer"'));
+  assert.ok(blueBagHtml.includes('./assets/sacs/sac-bleu/sac-bleu-face.png'));
+  assert.ok(blueBagHtml.includes('alt="Sac bleu vu de face"'));
+
+  const openedBlueBagHtml = renderApp(store.state, ui, ['container', 'sac-bleu-respi', 'intubation-centre']);
+  assert.ok(openedBlueBagHtml.includes('data-sac-view="ouvert"'));
+  assert.ok(openedBlueBagHtml.includes('./assets/sacs/sac-bleu/sac-bleu-ouvert.png'));
+
+  const rightBlueBagHtml = renderApp(store.state, ui, ['container', 'sac-bleu-respi', 'lateral-droit']);
+  assert.ok(rightBlueBagHtml.includes('data-sac-view="droite"'));
+  assert.ok(rightBlueBagHtml.includes('./assets/sacs/sac-bleu/sac-bleu-cote-droit.png'));
 
   const redBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes']);
   assert.ok(redBagHtml.includes('class="sac-visual-explorer__image"'));
