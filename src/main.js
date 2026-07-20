@@ -9,6 +9,7 @@ const ui = {
   online: navigator.onLine,
   search: '',
   inventoryCategory: 'bags',
+  inventoryFilter: 'all',
   inventoryExpanded: false,
   usageContainer: '',
   usageSection: '',
@@ -95,8 +96,14 @@ appRoot.addEventListener('click', async (event) => {
   }
   if (target.dataset.inventoryCategory) {
     ui.inventoryCategory = target.dataset.inventoryCategory;
+    ui.inventoryFilter = 'all';
     ui.inventoryExpanded = false;
     ui.search = '';
+    render();
+    return;
+  }
+  if (target.dataset.inventoryFilter) {
+    ui.inventoryFilter = target.dataset.inventoryFilter;
     render();
     return;
   }
