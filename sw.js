@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'releve-smur-';
-const CACHE = 'releve-smur-v1.0.0-20260720-inventory-cards';
+const CACHE = 'releve-smur-v1.0.0-20260720-dynamic-viewer';
 const NETWORK_TIMEOUT_MS = 4000;
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg',
@@ -13,7 +13,7 @@ const CORE_ASSETS = [
   './src/data/reference.js', './src/data/source-manifest.js', './src/data/operational-assets.js', './src/data/chariot-adapter.js', './src/data/chariot-reference.json', './src/data/visual-schemas.js', './src/data/sac-visuals.js',
   './src/domain/ids.js', './src/domain/availability.js', './src/domain/expiry.js', './src/domain/action-engine.js', './src/domain/conflicts.js', './src/domain/priority.js', './src/domain/route-planner.js', './src/domain/statistics.js', './src/domain/validation.js',
   './src/infrastructure/database.js', './src/infrastructure/repository.js', './src/infrastructure/sync-adapter.js',
-  './src/ui/utils.js', './src/ui/visual-schema.js', './src/ui/views.js'
+  './src/ui/utils.js', './src/ui/visual-schema.js', './src/ui/dynamic-inventory-viewer.js', './src/ui/views.js'
 ];
 
 self.addEventListener('install', (event) => {
