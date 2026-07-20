@@ -315,7 +315,7 @@ channel?.addEventListener('message', (event) => {
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const registration = await navigator.serviceWorker.register('./sw.js');
+    const registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
     const offerUpdate = (worker) => {
       showToast('Une mise à jour est prête.', 'saved', {
         label: 'Actualiser',
@@ -339,6 +339,7 @@ async function registerServiceWorker() {
         }
       });
     });
+    await registration.update();
   } catch (error) {
     console.warn('Service worker non enregistré', error);
   }
