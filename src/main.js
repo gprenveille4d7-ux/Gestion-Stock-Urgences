@@ -28,28 +28,28 @@ let store;
 let busy = false;
 let pendingScrollRestore = null;
 let viewerScrollFrame = 0;
+let viewerCompact = false;
 let fullscreenViewerState = null;
 const channel = 'BroadcastChannel' in globalThis ? new BroadcastChannel('releve-smur-updates') : null;
-
-function dynamicViewerCompactAt(viewer) {
-  const pageHeader = viewer.closest('.page')?.querySelector('.page-header');
-  return Math.round(pageHeader ? pageHeader.offsetTop + pageHeader.offsetHeight + 16 : 72);
-}
 
 function syncDynamicInventoryViewer() {
   viewerScrollFrame = 0;
   const viewer = document.querySelector('[data-dynamic-inventory-viewer]');
   if (!viewer) return;
-  if (!viewer.dataset.compactAt) {
-    viewer.dataset.compactAt = String(dynamicViewerCompactAt(viewer));
-  }
-  viewer.classList.toggle('is-compact', window.scrollY > Number(viewer.dataset.compactAt));
+  const scrollY = Math.max(0, window.scrollY);
+  if (!viewerCompact && scrollY > 80) viewerCompact = true;
+  if (viewerCompact && scrollY < 24) viewerCompact = false;
+  viewer.classList.toggle('is-compact', viewerCompact);
+  viewer.dataset.compact = String(viewerCompact);
+  viewer.querySelector('.dynamic-inventory-viewer__compact')?.setAttribute('aria-hidden', String(!viewerCompact));
 }
 
 function setupDynamicInventoryViewer() {
   const viewer = document.querySelector('[data-dynamic-inventory-viewer]');
   if (!viewer) return;
-  viewer.dataset.compactAt = String(dynamicViewerCompactAt(viewer));
+  const bounds = viewer.getBoundingClientRect();
+  viewer.style.setProperty('--viewer-left', `${Math.round(bounds.left)}px`);
+  viewer.style.setProperty('--viewer-width', `${Math.round(bounds.width)}px`);
   syncDynamicInventoryViewer();
 }
 
@@ -82,6 +82,7 @@ function openInventoryFullscreen(viewer, opener) {
   fullscreenViewerState = {
     scrollY,
     opener,
+    touchStartX: null,
     bodyPosition: document.body.style.position,
     bodyTop: document.body.style.top,
     bodyLeft: document.body.style.left,
@@ -93,13 +94,35 @@ function openInventoryFullscreen(viewer, opener) {
   document.body.style.right = '0';
   document.body.classList.add('inventory-viewer-open');
   overlay.hidden = false;
+  showFullscreenSlide(overlay, Number(overlay.dataset.activeSlide || 0));
   overlay.querySelector('[data-viewer-fullscreen-close]')?.focus({ preventScroll: true });
+}
+
+function showFullscreenSlide(overlay, requestedIndex) {
+  const slides = [...(overlay?.querySelectorAll('[data-viewer-slide]') || [])];
+  if (!slides.length) return;
+  const index = (requestedIndex + slides.length) % slides.length;
+  slides.forEach((slide, slideIndex) => {
+    const active = slideIndex === index;
+    slide.hidden = !active;
+    slide.classList.toggle('active', active);
+  });
+  overlay.dataset.activeSlide = String(index);
+  const counter = overlay.querySelector('[data-viewer-gallery-count]');
+  if (counter) counter.textContent = `${index + 1} / ${slides.length}`;
+}
+
+function stepFullscreenGallery(direction) {
+  const overlay = document.querySelector('[data-viewer-fullscreen]:not([hidden])');
+  if (!overlay) return;
+  showFullscreenSlide(overlay, Number(overlay.dataset.activeSlide || 0) + direction);
 }
 
 function closeInventoryFullscreen() {
   if (!fullscreenViewerState) return;
   const state = fullscreenViewerState;
   const overlay = document.querySelector('[data-viewer-fullscreen]:not([hidden])');
+  const activeRoute = overlay?.querySelector('[data-viewer-slide]:not([hidden])')?.dataset.containerRoute;
   if (overlay) overlay.hidden = true;
   document.body.classList.remove('inventory-viewer-open');
   document.body.style.position = state.bodyPosition;
@@ -108,6 +131,11 @@ function closeInventoryFullscreen() {
   document.body.style.right = state.bodyRight;
   fullscreenViewerState = null;
   state.opener?.focus({ preventScroll: true });
+  if (activeRoute && location.hash !== `#/${activeRoute}`) {
+    pendingScrollRestore = { x: 0, y: state.scrollY };
+    navigate(activeRoute);
+    return;
+  }
   window.requestAnimationFrame(() => {
     window.scrollTo(0, state.scrollY);
     syncDynamicInventoryViewer();
@@ -180,6 +208,14 @@ appRoot.addEventListener('click', async (event) => {
   }
   if (target.dataset.viewerFullscreenClose !== undefined) {
     closeInventoryFullscreen();
+    return;
+  }
+  if (target.dataset.viewerGalleryPrev !== undefined) {
+    stepFullscreenGallery(-1);
+    return;
+  }
+  if (target.dataset.viewerGalleryNext !== undefined) {
+    stepFullscreenGallery(1);
     return;
   }
   if (target.dataset.containerNav) {
@@ -416,7 +452,33 @@ window.addEventListener('hashchange', () => {
   render(!preserveScroll);
   if (preserveScroll) restorePendingScroll();
 });
+
+appRoot.addEventListener('error', (event) => {
+  const image = event.target.closest?.('[data-viewer-image]');
+  if (!image) return;
+  if (image.dataset.fallbackApplied === 'true') {
+    image.hidden = true;
+    image.closest('.dynamic-inventory-viewer__image-button')?.querySelector('[data-viewer-missing]')?.removeAttribute('hidden');
+    return;
+  }
+  image.dataset.fallbackApplied = 'true';
+  image.src = image.dataset.fallbackSrc;
+  image.closest('.dynamic-inventory-viewer__image-button')?.querySelector('[data-viewer-missing]')?.removeAttribute('hidden');
+}, true);
+
+appRoot.addEventListener('touchstart', (event) => {
+  if (!fullscreenViewerState || !event.target.closest('[data-viewer-gallery]')) return;
+  fullscreenViewerState.touchStartX = event.changedTouches[0]?.clientX ?? null;
+}, { passive: true });
+
+appRoot.addEventListener('touchend', (event) => {
+  if (!fullscreenViewerState || fullscreenViewerState.touchStartX === null || !event.target.closest('[data-viewer-gallery]')) return;
+  const delta = (event.changedTouches[0]?.clientX ?? fullscreenViewerState.touchStartX) - fullscreenViewerState.touchStartX;
+  fullscreenViewerState.touchStartX = null;
+  if (Math.abs(delta) >= 48) stepFullscreenGallery(delta < 0 ? 1 : -1);
+}, { passive: true });
 window.addEventListener('scroll', scheduleViewerSync, { passive: true });
+window.addEventListener('resize', setupDynamicInventoryViewer, { passive: true });
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && fullscreenViewerState) closeInventoryFullscreen();
 });

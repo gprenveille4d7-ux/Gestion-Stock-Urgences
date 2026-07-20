@@ -196,7 +196,16 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
 
   const redBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes']);
   assert.ok(redBagHtml.includes('class="dynamic-inventory-viewer__image"'));
+  assert.ok(redBagHtml.includes('dynamic-inventory-viewer__expanded'));
+  assert.ok(redBagHtml.includes('dynamic-inventory-viewer__compact'));
+  assert.ok(redBagHtml.includes('aria-hidden="true"'));
   assert.ok(redBagHtml.includes('data-viewer-fullscreen-open'));
+  assert.ok(redBagHtml.includes('data-viewer-gallery'));
+  assert.ok(redBagHtml.includes('data-viewer-gallery-count'));
+  assert.ok(redBagHtml.includes('aria-current="true"'));
+  assert.ok(redBagHtml.includes('data-container-nav="container/sac-rouge-solutes/amovible"'));
+  assert.ok(redBagHtml.includes('0 / 10 contrôlés'));
+  assert.ok(redBagHtml.includes('Non commencé'));
   assert.ok(redBagHtml.includes('data-container-nav="container/sac-rouge-solutes/plaque-a"'));
   assert.ok(redBagHtml.includes('data-container-nav="container/sac-rouge-solutes/ampoulier-gauche"'));
   assert.ok(redBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-face.png'));
