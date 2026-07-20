@@ -2742,6 +2742,18 @@ textarea {
   gap: 9px;
 }
 
+.brand-logo {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: white;
+}
+
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .home-primary-menu {
   display: grid;
   min-height: 108px;
@@ -2823,6 +2835,293 @@ textarea {
 .home-quick-action strong { font-size: 0.79rem; }
 .home-quick-action small { margin-top: 3px; color: var(--muted); font-size: 0.65rem; line-height: 1.35; }
 .home-quick-action > svg { color: #8ca0b5; }
+
+/* Accueil immersif — référence véhicule SMUR Falaise */
+.app-shell[data-route="home"] {
+  position: relative;
+  background: #fff;
+}
+
+.app-shell[data-route="home"] .topbar {
+  position: absolute;
+  width: 100%;
+  border-bottom: 0;
+  color: white;
+  background: linear-gradient(180deg, rgba(5, 20, 40, 0.72), rgba(5, 20, 40, 0));
+  backdrop-filter: none;
+}
+
+.app-shell[data-route="home"] .brand-copy strong,
+.app-shell[data-route="home"] .brand-copy small {
+  color: white;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+}
+
+.app-shell[data-route="home"] .icon-button {
+  color: #173354;
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 6px 20px rgba(4, 18, 36, 0.2);
+}
+
+.app-shell[data-route="home"] .p0-connectivity {
+  color: #08783f;
+  background: rgba(246, 255, 250, 0.94);
+  box-shadow: 0 6px 20px rgba(4, 18, 36, 0.16);
+}
+
+.app-shell[data-route="home"] .page {
+  min-height: 100dvh;
+  padding: 0 0 calc(92px + env(safe-area-inset-bottom));
+  background: white;
+}
+
+.home-hero {
+  position: relative;
+  display: flex;
+  min-height: 352px;
+  align-items: flex-end;
+  overflow: hidden;
+  padding: max(94px, calc(76px + env(safe-area-inset-top))) 24px 38px;
+  color: white;
+  background:
+    linear-gradient(90deg, rgba(4, 15, 31, 0.9) 0%, rgba(4, 15, 31, 0.64) 43%, rgba(4, 15, 31, 0.08) 78%),
+    linear-gradient(0deg, rgba(4, 15, 31, 0.62), transparent 56%),
+    url("./assets/branding/smur-falaise-vehicle.jpg") center 48% / cover no-repeat;
+}
+
+.home-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 390px;
+}
+
+.home-hero-logo {
+  display: block;
+  width: 70px;
+  height: 70px;
+  margin-bottom: 15px;
+  object-fit: cover;
+  border: 5px solid rgba(255, 255, 255, 0.88);
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+.home-hero .page-title {
+  color: white;
+  font-size: clamp(2.3rem, 9vw, 3.5rem);
+  text-shadow: 0 3px 22px rgba(0, 0, 0, 0.44);
+}
+
+.home-hero-question {
+  margin: 7px 0 13px;
+  font-size: clamp(1rem, 3.8vw, 1.3rem);
+  font-weight: 720;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.48);
+}
+
+.home-hero-question strong { color: #65a9ff; }
+
+.home-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.home-hero-badges span {
+  display: inline-flex;
+  min-height: 31px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.23);
+  border-radius: 999px;
+  background: rgba(7, 22, 42, 0.45);
+  backdrop-filter: blur(8px);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.home-hero-badges .is-active { color: #afffd0; }
+.home-hero-badges .is-warning { color: #ffe5a0; }
+
+.home-hero-pulse {
+  position: absolute;
+  right: 0;
+  bottom: 18px;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0 8%, #1684f5 8% 34%, transparent 34% 37%, #1684f5 37% 53%, transparent 53% 100%);
+  filter: drop-shadow(0 0 5px #1684f5);
+  opacity: 0.85;
+}
+
+.home-dashboard {
+  position: relative;
+  z-index: 3;
+  margin-top: -18px;
+  padding: 20px 16px 2px;
+  border-radius: 22px 22px 0 0;
+  background: white;
+}
+
+.home-dashboard .home-section:first-child { margin-top: 0; }
+
+.home-dashboard .section-head h2 {
+  color: #14263b;
+  font-size: 0.7rem;
+  letter-spacing: 0.055em;
+}
+
+.home-primary-menu {
+  position: relative;
+  min-height: 155px;
+  padding: 14px;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(30, 50, 78, 0.17);
+}
+
+.home-primary-menu::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), transparent 48%);
+}
+
+.home-primary-icon {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.home-primary-copy { position: relative; z-index: 1; }
+.home-primary-menu strong { font-size: 0.88rem; }
+.home-primary-menu small { max-width: 11rem; font-size: 0.62rem; }
+
+.home-primary-arrow {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: 12px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.home-primary-menu.red { background: linear-gradient(145deg, #f13a3a, #d61f28); }
+.home-primary-menu.orange { background: linear-gradient(145deg, #ffa719, #f07a00); }
+.home-primary-menu.violet { background: linear-gradient(145deg, #7451df, #4c2fb6); }
+.home-primary-menu.green { background: linear-gradient(145deg, #2fc778, #079450); }
+
+.home-quick-action {
+  min-height: 76px;
+  border-color: #e5eaf0;
+  background: #fff;
+}
+
+.home-quick-icon {
+  color: white;
+  background: linear-gradient(145deg, #176ee0, #0758b9);
+  box-shadow: 0 5px 13px rgba(7, 88, 185, 0.23);
+}
+
+.home-priority-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.home-priority-card {
+  display: grid;
+  min-height: 116px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  padding: 11px;
+  cursor: pointer;
+  text-align: left;
+  border: 1px solid color-mix(in srgb, currentColor 22%, #e6ebf1);
+  border-radius: 15px;
+  background: color-mix(in srgb, currentColor 5%, white);
+}
+
+.home-priority-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 12%, white);
+}
+
+.home-priority-copy strong,
+.home-priority-copy b,
+.home-priority-copy small,
+.home-priority-copy em { display: block; }
+.home-priority-copy strong { font-size: 1rem; line-height: 1; }
+.home-priority-copy b { margin-top: 3px; color: #24364b; font-size: 0.65rem; }
+.home-priority-copy small { margin-top: 2px; color: var(--muted); font-size: 0.58rem; }
+.home-priority-copy em { display: flex; align-items: center; gap: 2px; margin-top: 9px; font-size: 0.58rem; font-style: normal; font-weight: 850; }
+.home-priority-card.red { color: #d92d20; }
+.home-priority-card.orange { color: #dc7200; }
+.home-priority-card.violet { color: #6542c4; }
+.home-priority-card.green { color: #168a4a; }
+
+.home-expiry-section .card {
+  overflow: hidden;
+  border-color: #f1d9b6;
+  background: #fffaf3;
+}
+
+.home-expiry-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 13px;
+  color: #e77709;
+  background: #fff0da;
+}
+
+.expiry-home-empty > div { flex: 1; min-width: 0; }
+.expiry-home-empty strong { font-size: 0.72rem; }
+.expiry-home-empty .small-button { display: inline-flex; align-items: center; gap: 5px; }
+
+@media (min-width: 700px) {
+  .home-primary-grid,
+  .home-quick-grid,
+  .home-priority-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .home-hero { min-height: 390px; padding-right: 42px; padding-left: 42px; }
+  .home-dashboard { padding-right: 38px; padding-left: 38px; }
+}
+
+@media (max-width: 480px) {
+  .app-shell[data-route="home"] .topbar { padding-right: 13px; padding-left: 13px; }
+  .app-shell[data-route="home"] .brand-copy small { font-size: 0.56rem; }
+  .app-shell[data-route="home"] .p0-connectivity span { display: none; }
+  .home-hero {
+    min-height: 350px;
+    padding-right: 18px;
+    padding-left: 18px;
+    background-position: center 50%;
+  }
+  .home-hero-logo { width: 62px; height: 62px; }
+  .home-primary-menu { min-height: 148px; }
+  .home-quick-grid { grid-template-columns: 1fr; }
+  .expiry-home-empty { flex-wrap: wrap; }
+  .expiry-home-empty .small-button { width: 100%; justify-content: center; }
+}
 
 .p0-form {
   display: grid;
