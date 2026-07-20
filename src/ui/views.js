@@ -3,7 +3,7 @@ import { flattenActiveChariotReference } from '../data/chariot-adapter.js';
 import { OPERATIONAL_ASSETS } from '../data/operational-assets.js';
 import { EXCLUDED_SOURCE_CONTENT, SOURCE_DOCUMENTS } from '../data/source-manifest.js';
 import { findContainer, findReferenceItem, findZone, REFERENCE_ITEMS, SERVICE_ZONES, SMUR_CONTAINERS } from '../data/reference.js';
-import { bagPhotoConfig, bagPreloadImages, bagViewForSection, SAC_ROUGE_CONTAINER_ID, SAC_ROUGE_REMOVABLE_SECTION_IDS } from '../data/sac-visuals.js';
+import { bagPhotoConfig, SAC_ROUGE_CONTAINER_ID, SAC_ROUGE_REMOVABLE_SECTION_IDS } from '../data/sac-visuals.js';
 import { getChariotDiagram, getContainerDiagram, getReserveDiagram, RESERVE_ZONE_IDS } from '../data/visual-schemas.js';
 import { deriveAvailability, summarizeAvailability } from '../domain/availability.js';
 import { computeExpiryDashboard, daysUntil, EXPIRY_PANELS } from '../domain/expiry.js';
@@ -11,6 +11,7 @@ import { actionZoneId, planRoute } from '../domain/route-planner.js';
 import { computeStatistics } from '../domain/statistics.js';
 import { escapeHtml, formatDate, formatRelative, icon, normalizeSearch } from './utils.js';
 import { renderSchemaThumbnail, renderVisualSchema } from './visual-schema.js';
+import { DynamicInventoryViewer } from './dynamic-inventory-viewer.js';
 
 const SYNTHETIC_SOURCES = new Set(['demo', 'demo-synthetic', 'synthetic', 'example', 'seed-demo']);
 
@@ -437,7 +438,7 @@ function renderContainerSectionAccordion(container, section, index, isSelected) 
   const toggleRoute = isSelected ? `container/${container.id}` : sectionRoute;
   const detailId = `container-compartment-detail-${sectionToken(section.id)}`;
   return `<article class="container-compartment-item${isSelected ? ' active' : ''}">
-    <button type="button" class="container-compartment-row${isSelected ? ' active' : ''}" data-nav="${escapeHtml(toggleRoute)}" aria-expanded="${isSelected}" aria-controls="${escapeHtml(detailId)}">
+    <button type="button" class="container-compartment-row${isSelected ? ' active' : ''}" data-container-nav="${escapeHtml(toggleRoute)}" aria-expanded="${isSelected}" aria-controls="${escapeHtml(detailId)}">
       <span class="container-compartment-icon" data-tone="${index % 4}">${icon(index % 3 === 0 ? 'activity' : index % 3 === 1 ? 'bag' : 'plus', 17)}</span>
       <span class="container-compartment-label">${escapeHtml(section.label)}</span>
       <span class="container-compartment-count">${section.items.length} élément${section.items.length > 1 ? 's' : ''}</span>
@@ -458,7 +459,7 @@ function renderSacRougeRemovableAccordion(container, sections, selectedSection, 
   const groupRoute = `container/${container.id}/amovible`;
   const toggleRoute = groupSelected ? `container/${container.id}` : groupRoute;
   return `<article class="container-compartment-item container-removable-group${isOpen ? ' active' : ''}">
-    <button type="button" class="container-compartment-row container-removable-row${isOpen ? ' active' : ''}" data-nav="${escapeHtml(toggleRoute)}" aria-expanded="${isOpen}" aria-controls="container-removable-detail">
+    <button type="button" class="container-compartment-row container-removable-row${isOpen ? ' active' : ''}" data-container-nav="${escapeHtml(toggleRoute)}" aria-expanded="${isOpen}" aria-controls="container-removable-detail">
       <span class="container-compartment-icon" data-tone="1">${icon('bag', 17)}</span>
       <span class="container-compartment-label">Sac amovible rouge</span>
       <span class="container-compartment-count">${sections.length} kits · ${total} éléments</span>
@@ -468,7 +469,7 @@ function renderSacRougeRemovableAccordion(container, sections, selectedSection, 
       const isSelected = selectedSection?.id === section.id;
       const sectionRoute = `container/${container.id}/${sectionToken(section.id)}`;
       return `<article class="container-subcompartment-item${isSelected ? ' active' : ''}">
-        <button type="button" class="container-subcompartment-row${isSelected ? ' active' : ''}" data-nav="${escapeHtml(isSelected ? groupRoute : sectionRoute)}" aria-expanded="${isSelected}">
+        <button type="button" class="container-subcompartment-row${isSelected ? ' active' : ''}" data-container-nav="${escapeHtml(isSelected ? groupRoute : sectionRoute)}" aria-expanded="${isSelected}">
           <span class="container-compartment-icon" data-tone="${index % 4}">${icon(index === 2 ? 'plus' : 'bag', 15)}</span>
           <span class="container-compartment-label">${escapeHtml(removableSectionLabel(section))}</span>
           <span class="container-compartment-count">${section.items.length} élément${section.items.length > 1 ? 's' : ''}</span>
@@ -480,7 +481,7 @@ function renderSacRougeRemovableAccordion(container, sections, selectedSection, 
   </article>`;
 }
 
-function renderContainerHero(container, selectedSection, itemCount, availability, groupSelected = false) {
+function renderContainerHero(container, selectedSection, itemCount, availability, groupSelected = false, progress = null) {
   const photoConfig = bagPhotoConfig(container.id);
   if (!photoConfig) {
     return `<section class="container-detail-hero" data-color="${escapeHtml(container.color)}">
@@ -493,21 +494,16 @@ function renderContainerHero(container, selectedSection, itemCount, availability
     </section>`;
   }
 
-  const viewKey = groupSelected ? 'amovible' : bagViewForSection(container.id, selectedSection?.id);
-  const imagePath = photoConfig.views[viewKey];
   const removableCount = container.sections.filter((section) => SAC_ROUGE_REMOVABLE_SECTION_IDS.includes(sectionToken(section.id))).reduce((sum, section) => sum + section.items.length, 0);
-  const caption = groupSelected ? 'Sac amovible rouge' : selectedSection && viewKey !== 'face' ? removableSectionLabel(selectedSection) : photoConfig.caption;
-  const alt = groupSelected ? photoConfig.labels.amovible : selectedSection && viewKey !== 'face'
-    ? `${photoConfig.labels[viewKey]} — ${selectedSection.label}`
-    : photoConfig.labels.face;
-  const preloadImages = bagPreloadImages(container.id);
-  return `<section class="sac-visual-explorer" aria-label="Visualiseur photographique du ${escapeHtml(photoConfig.name)}">
-    <div class="sac-visual-explorer__visual" data-sac-view="${escapeHtml(viewKey)}">
-      <img class="sac-visual-explorer__image" src="${escapeHtml(imagePath)}" alt="${escapeHtml(alt)}" decoding="async">
-      <div class="sac-visual-explorer__caption" aria-live="polite"><span><strong>${escapeHtml(caption)}</strong><small>${groupSelected ? `4 sous-compartiments · ${removableCount} éléments` : selectedSection && viewKey !== 'face' ? `${selectedSection.items.length} élément${selectedSection.items.length > 1 ? 's' : ''}` : `${itemCount} éléments au total`}</small></span>${statusPill(availability.status, availability.label)}</div>
-    </div>
-    <div class="sac-visual-preload" aria-hidden="true">${preloadImages.filter((path) => path !== imagePath).map((path) => `<img src="${escapeHtml(path)}" alt="" width="1" height="1" decoding="async">`).join('')}</div>
-  </section>`;
+  return DynamicInventoryViewer({
+    container,
+    selectedSection,
+    itemCount,
+    statusHtml: statusPill(availability.status, availability.label),
+    groupSelected,
+    removableCount,
+    progress
+  });
 }
 
 function renderContainerDetail(state, containerId, sectionId) {
@@ -522,8 +518,20 @@ function renderContainerDetail(state, containerId, sectionId) {
   const availability = deriveAvailability(container.id, state);
   const itemCount = container.sections.reduce((sum, section) => sum + section.items.length, 0);
   const selectedIndex = selectedSection ? container.sections.indexOf(selectedSection) : -1;
+  const activeAudit = state.audits.find((audit) => audit.containerId === container.id
+    && audit.status === 'in_progress'
+    && (!audit.sectionId || audit.sectionId === selectedSection?.id));
+  const auditItems = activeAudit?.sectionId
+    ? findContainerSection(container, activeAudit.sectionId)?.items || []
+    : container.sections.flatMap((section) => section.items);
+  const observedCount = activeAudit
+    ? new Set(state.observations.filter((observation) => observation.auditId === activeAudit.id).map((observation) => observation.itemId)).size
+    : 0;
+  const progress = activeAudit && auditItems.length
+    ? { value: Math.round((observedCount / auditItems.length) * 100), label: `${observedCount} / ${auditItems.length} contrôlés` }
+    : null;
   return `${header(container.label, '', '', 'inventory')}
-    ${renderContainerHero(container, selectedSection, itemCount, availability, groupSelected)}
+    ${renderContainerHero(container, selectedSection, itemCount, availability, groupSelected, progress)}
     <section class="container-compartments" aria-labelledby="container-compartments-title">
       <h2 id="container-compartments-title">Compartiments</h2>
       <div class="container-compartment-list">
