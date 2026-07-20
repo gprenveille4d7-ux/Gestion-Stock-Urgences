@@ -166,7 +166,9 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(containerHtml.includes('data-nav="container/sac-vert-pedia/ampoulier"'));
 
   const selectedCompartmentHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia', 'ampoulier']);
-  assert.ok(selectedCompartmentHtml.includes('Compartiment 1'));
+  assert.equal((selectedCompartmentHtml.match(/class="container-compartment-panel"/g) || []).length, 1);
+  assert.ok(selectedCompartmentHtml.includes('aria-expanded="true"'));
+  assert.ok(selectedCompartmentHtml.includes('data-nav="container/sac-vert-pedia"'));
   assert.ok(selectedCompartmentHtml.includes('Adrénaline 1 mg'));
   assert.ok(selectedCompartmentHtml.includes('data-audit-section="sac-vert-pedia:ampoulier"'));
 
