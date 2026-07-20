@@ -209,8 +209,9 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.equal((perfusionRedBagHtml.match(/class="inventory-line"/g) || []).length, 8);
 
   const openedRedBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'plaque-a']);
-  assert.ok(openedRedBagHtml.includes('data-sac-view="ouvert"'));
-  assert.ok(openedRedBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-ouvert.png'));
+  assert.ok(openedRedBagHtml.includes('data-sac-view="plaqueFaceA"'));
+  assert.ok(openedRedBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-plaque-face-a.png'));
+  assert.ok(openedRedBagHtml.includes('alt="Plaque centrale du sac rouge vue côté Face A — Plaque centrale · Face A"'));
   assert.ok(openedRedBagHtml.includes('Plaque centrale · Face A'));
 
   const rightRedBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'lateral-droit']);
