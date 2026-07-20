@@ -11,7 +11,8 @@ export const SAC_ROUGE_VIEWS = Object.freeze({
   dos: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-dos.png`,
   dessus: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-dessus.png`,
   ouvert: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-ouvert.png`,
-  amovible: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-amovible.png`
+  amovible: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-amovible.png`,
+  ampoulier: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-ampoulier.png`
 });
 
 export const SAC_ROUGE_VIEW_LABELS = Object.freeze({
@@ -23,7 +24,8 @@ export const SAC_ROUGE_VIEW_LABELS = Object.freeze({
   dos: 'Sac rouge vu de dos',
   dessus: 'Sac rouge vu du dessus',
   ouvert: 'Sac rouge ouvert',
-  amovible: 'Sac amovible rouge ouvert'
+  amovible: 'Sac amovible rouge ouvert',
+  ampoulier: 'Ampoulier jaune extrait du sac rouge'
 });
 
 export const SAC_ROUGE_REMOVABLE_SECTION_IDS = Object.freeze([
@@ -40,6 +42,9 @@ export const SAC_ROUGE_SECTION_VIEWS = Object.freeze({
   aiguilles: 'amovible',
   'plaque-a': 'ouvert',
   'plaque-b': 'ouvert',
+  'ampoulier-gauche': 'ampoulier',
+  'ampoulier-droit': 'ampoulier',
+  'ampoulier-interne': 'ampoulier',
   'lateral-droit': 'droite'
 });
 
