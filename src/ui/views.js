@@ -134,8 +134,8 @@ function bottomNav(route) {
   return `<nav class="bottom-nav" aria-label="Navigation principale">${entries.map(([id, label, iconName], index) => `<button class="nav-item ${index === 1 ? 'center' : ''} ${active === id ? 'active' : ''}" data-nav="${id}" ${active === id ? 'aria-current="page"' : ''}>${icon(iconName, 20)}<span>${label}</span></button>`).join('')}</nav>`;
 }
 
-function homeExpiryIndicator(tone, value, label) {
-  return `<button type="button" class="home-expiry-indicator ${tone}" data-nav="expiry"><strong>${value}</strong><span>${escapeHtml(label)}</span></button>`;
+function homePrimaryMenu(tone, route, iconName, label, detail) {
+  return `<button type="button" class="home-primary-menu ${tone}" data-nav="${escapeHtml(route)}"><span class="home-primary-icon">${icon(iconName, 23)}</span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(detail)}</small></button>`;
 }
 
 function homeQuickAction(route, iconName, label, detail) {
@@ -147,7 +147,6 @@ function renderHome(state) {
   const priorityRank = { critique: 4, haute: 3, normale: 2, planifiee: 1 };
   const prioritized = [...openActions].sort((a, b) => (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0) || new Date(a.createdAt) - new Date(b.createdAt)).slice(0, 4);
   const expiry = expiryModels(state);
-  const expiryCounts = expiry.active.reduce((counts, lot) => ({ ...counts, [lot.bucket]: (counts[lot.bucket] || 0) + 1 }), {});
   const nextLots = expiry.active.filter((lot) => lot.daysRemaining <= expiry.thresholds.anticipationDays).slice(0, 3);
   const readyCount = summary.pret + summary.pret_avec_action_a_anticiper;
   const reviewCount = summary.a_verifier + summary.a_rearmer;
@@ -162,6 +161,8 @@ function renderHome(state) {
       : 'Tout est conforme';
   const userName = state.user?.displayName || 'Utilisateur local';
   const userRole = state.user?.team || state.user?.function || state.user?.role || 'Équipe locale';
+  const chariotReferences = state.chariotReference?.references || [];
+  const primaryChariotRoute = chariotReferences[0] ? `chariot/${chariotReferences[0].id}` : 'inventory';
   return `<header class="home-welcome">
       <p class="eyebrow">Gestion Stock Urgences</p>
       <h1 class="page-title" tabindex="-1">Bonjour ${escapeHtml(userName)}</h1>
@@ -175,22 +176,22 @@ function renderHome(state) {
       </dl>
       <p class="home-last-control">${latestAudit ? `Dernier contrôle complet le ${escapeHtml(formatDate(latestAudit.completedAt))}` : 'Aucun contrôle complet enregistré'}</p>
     </section>
-    <section class="home-section" aria-labelledby="home-expiry-title">
-      <div class="section-head"><h2 id="home-expiry-title">Péremptions</h2><button class="text-button" data-nav="expiry">Voir le suivi</button></div>
-      <div class="home-expiry-grid" aria-label="Indicateurs de péremption">
-        ${homeExpiryIndicator('red', expiryCounts.urgent || 0, 'À traiter')}
-        ${homeExpiryIndicator('orange', expiryCounts.soon || 0, `Dans les ${expiry.thresholds.rapidReplacementDays} jours`)}
-        ${homeExpiryIndicator('violet', expiryCounts.anticipate || 0, `Dans les ${expiry.thresholds.anticipationDays} jours`)}
-        ${homeExpiryIndicator('green', expiryCounts.monitor || 0, 'Suivis conformes')}
+    <section class="home-section" aria-labelledby="home-primary-title">
+      <div class="section-head"><h2 id="home-primary-title">Accès principaux</h2></div>
+      <div class="home-primary-grid" aria-label="Menus principaux">
+        ${homePrimaryMenu('red', 'inventory', 'bag', 'Inventaire SMUR', `${SMUR_CONTAINERS.length} sacs et kits référencés`)}
+        ${homePrimaryMenu('orange', primaryChariotRoute, 'clipboard', "Chariot d’urgence", `${chariotReferences.length} inventaire${chariotReferences.length > 1 ? 's' : ''} actif${chariotReferences.length > 1 ? 's' : ''}`)}
+        ${homePrimaryMenu('violet', 'reserve/reserve-smur', 'map', 'Les Réserves', `${RESERVE_ZONE_IDS.length} zones de stockage`)}
+        ${homePrimaryMenu('green', 'expiry', 'calendar', 'Péremptions', `${expiry.active.length} lot${expiry.active.length > 1 ? 's' : ''} suivi${expiry.active.length > 1 ? 's' : ''}`)}
       </div>
     </section>
     <section class="home-section" aria-labelledby="home-actions-title">
       <div class="section-head"><h2 id="home-actions-title">Actions rapides</h2></div>
       <div class="home-quick-grid">
-        ${homeQuickAction('inventory', 'bag', 'Inventaires', `${SMUR_CONTAINERS.length} contenants référencés`)}
-        ${homeQuickAction('expiry', 'calendar', 'Péremptions', `${expiry.active.length} lot${expiry.active.length > 1 ? 's' : ''} suivi${expiry.active.length > 1 ? 's' : ''}`)}
-        ${homeQuickAction('actions', 'clipboard', 'Réarmement SMUR', `${openActions.length} action${openActions.length > 1 ? 's' : ''} ouverte${openActions.length > 1 ? 's' : ''}`)}
-        ${homeQuickAction('return', 'plus', 'Retour SMUR', 'Déclarer le matériel utilisé')}
+        ${homeQuickAction('return', 'plus', "Retour d’intervention", 'Déclarer ce qui a été ouvert ou utilisé')}
+        ${homeQuickAction('audits', 'clipboard', 'Commencer un contrôle', 'Choisir un contenant et vérifier son contenu')}
+        ${homeQuickAction('actions', 'bag', 'Réarmement SMUR', `${openActions.length} action${openActions.length > 1 ? 's' : ''} à traiter`)}
+        ${homeQuickAction('stats', 'chart', 'Statistiques', 'Consulter les indicateurs d’activité')}
       </div>
     </section>
     <section class="section"><div class="section-head"><h2>Priorités opérationnelles</h2><button class="text-button" data-nav="actions">Tout voir</button></div><div class="action-list">${prioritized.length ? prioritized.map(actionCard).join('') : '<div class="empty-state"><h3>Aucune action ouverte</h3><p>Les contenants connus sont sans action active.</p></div>'}</div></section>

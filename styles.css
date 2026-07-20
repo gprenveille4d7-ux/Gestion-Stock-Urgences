@@ -2736,16 +2736,16 @@ textarea {
   margin-top: 20px;
 }
 
-.home-expiry-grid {
+.home-primary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
 }
 
-.home-expiry-indicator {
+.home-primary-menu {
   display: grid;
-  min-height: 88px;
-  align-content: center;
+  min-height: 108px;
+  align-content: start;
   justify-items: start;
   padding: 13px;
   cursor: pointer;
@@ -2756,22 +2756,34 @@ textarea {
   box-shadow: var(--shadow-small);
 }
 
-.home-expiry-indicator strong {
-  font-size: 1.65rem;
-  line-height: 1;
+.home-primary-icon {
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  margin-bottom: 9px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.17);
 }
 
-.home-expiry-indicator span {
-  margin-top: 7px;
-  font-size: 0.64rem;
+.home-primary-menu strong {
+  font-size: 0.76rem;
+  line-height: 1.22;
+}
+
+.home-primary-menu small {
+  display: block;
+  margin-top: 5px;
+  opacity: 0.84;
+  font-size: 0.58rem;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
-.home-expiry-indicator.red { background: linear-gradient(145deg, #c92c21, #991b12); }
-.home-expiry-indicator.orange { background: linear-gradient(145deg, #c65709, #913802); }
-.home-expiry-indicator.violet { background: linear-gradient(145deg, #6953aa, #49348b); }
-.home-expiry-indicator.green { background: linear-gradient(145deg, #237c47, #105c31); }
+.home-primary-menu.red { background: linear-gradient(145deg, #c92c21, #991b12); }
+.home-primary-menu.orange { background: linear-gradient(145deg, #c65709, #913802); }
+.home-primary-menu.violet { background: linear-gradient(145deg, #6953aa, #49348b); }
+.home-primary-menu.green { background: linear-gradient(145deg, #237c47, #105c31); }
 
 .home-quick-grid {
   display: grid;
@@ -3092,7 +3104,7 @@ textarea {
 @media (min-width: 600px) {
   .p0-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .p0-quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .home-expiry-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .home-primary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .home-quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .p0-container-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .p0-expiry-row { grid-template-columns: 4px minmax(0, 1fr) auto auto; }
