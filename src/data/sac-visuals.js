@@ -10,7 +10,8 @@ export const SAC_ROUGE_VIEWS = Object.freeze({
   droite: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-cote-droit.png`,
   dos: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-dos.png`,
   dessus: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-dessus.png`,
-  ouvert: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-ouvert.png`
+  ouvert: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-ouvert.png`,
+  amovible: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-amovible.png`
 });
 
 export const SAC_ROUGE_VIEW_LABELS = Object.freeze({
@@ -21,14 +22,22 @@ export const SAC_ROUGE_VIEW_LABELS = Object.freeze({
   droite: 'Sac rouge vu du côté droit',
   dos: 'Sac rouge vu de dos',
   dessus: 'Sac rouge vu du dessus',
-  ouvert: 'Sac rouge ouvert'
+  ouvert: 'Sac rouge ouvert',
+  amovible: 'Sac amovible rouge ouvert'
 });
 
+export const SAC_ROUGE_REMOVABLE_SECTION_IDS = Object.freeze([
+  'kit-perfusion',
+  'kit-paracetamol',
+  'aiguilles',
+  'kit-atb'
+]);
+
 export const SAC_ROUGE_SECTION_VIEWS = Object.freeze({
-  'kit-perfusion': 'ouvert',
-  'kit-paracetamol': 'ouvert',
-  'kit-atb': 'ouvert',
-  aiguilles: 'ouvert',
+  'kit-perfusion': 'amovible',
+  'kit-paracetamol': 'amovible',
+  'kit-atb': 'amovible',
+  aiguilles: 'amovible',
   'plaque-a': 'ouvert',
   'plaque-b': 'ouvert',
   'lateral-droit': 'droite'
