@@ -1,1 +1,1 @@
-import './src/main.js?v=20260720-face-b';
+import './src/main.js?v=20260720-face-a';
