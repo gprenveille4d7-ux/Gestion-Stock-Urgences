@@ -134,29 +134,67 @@ function bottomNav(route) {
   return `<nav class="bottom-nav" aria-label="Navigation principale">${entries.map(([id, label, iconName], index) => `<button class="nav-item ${index === 1 ? 'center' : ''} ${active === id ? 'active' : ''}" data-nav="${id}" ${active === id ? 'aria-current="page"' : ''}>${icon(iconName, 20)}<span>${label}</span></button>`).join('')}</nav>`;
 }
 
+function homeExpiryIndicator(tone, value, label) {
+  return `<button type="button" class="home-expiry-indicator ${tone}" data-nav="expiry"><strong>${value}</strong><span>${escapeHtml(label)}</span></button>`;
+}
+
+function homeQuickAction(route, iconName, label, detail) {
+  return `<button type="button" class="home-quick-action" data-nav="${route}"><span class="home-quick-icon">${icon(iconName, 21)}</span><span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(detail)}</small></span>${icon('chevron', 18)}</button>`;
+}
+
 function renderHome(state) {
   const summary = summarizeAvailability(state, SMUR_CONTAINERS);
   const openActions = state.actions.filter((action) => !['done', 'cancelled'].includes(action.status));
   const priorityRank = { critique: 4, haute: 3, normale: 2, planifiee: 1 };
   const prioritized = [...openActions].sort((a, b) => (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0) || new Date(a.createdAt) - new Date(b.createdAt)).slice(0, 4);
-  const nextLots = expiryModels(state).active.filter((lot) => lot.daysRemaining <= 90).slice(0, 3);
-  const attentionContainers = SMUR_CONTAINERS.map((container) => ({ container, availability: deriveAvailability(container.id, state) })).filter((entry) => entry.availability.status !== 'pret');
-  return `${header('Bonjour', 'Vue synthétique de la préparation opérationnelle locale.', 'Relève du jour')}
-    <span class="release-stamp">Version ${APP_RELEASE.version} · ${APP_RELEASE.date}</span>
-    <section class="p0-kpi-grid" aria-label="Synthèse des disponibilités">
-      <button class="p0-kpi success" data-nav="inventory"><strong>${summary.pret}</strong><span>prêts</span></button>
-      <button class="p0-kpi warning" data-nav="actions"><strong>${summary.pret_avec_action_a_anticiper + summary.a_verifier + summary.a_rearmer}</strong><span>à traiter</span></button>
-      <button class="p0-kpi danger" data-nav="actions"><strong>${summary.indisponible}</strong><span>indisponibles</span></button>
-      <button class="p0-kpi neutral" data-nav="actions"><strong>${openActions.length}</strong><span>actions ouvertes</span></button>
+  const expiry = expiryModels(state);
+  const expiryCounts = expiry.active.reduce((counts, lot) => ({ ...counts, [lot.bucket]: (counts[lot.bucket] || 0) + 1 }), {});
+  const nextLots = expiry.active.filter((lot) => lot.daysRemaining <= expiry.thresholds.anticipationDays).slice(0, 3);
+  const readyCount = summary.pret + summary.pret_avec_action_a_anticiper;
+  const reviewCount = summary.a_verifier + summary.a_rearmer;
+  const completedAudits = state.audits.filter((audit) => audit.status === 'completed');
+  const activeAudits = state.audits.filter((audit) => audit.status === 'in_progress');
+  const latestAudit = [...completedAudits].sort((left, right) => new Date(right.completedAt || 0) - new Date(left.completedAt || 0))[0];
+  const generalTone = summary.indisponible ? 'danger' : reviewCount ? 'warning' : 'success';
+  const generalLabel = summary.indisponible
+    ? `${summary.indisponible} contenant${summary.indisponible > 1 ? 's' : ''} indisponible${summary.indisponible > 1 ? 's' : ''}`
+    : reviewCount
+      ? `${reviewCount} contenant${reviewCount > 1 ? 's' : ''} à vérifier`
+      : 'Tout est conforme';
+  const userName = state.user?.displayName || 'Utilisateur local';
+  const userRole = state.user?.team || state.user?.function || state.user?.role || 'Équipe locale';
+  return `<header class="home-welcome">
+      <p class="eyebrow">Gestion Stock Urgences</p>
+      <h1 class="page-title" tabindex="-1">Bonjour ${escapeHtml(userName)}</h1>
+      <p>${escapeHtml(userRole)} <span aria-hidden="true">·</span> <span class="${state.persistent ? 'local-active' : 'local-temporary'}">${state.persistent ? 'Données locales actives' : 'Stockage temporaire'}</span></p>
+    </header>
+    <section class="home-general-card ${generalTone}" aria-labelledby="home-general-title">
+      <div class="home-general-heading"><span class="home-general-icon">${icon(generalTone === 'success' ? 'check' : 'alert', 20)}</span><div><p>État général</p><h2 id="home-general-title">${escapeHtml(generalLabel)}</h2></div></div>
+      <dl class="home-general-stats">
+        <div><dt>Contenants prêts</dt><dd>${readyCount}<span> / ${SMUR_CONTAINERS.length}</span></dd></div>
+        <div><dt>Contrôles en cours</dt><dd>${activeAudits.length}</dd></div>
+      </dl>
+      <p class="home-last-control">${latestAudit ? `Dernier contrôle complet le ${escapeHtml(formatDate(latestAudit.completedAt))}` : 'Aucun contrôle complet enregistré'}</p>
     </section>
-    <section class="p0-quick-grid">
-      <button class="p0-quick primary" data-nav="return">${icon('plus')}<span><strong>Retour d'intervention</strong><small>Déclarer ce qui a été ouvert ou utilisé</small></span></button>
-      <button class="p0-quick" data-nav="audits">${icon('clipboard')}<span><strong>Commencer un contrôle</strong><small>Enregistrement élément par élément</small></span></button>
-      <button class="p0-quick" data-nav="expiry">${icon('calendar')}<span><strong>Péremptions</strong><small>Anticiper un remplacement</small></span></button>
-      <button class="p0-quick" data-nav="map">${icon('map')}<span><strong>Parcours terrain</strong><small>Itinéraire construit depuis les actions</small></span></button>
+    <section class="home-section" aria-labelledby="home-expiry-title">
+      <div class="section-head"><h2 id="home-expiry-title">Péremptions</h2><button class="text-button" data-nav="expiry">Voir le suivi</button></div>
+      <div class="home-expiry-grid" aria-label="Indicateurs de péremption">
+        ${homeExpiryIndicator('red', expiryCounts.urgent || 0, 'À traiter')}
+        ${homeExpiryIndicator('orange', expiryCounts.soon || 0, `Dans les ${expiry.thresholds.rapidReplacementDays} jours`)}
+        ${homeExpiryIndicator('violet', expiryCounts.anticipate || 0, `Dans les ${expiry.thresholds.anticipationDays} jours`)}
+        ${homeExpiryIndicator('green', expiryCounts.monitor || 0, 'Suivis conformes')}
+      </div>
+    </section>
+    <section class="home-section" aria-labelledby="home-actions-title">
+      <div class="section-head"><h2 id="home-actions-title">Actions rapides</h2></div>
+      <div class="home-quick-grid">
+        ${homeQuickAction('inventory', 'bag', 'Inventaires', `${SMUR_CONTAINERS.length} contenants référencés`)}
+        ${homeQuickAction('expiry', 'calendar', 'Péremptions', `${expiry.active.length} lot${expiry.active.length > 1 ? 's' : ''} suivi${expiry.active.length > 1 ? 's' : ''}`)}
+        ${homeQuickAction('actions', 'clipboard', 'Réarmement SMUR', `${openActions.length} action${openActions.length > 1 ? 's' : ''} ouverte${openActions.length > 1 ? 's' : ''}`)}
+        ${homeQuickAction('return', 'plus', 'Retour SMUR', 'Déclarer le matériel utilisé')}
+      </div>
     </section>
     <section class="section"><div class="section-head"><h2>Priorités opérationnelles</h2><button class="text-button" data-nav="actions">Tout voir</button></div><div class="action-list">${prioritized.length ? prioritized.map(actionCard).join('') : '<div class="empty-state"><h3>Aucune action ouverte</h3><p>Les contenants connus sont sans action active.</p></div>'}</div></section>
-    ${attentionContainers.length ? `<section class="section"><div class="section-head"><h2>Disponibilité à expliquer</h2></div><div class="p0-status-list">${attentionContainers.slice(0, 5).map(({ container, availability }) => `<button data-nav="inventory" class="p0-status-row"><span class="p0-color-dot" data-color="${escapeHtml(container.color)}"></span><span><strong>${escapeHtml(container.label)}</strong><small>${escapeHtml(availability.reasons[0] || 'Action ouverte')}</small></span>${statusPill(availability.status, availability.label)}</button>`).join('')}</div></section>` : ''}
     <section class="section"><div class="section-head"><h2>Prochaines péremptions</h2><button class="text-button" data-nav="expiry">Gérer</button></div><div class="card">${nextLots.map((lot) => `<button type="button" class="p0-list-row expiry-home-row" data-nav="expiry/lot/${encodeURIComponent(lot.id)}"><span><strong>${escapeHtml(lot.item?.label || 'Produit du référentiel')}</strong><small>${escapeHtml(lot.item?.containerLabel || 'Contenant à confirmer')} · lot ${escapeHtml(lot.lotNumber)}</small></span><strong class="p0-days ${lot.daysRemaining <= 0 ? 'danger' : ''}">${lot.daysRemaining} j</strong></button>`).join('') || '<div class="expiry-home-empty"><p>Aucun lot suivi pour le moment</p><button type="button" class="small-button" data-nav="expiry/add">Commencer la saisie</button></div>'}</div></section>`;
 }
 

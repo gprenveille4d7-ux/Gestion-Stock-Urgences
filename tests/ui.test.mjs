@@ -49,6 +49,17 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
     assert.ok(html.includes('role="status" aria-live="polite"'), route.join('/'));
   }
 
+  const homeHtml = renderApp(state, ui, ['home']);
+  assert.ok(homeHtml.includes('Gestion Stock Urgences'));
+  assert.ok(homeHtml.includes(`Bonjour ${state.user.displayName}`));
+  assert.ok(homeHtml.includes(state.user.role));
+  assert.ok(homeHtml.includes('État général'));
+  assert.equal((homeHtml.match(/class="home-expiry-indicator /g) || []).length, 4);
+  for (const [label, route] of [['Inventaires', 'inventory'], ['Péremptions', 'expiry'], ['Réarmement SMUR', 'actions'], ['Retour SMUR', 'return']]) {
+    assert.ok(homeHtml.includes(label), label);
+    assert.ok(homeHtml.includes(`class="home-quick-action" data-nav="${route}"`), route);
+  }
+
   for (const container of SMUR_CONTAINERS) {
     const overview = renderApp(store.state, { ...ui, search: '' }, ['container', container.id]);
     assert.ok(overview.includes(`data-schema-kind="container"`), container.id);
