@@ -361,6 +361,24 @@ function renderInventory(state, ui) {
     ${expanded && !query && otherRows ? `<section class="section inventory-other-section"><div class="section-head"><h2>Autres inventaires</h2></div><div class="inventory-list compact">${otherRows}</div>${chariotWarning}</section>` : ''}`;
 }
 
+function renderContainerSectionAccordion(container, section, index, isSelected) {
+  const sectionRoute = `container/${container.id}/${sectionToken(section.id)}`;
+  const toggleRoute = isSelected ? `container/${container.id}` : sectionRoute;
+  const detailId = `container-compartment-detail-${sectionToken(section.id)}`;
+  return `<article class="container-compartment-item${isSelected ? ' active' : ''}">
+    <button type="button" class="container-compartment-row${isSelected ? ' active' : ''}" data-nav="${escapeHtml(toggleRoute)}" aria-expanded="${isSelected}" aria-controls="${escapeHtml(detailId)}">
+      <span class="container-compartment-icon" data-tone="${index % 4}">${icon(index % 3 === 0 ? 'activity' : index % 3 === 1 ? 'bag' : 'plus', 17)}</span>
+      <span class="container-compartment-label">${escapeHtml(section.label)}</span>
+      <span class="container-compartment-count">${section.items.length} élément${section.items.length > 1 ? 's' : ''}</span>
+      <span class="container-compartment-chevron">${icon('chevron', 16)}</span>
+    </button>
+    ${isSelected ? `<section id="${escapeHtml(detailId)}" class="container-compartment-panel" aria-label="Inventaire de ${escapeHtml(section.label)}">
+      <div class="inventory-line-list">${section.items.map((item) => `<div class="inventory-line"><span class="inventory-quantity">${Number(item.expectedQuantity)}×</span><span><strong>${escapeHtml(item.label)}</strong>${itemHasSourceAmbiguity(item) ? `<span class="data-quality-badge">${icon('alert', 12)} Libellé source à valider</span>` : ''}<small>${escapeHtml(item.category)} · unité : ${escapeHtml(item.unit)}${item.packSize ? ` · ${item.packSize} par paquet` : ''}${item.expiryTracked ? ' · péremption suivie' : ' · réutilisable'}</small>${(item.validationIssues || []).map((issue) => `<small class="inventory-validation-issue">${escapeHtml(issue)}</small>`).join('')}${item.sourceText ? `<small class="inventory-source-text">Source : ${escapeHtml(item.sourceText)}</small>` : ''}</span></div>`).join('')}</div>
+      <div class="inventory-detail-actions"><button type="button" class="primary-button" data-return-container="${container.id}" data-return-section="${section.id}">${icon('plus', 18)} Déclarer cette zone ouverte ou utilisée</button><button type="button" class="secondary-button" data-start-audit="${container.id}" data-audit-section="${section.id}">${icon('clipboard', 18)} Contrôler cette zone</button></div>
+    </section>` : ''}
+  </article>`;
+}
+
 function renderContainerDetail(state, containerId, sectionId) {
   const container = findContainer(containerId);
   if (!container) return `${header('Contenant introuvable', '', 'Erreur', 'inventory')}<div class="empty-state"><p>Ce contenant n’existe pas dans le référentiel chargé.</p></div>`;
@@ -380,16 +398,10 @@ function renderContainerDetail(state, containerId, sectionId) {
     <section class="container-compartments" aria-labelledby="container-compartments-title">
       <h2 id="container-compartments-title">Compartiments</h2>
       <div class="container-compartment-list">
-        ${container.sections.map((section, index) => `<button type="button" class="container-compartment-row${selectedIndex === index ? ' active' : ''}" data-nav="container/${container.id}/${sectionToken(section.id)}" aria-current="${selectedIndex === index ? 'true' : 'false'}">
-          <span class="container-compartment-icon" data-tone="${index % 4}">${icon(index % 3 === 0 ? 'activity' : index % 3 === 1 ? 'bag' : 'plus', 17)}</span>
-          <span class="container-compartment-label">${escapeHtml(section.label)}</span>
-          <span class="container-compartment-count">${section.items.length} élément${section.items.length > 1 ? 's' : ''}</span>
-          ${icon('chevron', 16)}
-        </button>`).join('')}
+        ${container.sections.map((section, index) => renderContainerSectionAccordion(container, section, index, selectedIndex === index)).join('')}
       </div>
     </section>
-    <button type="button" class="primary-button container-full-audit" data-start-audit="${container.id}">Voir l’inventaire complet</button>
-    ${selectedSection ? `<section class="section inventory-section-detail"><div class="section-head"><div><p class="section-eyebrow">Compartiment ${selectedIndex + 1}</p><h2>${escapeHtml(selectedSection.label)}</h2></div><span class="section-count">${selectedSection.items.length} éléments</span></div><div class="inventory-line-list">${selectedSection.items.map((item) => `<div class="inventory-line"><span class="inventory-quantity">${Number(item.expectedQuantity)}×</span><span><strong>${escapeHtml(item.label)}</strong>${itemHasSourceAmbiguity(item) ? `<span class="data-quality-badge">${icon('alert', 12)} Libellé source à valider</span>` : ''}<small>${escapeHtml(item.category)} · unité : ${escapeHtml(item.unit)}${item.packSize ? ` · ${item.packSize} par paquet` : ''}${item.expiryTracked ? ' · péremption suivie' : ' · réutilisable'}</small>${(item.validationIssues || []).map((issue) => `<small class="inventory-validation-issue">${escapeHtml(issue)}</small>`).join('')}${item.sourceText ? `<small class="inventory-source-text">Source : ${escapeHtml(item.sourceText)}</small>` : ''}</span></div>`).join('')}</div><div class="inventory-detail-actions"><button type="button" class="primary-button" data-return-container="${container.id}" data-return-section="${selectedSection.id}">${icon('plus', 18)} Déclarer cette zone ouverte ou utilisée</button><button type="button" class="secondary-button" data-start-audit="${container.id}" data-audit-section="${selectedSection.id}">${icon('clipboard', 18)} Contrôler cette zone</button></div></section>` : ''}`;
+    <button type="button" class="primary-button container-full-audit" data-start-audit="${container.id}">Voir l’inventaire complet</button>`;
 }
 
 function renderReserveDetail(state, reserveId) {
