@@ -9,6 +9,8 @@ const toastRoot = document.querySelector('#toast-root');
 const ui = {
   online: navigator.onLine,
   search: '',
+  inventoryCategory: 'bags',
+  inventoryExpanded: false,
   usageContainer: '',
   usageSection: '',
   usageItem: '',
@@ -129,6 +131,20 @@ appRoot.addEventListener('click', async (event) => {
   if (target.dataset.expiryFilter) {
     ui.expiryFilter = target.dataset.expiryFilter;
     render();
+    return;
+  }
+  if (target.dataset.inventoryCategory) {
+    ui.inventoryCategory = target.dataset.inventoryCategory;
+    ui.inventoryExpanded = false;
+    ui.search = '';
+    render();
+    return;
+  }
+  if (target.dataset.inventoryExpand) {
+    ui.inventoryExpanded = target.dataset.inventoryExpand === 'true';
+    ui.search = '';
+    render();
+    if (ui.inventoryExpanded) document.querySelector('#reference-search')?.focus();
     return;
   }
   if (target.dataset.selectExpiryItem) {

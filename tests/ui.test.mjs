@@ -22,6 +22,8 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   const ui = {
     online: false,
     search: 'adrénaline',
+    inventoryCategory: 'bags',
+    inventoryExpanded: false,
     usageContainer: 'sac-vert-pedia',
     usageSection: section.id,
     usageItem: section.items[0].id,
@@ -62,7 +64,12 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
 
   for (const container of SMUR_CONTAINERS) {
     const overview = renderApp(store.state, { ...ui, search: '' }, ['container', container.id]);
-    assert.ok(overview.includes(`data-schema-kind="container"`), container.id);
+    assert.ok(overview.includes(`class="container-detail-hero"`), container.id);
+    assert.equal(
+      (overview.match(/class="container-compartment-row/g) || []).length,
+      container.sections.length,
+      container.id
+    );
     for (const inventorySection of container.sections) {
       const token = inventorySection.id.split(':').at(-1);
       const detail = renderApp(store.state, { ...ui, search: '' }, ['container', container.id, token]);
@@ -118,16 +125,25 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(returnHtml.includes('Le sac parent est déduit automatiquement'));
   assert.ok(returnHtml.includes('data-schema-action="select-usage-section"'));
 
-  const inventoryHtml = renderApp(store.state, { ...ui, search: '' }, ['inventory']);
-  assert.ok(inventoryHtml.includes('Sacs et contenants SMUR'));
-  assert.ok(inventoryHtml.includes('Chariots d’urgence'));
-  assert.ok(inventoryHtml.includes('Réserves'));
-  assert.ok(inventoryHtml.includes('718 lignes issues de 16 inventaires'));
-  assert.ok(inventoryHtml.includes('URG.ENR.007 V4'));
-  assert.equal(inventoryHtml.includes('source historique'), false);
-  assert.equal(inventoryHtml.includes('Activation interdite'), false);
-  assert.ok(inventoryHtml.includes('class="schema-thumbnail"'));
-  assert.ok(inventoryHtml.includes('aria-hidden="true"'));
+  const inventoryHtml = renderApp(store.state, { ...ui, search: '', inventoryCategory: 'bags', inventoryExpanded: false }, ['inventory']);
+  assert.ok(inventoryHtml.includes('Catégories d’inventaires'));
+  assert.ok(inventoryHtml.includes('Sacs &amp; Kits'));
+  assert.ok(inventoryHtml.includes('Frigos &amp; Valises'));
+  assert.ok(inventoryHtml.includes('Voir tous les sacs & kits'));
+  assert.equal((inventoryHtml.match(/class="inventory-list-row"/g) || []).length, 6);
+  for (const containerId of ['sac-rouge-solutes', 'sac-bleu-respi', 'sac-vert-pedia', 'sac-noir-mater', 'sac-plaies', 'sac-orange-damage-control']) {
+    assert.ok(inventoryHtml.includes(`data-nav="container/${containerId}"`), containerId);
+  }
+  const expandedInventoryHtml = renderApp(store.state, { ...ui, search: '', inventoryCategory: 'bags', inventoryExpanded: true }, ['inventory']);
+  assert.ok(expandedInventoryHtml.includes('id="reference-search"'));
+  assert.ok(expandedInventoryHtml.includes('Réduire la liste'));
+  assert.ok(expandedInventoryHtml.includes('Autres inventaires'));
+  assert.ok(expandedInventoryHtml.includes('Réserve SMUR'));
+  assert.ok(expandedInventoryHtml.includes('data-nav="chariot/chariot-pediatrique"'));
+  const coldInventoryHtml = renderApp(store.state, { ...ui, search: '', inventoryCategory: 'cold', inventoryExpanded: false }, ['inventory']);
+  assert.ok(coldInventoryHtml.includes('Valise intra-osseuse'));
+  assert.ok(coldInventoryHtml.includes('Frigo médicaments'));
+  assert.equal((coldInventoryHtml.match(/class="inventory-list-row"/g) || []).length, 2);
   const actionListHtml = renderApp(state, ui, ['actions']);
   assert.ok(actionListHtml.includes('Réarmer le kit perfusion'));
   assert.equal(/prototype|démonstration|données de démonstration|lot de démonstration|action de démonstration/i.test(actionListHtml), false);
@@ -139,7 +155,17 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(searchedInventoryHtml.includes('affectation de zone à confirmer'));
 
   const containerHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia']);
-  assert.ok(containerHtml.includes('affectation proposée : Réserve SMUR · à confirmer'));
+  assert.ok(containerHtml.includes('class="container-detail-hero"'));
+  assert.ok(containerHtml.includes('105 éléments au total'));
+  assert.ok(containerHtml.includes('id="container-compartments-title"'));
+  assert.ok(containerHtml.includes('Voir l’inventaire complet'));
+  assert.equal((containerHtml.match(/class="container-compartment-row/g) || []).length, 11);
+  assert.ok(containerHtml.includes('data-nav="container/sac-vert-pedia/ampoulier"'));
+
+  const selectedCompartmentHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia', 'ampoulier']);
+  assert.ok(selectedCompartmentHtml.includes('Compartiment 1'));
+  assert.ok(selectedCompartmentHtml.includes('Adrénaline 1 mg'));
+  assert.ok(selectedCompartmentHtml.includes('data-audit-section="sac-vert-pedia:ampoulier"'));
 
   const reserveHtml = renderApp(store.state, ui, ['reserve', 'reserve-1']);
   assert.ok(reserveHtml.includes('PHOTO DE LA RÉSERVE À AJOUTER'));
@@ -147,8 +173,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.equal(reserveHtml.includes('reserve-warning'), false);
 
   const degradedState = { ...state, chariotReference: null };
-  const degradedInventory = renderApp(degradedState, { ...ui, search: '' }, ['inventory']);
-  assert.ok(degradedInventory.includes('361 lignes issues de 13 inventaires chargés'));
+  const degradedInventory = renderApp(degradedState, { ...ui, search: '', inventoryExpanded: true }, ['inventory']);
   assert.ok(degradedInventory.includes('Référentiel chariots indisponible'));
   const degradedProfile = renderApp(degradedState, ui, ['profile']);
   assert.ok(degradedProfile.includes('0/3 inventaires XLSX chargés'));
