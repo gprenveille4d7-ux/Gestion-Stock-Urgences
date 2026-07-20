@@ -3,7 +3,7 @@ import { flattenActiveChariotReference } from '../data/chariot-adapter.js';
 import { OPERATIONAL_ASSETS } from '../data/operational-assets.js';
 import { EXCLUDED_SOURCE_CONTENT, SOURCE_DOCUMENTS } from '../data/source-manifest.js';
 import { findContainer, findReferenceItem, findZone, REFERENCE_ITEMS, SERVICE_ZONES, SMUR_CONTAINERS } from '../data/reference.js';
-import { SAC_ROUGE_CONTAINER_ID, SAC_ROUGE_PRELOAD_IMAGES, SAC_ROUGE_REMOVABLE_SECTION_IDS, SAC_ROUGE_VIEWS, SAC_ROUGE_VIEW_LABELS, sacRougeViewForSection } from '../data/sac-visuals.js';
+import { bagPhotoConfig, bagPreloadImages, bagViewForSection, SAC_ROUGE_CONTAINER_ID, SAC_ROUGE_REMOVABLE_SECTION_IDS } from '../data/sac-visuals.js';
 import { getChariotDiagram, getContainerDiagram, getReserveDiagram, RESERVE_ZONE_IDS } from '../data/visual-schemas.js';
 import { deriveAvailability, summarizeAvailability } from '../domain/availability.js';
 import { computeExpiryDashboard, daysUntil, EXPIRY_PANELS } from '../domain/expiry.js';
@@ -418,7 +418,8 @@ function renderSacRougeRemovableAccordion(container, sections, selectedSection, 
 }
 
 function renderContainerHero(container, selectedSection, itemCount, availability, groupSelected = false) {
-  if (container.id !== SAC_ROUGE_CONTAINER_ID) {
+  const photoConfig = bagPhotoConfig(container.id);
+  if (!photoConfig) {
     return `<section class="container-detail-hero" data-color="${escapeHtml(container.color)}">
       <div class="container-bag-illustration" aria-hidden="true">
         <span class="container-bag-handle"></span>
@@ -429,19 +430,20 @@ function renderContainerHero(container, selectedSection, itemCount, availability
     </section>`;
   }
 
-  const viewKey = groupSelected ? 'amovible' : sacRougeViewForSection(selectedSection?.id);
-  const imagePath = SAC_ROUGE_VIEWS[viewKey];
+  const viewKey = groupSelected ? 'amovible' : bagViewForSection(container.id, selectedSection?.id);
+  const imagePath = photoConfig.views[viewKey];
   const removableCount = container.sections.filter((section) => SAC_ROUGE_REMOVABLE_SECTION_IDS.includes(sectionToken(section.id))).reduce((sum, section) => sum + section.items.length, 0);
-  const caption = groupSelected ? 'Sac amovible rouge' : selectedSection && viewKey !== 'face' ? removableSectionLabel(selectedSection) : 'Sac rouge · Vue générale';
-  const alt = groupSelected ? SAC_ROUGE_VIEW_LABELS.amovible : selectedSection && viewKey !== 'face'
-    ? `${SAC_ROUGE_VIEW_LABELS[viewKey]} — ${selectedSection.label}`
-    : SAC_ROUGE_VIEW_LABELS.face;
-  return `<section class="sac-visual-explorer" aria-label="Visualiseur photographique du sac rouge">
+  const caption = groupSelected ? 'Sac amovible rouge' : selectedSection && viewKey !== 'face' ? removableSectionLabel(selectedSection) : photoConfig.caption;
+  const alt = groupSelected ? photoConfig.labels.amovible : selectedSection && viewKey !== 'face'
+    ? `${photoConfig.labels[viewKey]} — ${selectedSection.label}`
+    : photoConfig.labels.face;
+  const preloadImages = bagPreloadImages(container.id);
+  return `<section class="sac-visual-explorer" aria-label="Visualiseur photographique du ${escapeHtml(photoConfig.name)}">
     <div class="sac-visual-explorer__visual" data-sac-view="${escapeHtml(viewKey)}">
       <img class="sac-visual-explorer__image" src="${escapeHtml(imagePath)}" alt="${escapeHtml(alt)}" decoding="async">
       <div class="sac-visual-explorer__caption" aria-live="polite"><span><strong>${escapeHtml(caption)}</strong><small>${groupSelected ? `4 sous-compartiments · ${removableCount} éléments` : selectedSection && viewKey !== 'face' ? `${selectedSection.items.length} élément${selectedSection.items.length > 1 ? 's' : ''}` : `${itemCount} éléments au total`}</small></span>${statusPill(availability.status, availability.label)}</div>
     </div>
-    <div class="sac-visual-preload" aria-hidden="true">${SAC_ROUGE_PRELOAD_IMAGES.filter((path) => path !== imagePath).map((path) => `<img src="${escapeHtml(path)}" alt="" width="1" height="1" decoding="async">`).join('')}</div>
+    <div class="sac-visual-preload" aria-hidden="true">${preloadImages.filter((path) => path !== imagePath).map((path) => `<img src="${escapeHtml(path)}" alt="" width="1" height="1" decoding="async">`).join('')}</div>
   </section>`;
 }
 
