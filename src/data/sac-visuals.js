@@ -13,6 +13,7 @@ export const SAC_ROUGE_VIEWS = Object.freeze({
   ouvert: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-ouvert.png`,
   amovible: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-amovible.png`,
   ampoulier: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-ampoulier.png`,
+  plaqueFaceA: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-plaque-face-a.png`,
   plaqueFaceB: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-plaque-face-b.png`
 });
 
@@ -27,6 +28,7 @@ export const SAC_ROUGE_VIEW_LABELS = Object.freeze({
   ouvert: 'Sac rouge ouvert',
   amovible: 'Sac amovible rouge ouvert',
   ampoulier: 'Ampoulier jaune extrait du sac rouge',
+  plaqueFaceA: 'Plaque centrale du sac rouge vue côté Face A',
   plaqueFaceB: 'Plaque centrale du sac rouge vue côté Face B'
 });
 
@@ -42,7 +44,7 @@ export const SAC_ROUGE_SECTION_VIEWS = Object.freeze({
   'kit-paracetamol': 'amovible',
   'kit-atb': 'amovible',
   aiguilles: 'amovible',
-  'plaque-a': 'ouvert',
+  'plaque-a': 'plaqueFaceA',
   'plaque-b': 'plaqueFaceB',
   'ampoulier-gauche': 'ampoulier',
   'ampoulier-droit': 'ampoulier',
