@@ -56,11 +56,14 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(homeHtml.includes(`Bonjour ${state.user.displayName}`));
   assert.ok(homeHtml.includes(state.user.role));
   assert.ok(homeHtml.includes('État général'));
-  assert.equal((homeHtml.match(/class="home-expiry-indicator /g) || []).length, 4);
-  for (const [label, route] of [['Inventaires', 'inventory'], ['Péremptions', 'expiry'], ['Réarmement SMUR', 'actions'], ['Retour SMUR', 'return']]) {
+  assert.equal((homeHtml.match(/class="home-primary-menu /g) || []).length, 4);
+  for (const [label, route] of [["Retour d’intervention", 'return'], ['Commencer un contrôle', 'audits'], ['Réarmement SMUR', 'actions'], ['Statistiques', 'stats']]) {
     assert.ok(homeHtml.includes(label), label);
     assert.ok(homeHtml.includes(`class="home-quick-action" data-nav="${route}"`), route);
   }
+  for (const label of ['Inventaire SMUR', 'Chariot d’urgence', 'Les Réserves', 'Péremptions']) assert.ok(homeHtml.includes(label), label);
+  assert.ok(homeHtml.includes('data-nav="inventory"'));
+  assert.ok(homeHtml.includes('data-nav="reserve/reserve-smur"'));
 
   for (const container of SMUR_CONTAINERS) {
     const overview = renderApp(store.state, { ...ui, search: '' }, ['container', container.id]);
