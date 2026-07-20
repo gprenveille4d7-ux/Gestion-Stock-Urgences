@@ -218,6 +218,13 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(rightRedBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-cote-droit.png'));
   assert.ok(rightRedBagHtml.includes('alt="Sac rouge vu du côté droit — Compartiment latéral droit"'));
 
+  for (const ampoulierSection of ['ampoulier-gauche', 'ampoulier-droit', 'ampoulier-interne']) {
+    const ampoulierHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', ampoulierSection]);
+    assert.ok(ampoulierHtml.includes('data-sac-view="ampoulier"'), ampoulierSection);
+    assert.ok(ampoulierHtml.includes('./assets/sacs/sac-rouge/sac-rouge-ampoulier.png'), ampoulierSection);
+    assert.ok(ampoulierHtml.includes('Ampoulier jaune extrait du sac rouge'), ampoulierSection);
+  }
+
   const selectedCompartmentHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia', 'ampoulier']);
   assert.equal((selectedCompartmentHtml.match(/class="container-compartment-panel"/g) || []).length, 1);
   assert.ok(selectedCompartmentHtml.includes('aria-expanded="true"'));
