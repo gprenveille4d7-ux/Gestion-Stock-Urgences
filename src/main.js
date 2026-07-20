@@ -1,5 +1,6 @@
 import { SMUR_CONTAINERS } from './data/reference.js';
 import { OperationalStore } from './application/operational-store.js';
+import { normalizeBagExplorerIndex } from './ui/bag-explorer.js';
 import { renderApp } from './ui/views.js';
 import { navigate, routeParts } from './ui/utils.js';
 
@@ -18,11 +19,15 @@ const ui = {
   expiryItemId: '',
   defectContainer: SMUR_CONTAINERS[0].id,
   mapOrigin: 'pc-ide',
-  mapZoom: 1
+  mapZoom: 1,
+  bagExplorerCatalog: null,
+  bagExplorerIndexes: Object.create(null),
+  bagExplorerDirections: Object.create(null)
 };
 
 let store;
 let busy = false;
+let bagSwipe = null;
 const channel = 'BroadcastChannel' in globalThis ? new BroadcastChannel('releve-smur-updates') : null;
 
 function showToast(message, tone = 'saved', action = null) {
@@ -62,6 +67,27 @@ async function loadChariotReference() {
   }
 }
 
+async function loadBagExplorerCatalog() {
+  try {
+    const response = await fetch('./src/data/bag-explorers.json');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const catalog = await response.json();
+    return catalog?.explorers ? catalog : null;
+  } catch (error) {
+    console.warn('Explorateurs de contenants indisponibles', error);
+    return null;
+  }
+}
+
+function moveBagExplorer(containerId, requestedIndex, direction = 'next', restoreFocus = false) {
+  const config = ui.bagExplorerCatalog?.explorers?.[containerId];
+  if (!config?.views?.length) return;
+  ui.bagExplorerIndexes[containerId] = normalizeBagExplorerIndex(requestedIndex, config.views.length);
+  ui.bagExplorerDirections[containerId] = direction;
+  render();
+  if (restoreFocus) appRoot.querySelector('[data-bag-explorer]')?.focus();
+}
+
 async function perform(operation, successMessage = '') {
   if (busy) return null;
   busy = true;
@@ -85,6 +111,20 @@ appRoot.addEventListener('click', async (event) => {
   const target = event.target.closest('button, [data-nav]');
   if (!target || target.disabled) return;
   if (target.dataset.nav) return navigate(target.dataset.nav);
+
+  const explorer = target.closest('[data-bag-explorer]');
+  if (explorer && target.dataset.bagExplorerStep) {
+    const step = Number(target.dataset.bagExplorerStep);
+    const current = Number(explorer.dataset.viewIndex);
+    moveBagExplorer(explorer.dataset.bagExplorer, current + step, step < 0 ? 'previous' : 'next', true);
+    return;
+  }
+  if (explorer && target.dataset.bagExplorerIndex) {
+    const current = Number(explorer.dataset.viewIndex);
+    const requested = Number(target.dataset.bagExplorerIndex);
+    moveBagExplorer(explorer.dataset.bagExplorer, requested, requested < current ? 'previous' : 'next', true);
+    return;
+  }
 
   if (target.dataset.expiryFilter) {
     ui.expiryFilter = target.dataset.expiryFilter;
@@ -172,6 +212,49 @@ appRoot.addEventListener('click', async (event) => {
     return;
   }
 });
+
+appRoot.addEventListener('keydown', (event) => {
+  const explorer = event.target.closest('[data-bag-explorer]');
+  if (!explorer || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+  event.preventDefault();
+  const step = event.key === 'ArrowLeft' ? -1 : 1;
+  moveBagExplorer(explorer.dataset.bagExplorer, Number(explorer.dataset.viewIndex) + step, step < 0 ? 'previous' : 'next', true);
+});
+
+appRoot.addEventListener('pointerdown', (event) => {
+  const stage = event.target.closest('[data-bag-swipe]');
+  if (!stage || event.button !== 0) return;
+  bagSwipe = { stage, containerId: stage.dataset.bagSwipe, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, deltaX: 0, deltaY: 0 };
+  stage.setPointerCapture?.(event.pointerId);
+  stage.classList.add('is-dragging');
+});
+
+appRoot.addEventListener('pointermove', (event) => {
+  if (!bagSwipe || bagSwipe.pointerId !== event.pointerId) return;
+  bagSwipe.deltaX = event.clientX - bagSwipe.startX;
+  bagSwipe.deltaY = event.clientY - bagSwipe.startY;
+  const visualDelta = Math.abs(bagSwipe.deltaX) > Math.abs(bagSwipe.deltaY) ? Math.max(-72, Math.min(72, bagSwipe.deltaX)) : 0;
+  bagSwipe.stage.style.setProperty('--bag-drag-x', `${visualDelta}px`);
+  bagSwipe.stage.style.setProperty('--bag-drag-rotate', `${visualDelta / 24}deg`);
+});
+
+function finishBagSwipe(event, cancelled = false) {
+  if (!bagSwipe || bagSwipe.pointerId !== event.pointerId) return;
+  const { stage, containerId, deltaX, deltaY } = bagSwipe;
+  stage.releasePointerCapture?.(event.pointerId);
+  stage.classList.remove('is-dragging');
+  stage.style.removeProperty('--bag-drag-x');
+  stage.style.removeProperty('--bag-drag-rotate');
+  bagSwipe = null;
+  if (cancelled) return;
+  if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
+  const explorer = stage.closest('[data-bag-explorer]');
+  const step = deltaX < 0 ? 1 : -1;
+  moveBagExplorer(containerId, Number(explorer.dataset.viewIndex) + step, step < 0 ? 'previous' : 'next');
+}
+
+appRoot.addEventListener('pointerup', finishBagSwipe);
+appRoot.addEventListener('pointercancel', (event) => finishBagSwipe(event, true));
 
 appRoot.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -289,7 +372,14 @@ appRoot.addEventListener('change', (event) => {
   }
 });
 
-window.addEventListener('hashchange', () => render(true));
+window.addEventListener('hashchange', () => {
+  const [route, containerId] = routeParts();
+  if (route === 'container' && ui.bagExplorerCatalog?.explorers?.[containerId]) {
+    delete ui.bagExplorerIndexes[containerId];
+    delete ui.bagExplorerDirections[containerId];
+  }
+  render(true);
+});
 window.addEventListener('online', () => { ui.online = true; render(); });
 window.addEventListener('offline', () => { ui.online = false; render(); });
 channel?.addEventListener('message', (event) => {
@@ -331,7 +421,8 @@ async function registerServiceWorker() {
 async function boot() {
   appRoot.innerHTML = '<div class="p0-loading"><span></span><strong>Ouverture du journal local…</strong></div>';
   try {
-    const chariotReference = await loadChariotReference();
+    const [chariotReference, bagExplorerCatalog] = await Promise.all([loadChariotReference(), loadBagExplorerCatalog()]);
+    ui.bagExplorerCatalog = bagExplorerCatalog;
     store = await OperationalStore.create(chariotReference);
     store.subscribe(render);
     render();

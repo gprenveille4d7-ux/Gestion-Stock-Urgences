@@ -8,6 +8,7 @@ import { deriveAvailability, summarizeAvailability } from '../domain/availabilit
 import { computeExpiryDashboard, daysUntil, EXPIRY_PANELS } from '../domain/expiry.js';
 import { actionZoneId, planRoute } from '../domain/route-planner.js';
 import { computeStatistics } from '../domain/statistics.js';
+import { bagExplorerSelection, bagExplorerViewIndex, renderBagExplorer } from './bag-explorer.js';
 import { escapeHtml, formatDate, formatRelative, icon, normalizeSearch } from './utils.js';
 import { renderSchemaThumbnail, renderVisualSchema } from './visual-schema.js';
 
@@ -330,12 +331,26 @@ function renderInventory(state, ui) {
       <section class="section"><div class="section-head"><div><p class="section-eyebrow">URG.ENR.007 V4 · sources XLSX de mars 2024</p><h2>Chariots d’urgence</h2></div><span class="section-count">${chariotItems.length} lignes</span></div>${chariots.length ? `<div class="inventory-visual-grid">${chariots.map(renderChariotInventoryCard).join('')}</div>` : `<div class="p0-reference-banner historical-warning">${icon('alert', 18)}<div><strong>Référentiel chariots indisponible</strong><span>Les 3 fichiers restent référencés mais leurs 357 lignes n’ont pas pu être chargées. Réessayez en ligne ou vérifiez le cache PWA.</span></div></div>`}</section>`}`;
 }
 
-function renderContainerDetail(state, containerId, sectionId) {
+function renderInventoryLine(item, index = null) {
+  const reveal = Number.isInteger(index) ? ` bag-explorer-reveal" style="--item-index:${index}` : '';
+  return `<div class="inventory-line${reveal}"><span class="inventory-quantity">${Number(item.expectedQuantity)}×</span><span><strong>${escapeHtml(item.label)}</strong>${itemHasSourceAmbiguity(item) ? `<span class="data-quality-badge">${icon('alert', 12)} Libellé source à valider</span>` : ''}<small>${escapeHtml(item.category)} · unité : ${escapeHtml(item.unit)}${item.packSize ? ` · ${item.packSize} par paquet` : ''}${item.expiryTracked ? ' · péremption suivie' : ' · réutilisable'}</small>${(item.validationIssues || []).map((issue) => `<small class="inventory-validation-issue">${escapeHtml(issue)}</small>`).join('')}${item.sourceText ? `<small class="inventory-source-text">Source : ${escapeHtml(item.sourceText)}</small>` : ''}</span></div>`;
+}
+
+function renderContainerActions(container, sections) {
+  const section = sections.length === 1 ? sections[0] : null;
+  const sectionAttribute = section ? ` data-return-section="${escapeHtml(section.id)}"` : '';
+  const auditAttribute = section ? ` data-audit-section="${escapeHtml(section.id)}"` : '';
+  const targetLabel = section ? 'cette zone' : 'ce sac';
+  return `<div class="inventory-detail-actions"><button type="button" class="primary-button" data-return-container="${escapeHtml(container.id)}"${sectionAttribute}>${icon('plus', 18)} Déclarer ${targetLabel} ouvert ou utilisé</button><button type="button" class="secondary-button" data-start-audit="${escapeHtml(container.id)}"${auditAttribute}>${icon('clipboard', 18)} Contrôler ${targetLabel}</button></div>`;
+}
+
+function renderContainerDetail(state, ui, containerId, sectionId) {
   const container = findContainer(containerId);
   if (!container) return `${header('Contenant introuvable', '', 'Erreur', 'inventory')}<div class="empty-state"><p>Ce contenant n’existe pas dans le référentiel chargé.</p></div>`;
   const diagram = getContainerDiagram(container);
   const source = SOURCE_DOCUMENTS.find((candidate) => candidate.id === container.sourceId);
   const selectedSection = findContainerSection(container, sectionId);
+  const explorerConfig = ui.bagExplorerCatalog?.explorers?.[container.id] || null;
   const availability = deriveAvailability(container.id, state);
   const stockZone = findZone(container.stockZoneId);
   const itemCount = container.sections.reduce((sum, section) => sum + section.items.length, 0);
@@ -345,14 +360,27 @@ function renderContainerDetail(state, containerId, sectionId) {
     if (openActionTouchesSection(state, container.id, zone.targetId)) return availability.status === 'indisponible' ? 'indisponible' : 'a_rearmer';
     return container.sections.find((section) => section.id === zone.targetId)?.sourceStatus === 'source-ambiguity-to-validate' ? 'a_verifier' : 'pret';
   };
-  return `${header(container.label, `${itemCount} lignes d’inventaire · ${container.sections.length} zone${container.sections.length > 1 ? 's' : ''}.`, 'Schéma du contenant', 'inventory')}
+  const routedExplorerIndex = bagExplorerViewIndex(explorerConfig, sectionId);
+  const storedExplorerIndex = ui.bagExplorerIndexes?.[container.id];
+  const requestedExplorerIndex = Number.isInteger(storedExplorerIndex) ? storedExplorerIndex : Math.max(0, routedExplorerIndex);
+  const explorerSelection = explorerConfig ? bagExplorerSelection(container, explorerConfig, requestedExplorerIndex) : null;
+  const explorerFooter = explorerSelection?.index > 0 ? renderContainerActions(container, explorerSelection.sections) : '';
+  const visualContent = explorerConfig
+    ? renderBagExplorer(container, explorerConfig, {
+      index: requestedExplorerIndex,
+      direction: ui.bagExplorerDirections?.[container.id],
+      renderItem: renderInventoryLine,
+      footer: explorerFooter
+    })
+    : `${renderVisualSchema(diagram, { kind: 'container', label: container.label, color: container.color, selectedTargetId: selectedSection?.id || '', routeForZone, statusForZone })}
+      <ol class="schema-zone-index" aria-label="Index des zones">${container.sections.map((section, index) => `<li class="${selectedSection?.id === section.id ? 'active' : ''}"><button type="button" data-nav="container/${container.id}/${sectionToken(section.id)}"><span>${index + 1}</span><span><strong>${escapeHtml(section.label)}</strong><small>${section.items.length} ligne${section.items.length > 1 ? 's' : ''}</small></span>${icon('chevron', 16)}</button></li>`).join('')}</ol>
+      ${selectedSection ? `<section class="section inventory-section-detail"><div class="section-head"><div><p class="section-eyebrow">Zone ${container.sections.indexOf(selectedSection) + 1}</p><h2>${escapeHtml(selectedSection.label)}</h2></div><span class="section-count">${selectedSection.items.length} lignes</span></div><div class="inventory-line-list">${selectedSection.items.map((item) => renderInventoryLine(item)).join('')}</div>${renderContainerActions(container, [selectedSection])}</section>` : `<div class="schema-guidance">${icon('bag', 20)}<div><strong>Touchez une zone du schéma</strong><span>Vous n’afficherez alors que le kit ou compartiment concerné, sans parcourir une longue liste.</span></div></div>`}`;
+  return `${header(container.label, `${itemCount} lignes d’inventaire · ${explorerConfig ? `${explorerConfig.views.length} vues physiques` : `${container.sections.length} zone${container.sections.length > 1 ? 's' : ''}`}.`, explorerConfig ? 'Exploration du contenant' : 'Schéma du contenant', 'inventory')}
     <section class="inventory-detail-summary">
       <div><span class="p0-bag-color" data-color="${escapeHtml(container.color)}">${icon('bag')}</span><span><strong>${escapeHtml(container.shortLabel)}</strong><small>${escapeHtml(container.kind)} · ${itemCount} lignes · total théorique ${theoreticalTotal} · affectation proposée : ${escapeHtml(stockZone?.label || 'non renseignée')} · à confirmer</small></span></div>
       ${statusPill(availability.status, availability.label)}
     </section>
-    ${renderVisualSchema(diagram, { kind: 'container', label: container.label, color: container.color, selectedTargetId: selectedSection?.id || '', routeForZone, statusForZone })}
-    <ol class="schema-zone-index" aria-label="Index des zones">${container.sections.map((section, index) => `<li class="${selectedSection?.id === section.id ? 'active' : ''}"><button type="button" data-nav="container/${container.id}/${sectionToken(section.id)}"><span>${index + 1}</span><span><strong>${escapeHtml(section.label)}</strong><small>${section.items.length} ligne${section.items.length > 1 ? 's' : ''}</small></span>${icon('chevron', 16)}</button></li>`).join('')}</ol>
-    ${selectedSection ? `<section class="section inventory-section-detail"><div class="section-head"><div><p class="section-eyebrow">Zone ${container.sections.indexOf(selectedSection) + 1}</p><h2>${escapeHtml(selectedSection.label)}</h2></div><span class="section-count">${selectedSection.items.length} lignes</span></div><div class="inventory-line-list">${selectedSection.items.map((item) => `<div class="inventory-line"><span class="inventory-quantity">${Number(item.expectedQuantity)}×</span><span><strong>${escapeHtml(item.label)}</strong>${itemHasSourceAmbiguity(item) ? `<span class="data-quality-badge">${icon('alert', 12)} Libellé source à valider</span>` : ''}<small>${escapeHtml(item.category)} · unité : ${escapeHtml(item.unit)}${item.packSize ? ` · ${item.packSize} par paquet` : ''}${item.expiryTracked ? ' · péremption suivie' : ' · réutilisable'}</small>${(item.validationIssues || []).map((issue) => `<small class="inventory-validation-issue">${escapeHtml(issue)}</small>`).join('')}${item.sourceText ? `<small class="inventory-source-text">Source : ${escapeHtml(item.sourceText)}</small>` : ''}</span></div>`).join('')}</div><div class="inventory-detail-actions"><button type="button" class="primary-button" data-return-container="${container.id}" data-return-section="${selectedSection.id}">${icon('plus', 18)} Déclarer cette zone ouverte ou utilisée</button><button type="button" class="secondary-button" data-start-audit="${container.id}" data-audit-section="${selectedSection.id}">${icon('clipboard', 18)} Contrôler cette zone</button></div></section>` : `<div class="schema-guidance">${icon('bag', 20)}<div><strong>Touchez une zone du schéma</strong><span>Vous n’afficherez alors que le kit ou compartiment concerné, sans parcourir une longue liste.</span></div></div>`}
+    ${visualContent}
     <details class="p0-details"><summary>Source, version et limites</summary><div><p><strong>${escapeHtml(source?.documentRef || source?.id || 'Source non renseignée')}</strong> · ${escapeHtml(source?.fileName || '')}<br><small>${escapeHtml(source?.revision || 'révision inconnue')} · ${escapeHtml(source?.sourceDate || 'date inconnue')} · ${escapeHtml(source?.status || container.sourceStatus || 'imported-from-source')}</small></p><p><strong>Schéma ${escapeHtml(diagram.version)}</strong><br><small>${isPhysicalLayoutValidated(diagram, container) ? 'Organisation visuelle validée.' : 'Organisation visuelle à préciser. '}${diagram.layoutMode === 'semantic-override' ? 'Disposition déduite uniquement des intitulés de zones.' : diagram.layoutMode === 'inventory-placeholder' ? 'Aucune position interne n’est déduite : la zone ouvre seulement l’inventaire sourcé.' : 'Grille fonctionnelle générée, non représentative du rangement réel.'}</small></p></div></details>`;
 }
 
@@ -712,7 +740,7 @@ export function renderApp(state, ui, routeParts) {
   switch (route) {
     case 'return': content = renderReturn(viewState, ui); break;
     case 'inventory': content = renderInventory(viewState, ui); break;
-    case 'container': content = renderContainerDetail(viewState, id, subId); break;
+    case 'container': content = renderContainerDetail(viewState, ui, id, subId); break;
     case 'reserve': content = renderReserveDetail(viewState, id); break;
     case 'chariot': content = renderChariotDetail(viewState, id, subId); break;
     case 'actions': content = renderActions(viewState, ui); break;

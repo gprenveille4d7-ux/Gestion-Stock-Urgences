@@ -1,15 +1,15 @@
 const CACHE_PREFIX = 'releve-smur-';
-const CACHE = 'releve-smur-v1.0.0-20260717';
+const CACHE = 'releve-smur-v1.0.0-20260720-bag-explorer';
 const NETWORK_TIMEOUT_MS = 4000;
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg',
   './assets/plan-urgences-falaise.png', './assets/icon-180.png', './assets/icon-192.png', './assets/icon-512.png',
   './src/config.js', './src/main.js',
   './src/application/operational-store.js',
-  './src/data/reference.js', './src/data/source-manifest.js', './src/data/operational-assets.js', './src/data/chariot-adapter.js', './src/data/chariot-reference.json', './src/data/visual-schemas.js',
+  './src/data/reference.js', './src/data/source-manifest.js', './src/data/operational-assets.js', './src/data/chariot-adapter.js', './src/data/chariot-reference.json', './src/data/bag-explorers.json', './src/data/visual-schemas.js',
   './src/domain/ids.js', './src/domain/availability.js', './src/domain/expiry.js', './src/domain/action-engine.js', './src/domain/conflicts.js', './src/domain/priority.js', './src/domain/route-planner.js', './src/domain/statistics.js', './src/domain/validation.js',
   './src/infrastructure/database.js', './src/infrastructure/repository.js', './src/infrastructure/sync-adapter.js',
-  './src/ui/utils.js', './src/ui/visual-schema.js', './src/ui/views.js'
+  './src/ui/utils.js', './src/ui/visual-schema.js', './src/ui/bag-explorer.js', './src/ui/views.js'
 ];
 
 self.addEventListener('install', (event) => {

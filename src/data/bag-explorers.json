@@ -1,0 +1,67 @@
+{
+  "version": "2026.07.1",
+  "explorers": {
+    "sac-rouge-solutes": {
+      "kind": "bag",
+      "views": [
+        {
+          "id": "closed",
+          "label": "Sac fermé",
+          "visual": "closed",
+          "sectionIds": [],
+          "emptyMessage": "Faites glisser le sac pour découvrir son rangement."
+        },
+        {
+          "id": "removable-red",
+          "label": "Sac ouvert · Sac amovible rouge",
+          "visual": "open-red",
+          "presentation": "groups",
+          "sectionIds": ["kit-perfusion", "kit-paracetamol", "kit-atb", "aiguilles"]
+        },
+        {
+          "id": "central-a",
+          "label": "Plaque centrale · Face A",
+          "visual": "panel-a",
+          "sectionIds": ["plaque-a"]
+        },
+        {
+          "id": "central-b",
+          "label": "Plaque centrale · Face B",
+          "visual": "panel-b",
+          "sectionIds": ["plaque-b"]
+        },
+        {
+          "id": "ampoule-left",
+          "label": "Ampoulier · Côté gauche cardio-pneumo-réa",
+          "visual": "ampoule-left",
+          "sectionIds": ["ampoulier-gauche"]
+        },
+        {
+          "id": "ampoule-right",
+          "label": "Ampoulier · Côté droit",
+          "visual": "ampoule-right",
+          "sectionIds": ["ampoulier-droit"]
+        },
+        {
+          "id": "ampoule-inside",
+          "label": "Ampoulier · Compartiment interne",
+          "visual": "ampoule-inside",
+          "sectionIds": ["ampoulier-interne"]
+        },
+        {
+          "id": "right-side",
+          "label": "Compartiment latéral droit",
+          "visual": "side-right",
+          "sectionIds": ["lateral-droit"]
+        },
+        {
+          "id": "left-side",
+          "label": "Compartiment latéral gauche",
+          "visual": "side-left",
+          "sectionIds": [],
+          "emptyMessage": "Emplacement prévu pour un contenu futur."
+        }
+      ]
+    }
+  }
+}
