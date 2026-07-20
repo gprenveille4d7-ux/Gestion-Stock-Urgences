@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'releve-smur-';
-const CACHE = 'releve-smur-v1.0.0-20260720-plaque-face-b';
+const CACHE = 'releve-smur-v1.0.0-20260720-plaque-face-b-v2';
 const NETWORK_TIMEOUT_MS = 4000;
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg',
