@@ -7,6 +7,15 @@ const d = (quantity, label, sourceText = null, metadata = {}) => [quantity, labe
 const e = (quantity, label, sourceText = null, metadata = {}) => [quantity, label, 'equipement', sourceText, metadata];
 const c = (quantity, label, sourceText = null, metadata = {}) => [quantity, label, 'consommable', sourceText, metadata];
 
+const PRESENTATION = Object.freeze({
+  syringe: Object.freeze({ pictogram: '💉', presentation: 'seringue préremplie' }),
+  ampoule: Object.freeze({ pictogram: '🧪', presentation: 'ampoule injectable' }),
+  vial: Object.freeze({ pictogram: '🧴', presentation: 'flacon injectable' }),
+  infusion: Object.freeze({ pictogram: '💧', presentation: 'poche ou flacon de perfusion' }),
+  tubing: Object.freeze({ pictogram: '🔗', presentation: 'tubulure ou dispositif de transfert' }),
+  tablet: Object.freeze({ pictogram: '💊', presentation: 'comprimé' })
+});
+
 export const CONTAINER_KINDS = Object.freeze(['sac', 'valise', 'pochette', 'kit', 'armoire', 'chariot', 'tiroir', 'plateau', 'compartiment']);
 
 function productIdFor(label) {
@@ -37,6 +46,8 @@ function makeSection(containerId, id, label, entries) {
       legacyIds: Object.freeze(metadata.legacyIds || []),
       dataQuality: metadata.dataQuality || 'source-validated',
       validationIssues: Object.freeze(metadata.validationIssues || []),
+      pictogram: metadata.pictogram || null,
+      presentation: metadata.presentation || null,
       operationalUseAllowed: metadata.operationalUseAllowed !== false,
       expiryTracked: category !== 'equipement',
       criticality: 'non_evaluee',
@@ -147,13 +158,13 @@ export const SMUR_CONTAINERS = Object.freeze([
     sections: [
       ['kit-perfusion', 'Sac amovible rouge · Kit perfusion', [c(1, 'NaCl 500 mL'), d(1, 'Perfuseur 3 voies'), c(5, 'Tegaderm'), d(2, 'Cathéter 18 G'), d(2, 'Cathéter 20 G'), c(2, 'Paquet de 5 compresses stériles', null, { unit: 'paquet', packSize: 5 }), c(1, 'Biseptine'), c(1, 'Dosette Bétadine alcoolique')]],
       ['kit-paracetamol', 'Kit paracétamol', [d(1, 'Perfuseur'), m(1, 'Paracétamol 1 g')]],
-      ['kit-atb', 'Kit ATB', [c(2, 'NaCl 50 mL'), d(2, 'Perfuseur 3 voies'), d(2, 'Dispositif de transfert'), m(2, 'Rocephine'), m(2, 'Augmentin')]],
+      ['kit-atb', 'Kit ATB', [c(2, 'NaCl 50 mL', null, PRESENTATION.infusion), d(2, 'Perfuseur 3 voies', null, PRESENTATION.tubing), d(2, 'Dispositif de transfert', null, PRESENTATION.tubing), m(2, 'Rocephine', null, PRESENTATION.vial), m(2, 'Augmentin', null, PRESENTATION.vial)]],
       ['aiguilles', 'Boîte à aiguilles', [e(1, 'Boîte à aiguilles')]],
       ['plaque-a', 'Plaque centrale · Face A', [d(2, 'Cathéter gris 16 G'), d(2, 'Cathéter vert 18 G'), d(2, 'Cathéter rose 20 G'), d(2, 'Cathéter bleu 22 G'), d(2, 'Cathéter jaune 24 G'), d(2, 'Épicrânienne 21 G'), c(5, 'EPPI 20 mL'), e(1, 'Garrot'), c(1, 'Sparadrap'), d(5, 'Bionecteur')]],
       ['plaque-b', 'Plaque centrale · Face B', [d(2, 'Seringue 20 mL'), d(5, 'Seringue 10 mL'), d(3, 'Seringue 5 mL'), d(2, 'Seringue 2 mL'), d(5, 'Aiguille verte'), d(5, 'Aiguille rose'), d(5, 'Aiguille bleue'), d(5, 'Aiguille orange'), d(5, 'Bouchon')]],
-      ['ampoulier-gauche', 'Ampoulier · Côté gauche cardio-pneumo-réa', [m(2, 'Dobutamine'), m(2, 'Noradrénaline'), m(2, 'Salbutamol'), m(2, 'Loxen'), m(2, 'Solumédrol 120 mg'), m(2, 'Solumédrol 40 mg'), m(3, 'Atropine 0,5 mg'), m(2, 'Risordan'), m(5, 'Lasilix 20 mg'), m(2, 'Bricanyl'), m(2, 'Adrénaline 1 mg'), m(5, 'Adrénaline 5 mg'), m(3, 'Cordarone 150 mg'), m(2, 'Dopamine 200 mg'), m(2, 'Tildiem'), m(2, 'Digoxine')]],
-      ['ampoulier-droit', 'Ampoulier · Côté droit', [m(3, 'Loxapac'), m(2, 'Tranxène 20 mg avec solvant'), m(3, 'Valium 10 mg'), m(3, 'Rivotril 1 mg avec solvant'), m(5, 'Nubain'), m(2, 'Polaramine'), m(2, 'Primpéran'), m(5, 'Narcan 0,4 mg'), m(2, 'Anexate (flumazénil)'), m(2, 'Gluconate de calcium'), m(2, 'Bicarbonate de sodium 42 %', '2 X BICARBONATES 42%', { dataQuality: 'ambiguous-source', validationIssues: ['Concentration inhabituelle conservée telle qu’écrite dans la source'], operationalUseAllowed: false }), m(6, 'Glucose 30 % 10 mL (ampoule plastique)'), m(2, 'IPP 40 mg')]],
-      ['ampoulier-interne', 'Ampoulier · Compartiment interne', [c(2, 'NaCl 50 mL'), d(2, 'Perfuseur 3 voies'), d(1, 'Perfuseur Volumed'), d(2, 'Dispositif de transfert'), m(1, 'Penthrox'), m(4, 'Lidocaïne 200 mg'), m(5, 'Exacyl (acide tranexamique)'), m(4, 'Dépakine 400 mg'), m(5, 'Xanax 0,5'), m(2, 'Éphédrine 30 mg/10 mL IV en seringue pré-remplie')]],
+      ['ampoulier-gauche', 'Ampoulier · Côté gauche cardio-pneumo-réa', [m(2, 'Dobutamine', null, PRESENTATION.ampoule), m(2, 'Noradrénaline', null, PRESENTATION.ampoule), m(2, 'Salbutamol', null, PRESENTATION.ampoule), m(2, 'Loxen', null, PRESENTATION.ampoule), m(2, 'Solumédrol 120 mg', null, PRESENTATION.vial), m(2, 'Solumédrol 40 mg', null, PRESENTATION.vial), m(3, 'Atropine 0,5 mg', null, PRESENTATION.ampoule), m(2, 'Risordan', null, PRESENTATION.ampoule), m(5, 'Lasilix 20 mg', null, PRESENTATION.ampoule), m(2, 'Bricanyl', null, PRESENTATION.ampoule), m(2, 'Adrénaline 1 mg', null, PRESENTATION.ampoule), m(5, 'Adrénaline 5 mg', null, PRESENTATION.ampoule), m(3, 'Cordarone 150 mg', null, PRESENTATION.ampoule), m(2, 'Dopamine 200 mg', null, PRESENTATION.ampoule), m(2, 'Tildiem', null, PRESENTATION.vial), m(2, 'Digoxine', null, PRESENTATION.ampoule)]],
+      ['ampoulier-droit', 'Ampoulier · Côté droit', [m(3, 'Loxapac', null, PRESENTATION.vial), m(2, 'Tranxène 20 mg avec solvant', null, PRESENTATION.vial), m(3, 'Valium 10 mg', null, PRESENTATION.ampoule), m(3, 'Rivotril 1 mg avec solvant', null, PRESENTATION.vial), m(5, 'Nubain', null, PRESENTATION.ampoule), m(2, 'Polaramine', null, PRESENTATION.ampoule), m(2, 'Primpéran', null, PRESENTATION.ampoule), m(5, 'Narcan 0,4 mg', null, PRESENTATION.ampoule), m(2, 'Anexate (flumazénil)', null, PRESENTATION.ampoule), m(2, 'Gluconate de calcium', null, PRESENTATION.ampoule), m(2, 'Bicarbonate de sodium 42 %', '2 X BICARBONATES 42%', { ...PRESENTATION.ampoule, dataQuality: 'ambiguous-source', validationIssues: ['Concentration inhabituelle conservée telle qu’écrite dans la source'], operationalUseAllowed: false }), m(6, 'Glucose 30 % 10 mL (ampoule plastique)', null, PRESENTATION.ampoule), m(2, 'IPP 40 mg', null, PRESENTATION.vial)]],
+      ['ampoulier-interne', 'Ampoulier · Compartiment interne', [c(2, 'NaCl 50 mL', null, PRESENTATION.infusion), d(1, 'Perfuseur 3 voies', null, { ...PRESENTATION.tubing, expectedQuantitySource: 2, quantityStatus: 'user-corrected' }), d(2, 'Perfuseur Volumed', null, { ...PRESENTATION.tubing, expectedQuantitySource: 1, quantityStatus: 'user-corrected' }), d(1, 'Dispositif de transfert', null, { ...PRESENTATION.tubing, expectedQuantitySource: 2, quantityStatus: 'user-corrected' }), m(4, 'Penthrox', null, { ...PRESENTATION.ampoule, expectedQuantitySource: 1, quantityStatus: 'user-corrected' }), m(5, 'Lidocaïne 200 mg', null, { ...PRESENTATION.ampoule, expectedQuantitySource: 4, quantityStatus: 'user-corrected' }), m(4, 'Exacyl (acide tranexamique)', null, { ...PRESENTATION.ampoule, expectedQuantitySource: 5, quantityStatus: 'user-corrected' }), m(5, 'Dépakine 400 mg', null, { ...PRESENTATION.ampoule, expectedQuantitySource: 4, quantityStatus: 'user-corrected' }), m(2, 'Xanax 0,5', null, { ...PRESENTATION.tablet, expectedQuantitySource: 5, quantityStatus: 'user-corrected' }), m(1, 'Éphédrine 30 mg/10 mL IV en seringue pré-remplie', null, { ...PRESENTATION.syringe, expectedQuantitySource: 2, quantityStatus: 'user-corrected' })]],
       ['lateral-droit', 'Compartiment latéral droit', [e(1, 'Nécessaire dextro (appareil, 5 Unistix, 1 boîte de bandelettes)'), e(1, 'Brassard'), e(1, 'Stéthoscope'), e(1, 'Lampe'), e(1, 'Couverture de survie'), e(1, 'Thermomètre'), e(1, 'Ciseau')]]
     ]
   }),
