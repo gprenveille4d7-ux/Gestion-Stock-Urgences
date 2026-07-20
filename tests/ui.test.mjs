@@ -70,7 +70,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
     assert.ok(overview.includes(container.id === 'sac-rouge-solutes' ? 'class="sac-visual-explorer"' : 'class="container-detail-hero"'), container.id);
     assert.equal(
       (overview.match(/class="container-compartment-row/g) || []).length,
-      container.sections.length,
+      container.id === 'sac-rouge-solutes' ? container.sections.length - 3 : container.sections.length,
       container.id
     );
     for (const inventorySection of container.sections) {
@@ -169,6 +169,22 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(redBagHtml.includes('class="sac-visual-explorer__image"'));
   assert.ok(redBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-face.png'));
   assert.ok(redBagHtml.includes('alt="Sac rouge vu de face"'));
+  assert.ok(redBagHtml.includes('Sac amovible rouge'));
+  assert.ok(!redBagHtml.includes('class="container-subcompartment-row'));
+
+  const removableRedBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'amovible']);
+  assert.ok(removableRedBagHtml.includes('data-sac-view="amovible"'));
+  assert.ok(removableRedBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-amovible.png'));
+  assert.equal((removableRedBagHtml.match(/class="container-subcompartment-row/g) || []).length, 4);
+  assert.ok(removableRedBagHtml.includes('Kit perfusion'));
+  assert.ok(removableRedBagHtml.includes('Kit paracétamol'));
+  assert.ok(removableRedBagHtml.includes('Boîte à aiguilles'));
+  assert.ok(removableRedBagHtml.includes('Kit ATB'));
+
+  const perfusionRedBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'kit-perfusion']);
+  assert.ok(perfusionRedBagHtml.includes('data-sac-view="amovible"'));
+  assert.ok(perfusionRedBagHtml.includes('data-nav="container/sac-rouge-solutes/amovible" aria-expanded="true"'));
+  assert.equal((perfusionRedBagHtml.match(/class="inventory-line"/g) || []).length, 8);
 
   const openedRedBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'plaque-a']);
   assert.ok(openedRedBagHtml.includes('data-sac-view="ouvert"'));

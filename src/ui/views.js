@@ -3,7 +3,7 @@ import { flattenActiveChariotReference } from '../data/chariot-adapter.js';
 import { OPERATIONAL_ASSETS } from '../data/operational-assets.js';
 import { EXCLUDED_SOURCE_CONTENT, SOURCE_DOCUMENTS } from '../data/source-manifest.js';
 import { findContainer, findReferenceItem, findZone, REFERENCE_ITEMS, SERVICE_ZONES, SMUR_CONTAINERS } from '../data/reference.js';
-import { SAC_ROUGE_CONTAINER_ID, SAC_ROUGE_PRELOAD_IMAGES, SAC_ROUGE_VIEWS, SAC_ROUGE_VIEW_LABELS, sacRougeViewForSection } from '../data/sac-visuals.js';
+import { SAC_ROUGE_CONTAINER_ID, SAC_ROUGE_PRELOAD_IMAGES, SAC_ROUGE_REMOVABLE_SECTION_IDS, SAC_ROUGE_VIEWS, SAC_ROUGE_VIEW_LABELS, sacRougeViewForSection } from '../data/sac-visuals.js';
 import { getChariotDiagram, getContainerDiagram, getReserveDiagram, RESERVE_ZONE_IDS } from '../data/visual-schemas.js';
 import { deriveAvailability, summarizeAvailability } from '../domain/availability.js';
 import { computeExpiryDashboard, daysUntil, EXPIRY_PANELS } from '../domain/expiry.js';
@@ -362,6 +362,13 @@ function renderInventory(state, ui) {
     ${expanded && !query && otherRows ? `<section class="section inventory-other-section"><div class="section-head"><h2>Autres inventaires</h2></div><div class="inventory-list compact">${otherRows}</div>${chariotWarning}</section>` : ''}`;
 }
 
+function renderContainerSectionPanel(container, section, className = 'container-compartment-panel') {
+  return `<section class="${className}" aria-label="Inventaire de ${escapeHtml(section.label)}">
+    <div class="inventory-line-list">${section.items.map((item) => `<div class="inventory-line"><span class="inventory-quantity">${Number(item.expectedQuantity)}×</span><span><strong>${escapeHtml(item.label)}</strong>${itemHasSourceAmbiguity(item) ? `<span class="data-quality-badge">${icon('alert', 12)} Libellé source à valider</span>` : ''}<small>${escapeHtml(item.category)} · unité : ${escapeHtml(item.unit)}${item.packSize ? ` · ${item.packSize} par paquet` : ''}${item.expiryTracked ? ' · péremption suivie' : ' · réutilisable'}</small>${(item.validationIssues || []).map((issue) => `<small class="inventory-validation-issue">${escapeHtml(issue)}</small>`).join('')}${item.sourceText ? `<small class="inventory-source-text">Source : ${escapeHtml(item.sourceText)}</small>` : ''}</span></div>`).join('')}</div>
+    <div class="inventory-detail-actions"><button type="button" class="primary-button" data-return-container="${container.id}" data-return-section="${section.id}">${icon('plus', 18)} Déclarer cette zone ouverte ou utilisée</button><button type="button" class="secondary-button" data-start-audit="${container.id}" data-audit-section="${section.id}">${icon('clipboard', 18)} Contrôler cette zone</button></div>
+  </section>`;
+}
+
 function renderContainerSectionAccordion(container, section, index, isSelected) {
   const sectionRoute = `container/${container.id}/${sectionToken(section.id)}`;
   const toggleRoute = isSelected ? `container/${container.id}` : sectionRoute;
@@ -373,14 +380,44 @@ function renderContainerSectionAccordion(container, section, index, isSelected) 
       <span class="container-compartment-count">${section.items.length} élément${section.items.length > 1 ? 's' : ''}</span>
       <span class="container-compartment-chevron">${icon('chevron', 16)}</span>
     </button>
-    ${isSelected ? `<section id="${escapeHtml(detailId)}" class="container-compartment-panel" aria-label="Inventaire de ${escapeHtml(section.label)}">
-      <div class="inventory-line-list">${section.items.map((item) => `<div class="inventory-line"><span class="inventory-quantity">${Number(item.expectedQuantity)}×</span><span><strong>${escapeHtml(item.label)}</strong>${itemHasSourceAmbiguity(item) ? `<span class="data-quality-badge">${icon('alert', 12)} Libellé source à valider</span>` : ''}<small>${escapeHtml(item.category)} · unité : ${escapeHtml(item.unit)}${item.packSize ? ` · ${item.packSize} par paquet` : ''}${item.expiryTracked ? ' · péremption suivie' : ' · réutilisable'}</small>${(item.validationIssues || []).map((issue) => `<small class="inventory-validation-issue">${escapeHtml(issue)}</small>`).join('')}${item.sourceText ? `<small class="inventory-source-text">Source : ${escapeHtml(item.sourceText)}</small>` : ''}</span></div>`).join('')}</div>
-      <div class="inventory-detail-actions"><button type="button" class="primary-button" data-return-container="${container.id}" data-return-section="${section.id}">${icon('plus', 18)} Déclarer cette zone ouverte ou utilisée</button><button type="button" class="secondary-button" data-start-audit="${container.id}" data-audit-section="${section.id}">${icon('clipboard', 18)} Contrôler cette zone</button></div>
-    </section>` : ''}
+    ${isSelected ? `<div id="${escapeHtml(detailId)}">${renderContainerSectionPanel(container, section)}</div>` : ''}
   </article>`;
 }
 
-function renderContainerHero(container, selectedSection, itemCount, availability) {
+function removableSectionLabel(section) {
+  if (sectionToken(section.id) === 'kit-perfusion') return 'Kit perfusion';
+  return section.label;
+}
+
+function renderSacRougeRemovableAccordion(container, sections, selectedSection, groupSelected) {
+  const isOpen = groupSelected || Boolean(selectedSection);
+  const total = sections.reduce((sum, section) => sum + section.items.length, 0);
+  const groupRoute = `container/${container.id}/amovible`;
+  const toggleRoute = groupSelected ? `container/${container.id}` : groupRoute;
+  return `<article class="container-compartment-item container-removable-group${isOpen ? ' active' : ''}">
+    <button type="button" class="container-compartment-row container-removable-row${isOpen ? ' active' : ''}" data-nav="${escapeHtml(toggleRoute)}" aria-expanded="${isOpen}" aria-controls="container-removable-detail">
+      <span class="container-compartment-icon" data-tone="1">${icon('bag', 17)}</span>
+      <span class="container-compartment-label">Sac amovible rouge</span>
+      <span class="container-compartment-count">${sections.length} kits · ${total} éléments</span>
+      <span class="container-compartment-chevron">${icon('chevron', 16)}</span>
+    </button>
+    ${isOpen ? `<div id="container-removable-detail" class="container-removable-panel">${sections.map((section, index) => {
+      const isSelected = selectedSection?.id === section.id;
+      const sectionRoute = `container/${container.id}/${sectionToken(section.id)}`;
+      return `<article class="container-subcompartment-item${isSelected ? ' active' : ''}">
+        <button type="button" class="container-subcompartment-row${isSelected ? ' active' : ''}" data-nav="${escapeHtml(isSelected ? groupRoute : sectionRoute)}" aria-expanded="${isSelected}">
+          <span class="container-compartment-icon" data-tone="${index % 4}">${icon(index === 2 ? 'plus' : 'bag', 15)}</span>
+          <span class="container-compartment-label">${escapeHtml(removableSectionLabel(section))}</span>
+          <span class="container-compartment-count">${section.items.length} élément${section.items.length > 1 ? 's' : ''}</span>
+          <span class="container-compartment-chevron">${icon('chevron', 15)}</span>
+        </button>
+        ${isSelected ? renderContainerSectionPanel(container, section, 'container-compartment-panel container-subcompartment-panel') : ''}
+      </article>`;
+    }).join('')}</div>` : ''}
+  </article>`;
+}
+
+function renderContainerHero(container, selectedSection, itemCount, availability, groupSelected = false) {
   if (container.id !== SAC_ROUGE_CONTAINER_ID) {
     return `<section class="container-detail-hero" data-color="${escapeHtml(container.color)}">
       <div class="container-bag-illustration" aria-hidden="true">
@@ -392,16 +429,17 @@ function renderContainerHero(container, selectedSection, itemCount, availability
     </section>`;
   }
 
-  const viewKey = sacRougeViewForSection(selectedSection?.id);
+  const viewKey = groupSelected ? 'amovible' : sacRougeViewForSection(selectedSection?.id);
   const imagePath = SAC_ROUGE_VIEWS[viewKey];
-  const caption = selectedSection && viewKey !== 'face' ? selectedSection.label : 'Sac rouge · Vue générale';
-  const alt = selectedSection && viewKey !== 'face'
+  const removableCount = container.sections.filter((section) => SAC_ROUGE_REMOVABLE_SECTION_IDS.includes(sectionToken(section.id))).reduce((sum, section) => sum + section.items.length, 0);
+  const caption = groupSelected ? 'Sac amovible rouge' : selectedSection && viewKey !== 'face' ? removableSectionLabel(selectedSection) : 'Sac rouge · Vue générale';
+  const alt = groupSelected ? SAC_ROUGE_VIEW_LABELS.amovible : selectedSection && viewKey !== 'face'
     ? `${SAC_ROUGE_VIEW_LABELS[viewKey]} — ${selectedSection.label}`
     : SAC_ROUGE_VIEW_LABELS.face;
   return `<section class="sac-visual-explorer" aria-label="Visualiseur photographique du sac rouge">
     <div class="sac-visual-explorer__visual" data-sac-view="${escapeHtml(viewKey)}">
-      <img class="sac-visual-explorer__image" src="${escapeHtml(imagePath)}" alt="${escapeHtml(alt)}" width="1254" height="1254" decoding="async">
-      <div class="sac-visual-explorer__caption" aria-live="polite"><span><strong>${escapeHtml(caption)}</strong><small>${selectedSection && viewKey !== 'face' ? `${selectedSection.items.length} élément${selectedSection.items.length > 1 ? 's' : ''}` : `${itemCount} éléments au total`}</small></span>${statusPill(availability.status, availability.label)}</div>
+      <img class="sac-visual-explorer__image" src="${escapeHtml(imagePath)}" alt="${escapeHtml(alt)}" decoding="async">
+      <div class="sac-visual-explorer__caption" aria-live="polite"><span><strong>${escapeHtml(caption)}</strong><small>${groupSelected ? `4 sous-compartiments · ${removableCount} éléments` : selectedSection && viewKey !== 'face' ? `${selectedSection.items.length} élément${selectedSection.items.length > 1 ? 's' : ''}` : `${itemCount} éléments au total`}</small></span>${statusPill(availability.status, availability.label)}</div>
     </div>
     <div class="sac-visual-preload" aria-hidden="true">${SAC_ROUGE_PRELOAD_IMAGES.filter((path) => path !== imagePath).map((path) => `<img src="${escapeHtml(path)}" alt="" width="1" height="1" decoding="async">`).join('')}</div>
   </section>`;
@@ -411,15 +449,28 @@ function renderContainerDetail(state, containerId, sectionId) {
   const container = findContainer(containerId);
   if (!container) return `${header('Contenant introuvable', '', 'Erreur', 'inventory')}<div class="empty-state"><p>Ce contenant n’existe pas dans le référentiel chargé.</p></div>`;
   const selectedSection = findContainerSection(container, sectionId);
+  const groupSelected = container.id === SAC_ROUGE_CONTAINER_ID && sectionId === 'amovible';
+  const removableSections = container.id === SAC_ROUGE_CONTAINER_ID
+    ? SAC_ROUGE_REMOVABLE_SECTION_IDS.map((id) => findContainerSection(container, id)).filter(Boolean)
+    : [];
+  const selectedRemovableSection = selectedSection && SAC_ROUGE_REMOVABLE_SECTION_IDS.includes(sectionToken(selectedSection.id)) ? selectedSection : null;
   const availability = deriveAvailability(container.id, state);
   const itemCount = container.sections.reduce((sum, section) => sum + section.items.length, 0);
   const selectedIndex = selectedSection ? container.sections.indexOf(selectedSection) : -1;
   return `${header(container.label, '', '', 'inventory')}
-    ${renderContainerHero(container, selectedSection, itemCount, availability)}
+    ${renderContainerHero(container, selectedSection, itemCount, availability, groupSelected)}
     <section class="container-compartments" aria-labelledby="container-compartments-title">
       <h2 id="container-compartments-title">Compartiments</h2>
       <div class="container-compartment-list">
-        ${container.sections.map((section, index) => renderContainerSectionAccordion(container, section, index, selectedIndex === index)).join('')}
+        ${container.sections.map((section, index) => {
+          const token = sectionToken(section.id);
+          if (container.id === SAC_ROUGE_CONTAINER_ID && SAC_ROUGE_REMOVABLE_SECTION_IDS.includes(token)) {
+            return token === SAC_ROUGE_REMOVABLE_SECTION_IDS[0]
+              ? renderSacRougeRemovableAccordion(container, removableSections, selectedRemovableSection, groupSelected)
+              : '';
+          }
+          return renderContainerSectionAccordion(container, section, index, selectedIndex === index);
+        }).join('')}
       </div>
     </section>
     <button type="button" class="primary-button container-full-audit" data-start-audit="${container.id}">Voir l’inventaire complet</button>`;
