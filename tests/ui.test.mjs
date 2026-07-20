@@ -223,7 +223,22 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
     assert.ok(ampoulierHtml.includes('data-sac-view="ampoulier"'), ampoulierSection);
     assert.ok(ampoulierHtml.includes('./assets/sacs/sac-rouge/sac-rouge-ampoulier.png'), ampoulierSection);
     assert.ok(ampoulierHtml.includes('Ampoulier jaune extrait du sac rouge'), ampoulierSection);
+    assert.ok(ampoulierHtml.includes('class="inventory-pictogram"'), ampoulierSection);
   }
+
+  const innerAmpoulierHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'ampoulier-interne']);
+  assert.ok(innerAmpoulierHtml.includes('aria-label="poche ou flacon de perfusion">💧'));
+  assert.ok(innerAmpoulierHtml.includes('aria-label="tubulure ou dispositif de transfert">🔗'));
+  assert.ok(innerAmpoulierHtml.includes('aria-label="ampoule injectable">🧪'));
+  assert.ok(innerAmpoulierHtml.includes('aria-label="comprimé">💊'));
+  assert.ok(innerAmpoulierHtml.includes('aria-label="seringue préremplie">💉'));
+  assert.ok(innerAmpoulierHtml.includes('<span class="inventory-quantity">4×</span></span><span><strong>Penthrox</strong>'));
+  assert.ok(innerAmpoulierHtml.includes('<span class="inventory-quantity">1×</span></span><span><strong>Éphédrine 30 mg/10 mL IV en seringue pré-remplie</strong>'));
+
+  const kitAtbHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'kit-atb']);
+  assert.ok(kitAtbHtml.includes('aria-label="poche ou flacon de perfusion">💧'));
+  assert.ok(kitAtbHtml.includes('aria-label="tubulure ou dispositif de transfert">🔗'));
+  assert.ok(kitAtbHtml.includes('aria-label="flacon injectable">🧴'));
 
   const selectedCompartmentHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia', 'ampoulier']);
   assert.equal((selectedCompartmentHtml.match(/class="container-compartment-panel"/g) || []).length, 1);

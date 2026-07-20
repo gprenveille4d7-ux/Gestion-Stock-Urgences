@@ -106,7 +106,7 @@ test('les 361 lignes PDF restent toutes visibles et leurs quantités se réconci
     assert.ok(sourceLines.every((line) => line.sourceId === item.sourceId));
     assert.equal(
       sourceLines.reduce((total, line) => total + line.expectedQuantity, 0),
-      item.expectedQuantity,
+      item.expectedQuantitySource,
       `quantité non réconciliée : ${item.id}`,
     );
   }
@@ -118,6 +118,13 @@ test('les 361 lignes PDF restent toutes visibles et leurs quantités se réconci
       assert.ok(section.items.every((item) => Number.isFinite(item.expectedQuantity) && item.expectedQuantity > 0));
     }
   }
+});
+
+test('les quantités relues par l’utilisateur restent traçables sans modifier le snapshot source', () => {
+  const corrected = REFERENCE_ITEMS.filter((item) => item.quantityStatus === 'user-corrected');
+  assert.equal(corrected.length, 9);
+  assert.ok(corrected.every((item) => item.sectionId === 'sac-rouge-solutes:ampoulier-interne'));
+  assert.ok(corrected.every((item) => item.expectedQuantity !== item.expectedQuantitySource));
 });
 
 test('les libellés PDF ambigus restent littéraux et localement signalés', () => {

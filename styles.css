@@ -3947,6 +3947,19 @@ button.visual-hotspot:focus-visible { outline: 3px solid #0758b9; outline-offset
 .inventory-line small { margin-top: 3px; color: var(--muted); font-size: 0.59rem; }
 .inventory-line .inventory-source-text { color: #765818; font-style: italic; }
 .inventory-line .inventory-validation-issue { color: #9a3e0a; }
+.inventory-line-leading { display: flex; align-items: center; gap: 7px; }
+.inventory-pictogram {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #d8e5f3;
+  border-radius: 9px;
+  background: #f5f9ff;
+  font-size: 1rem;
+  line-height: 1;
+}
 .data-quality-badge {
   display: inline-flex;
   align-items: center;
