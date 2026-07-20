@@ -67,7 +67,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
 
   for (const container of SMUR_CONTAINERS) {
     const overview = renderApp(store.state, { ...ui, search: '' }, ['container', container.id]);
-    assert.ok(overview.includes(`class="container-detail-hero"`), container.id);
+    assert.ok(overview.includes(container.id === 'sac-rouge-solutes' ? 'class="sac-visual-explorer"' : 'class="container-detail-hero"'), container.id);
     assert.equal(
       (overview.match(/class="container-compartment-row/g) || []).length,
       container.sections.length,
@@ -164,6 +164,21 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(containerHtml.includes('Voir l’inventaire complet'));
   assert.equal((containerHtml.match(/class="container-compartment-row/g) || []).length, 11);
   assert.ok(containerHtml.includes('data-nav="container/sac-vert-pedia/ampoulier"'));
+
+  const redBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes']);
+  assert.ok(redBagHtml.includes('class="sac-visual-explorer__image"'));
+  assert.ok(redBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-face.png'));
+  assert.ok(redBagHtml.includes('alt="Sac rouge vu de face"'));
+
+  const openedRedBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'plaque-a']);
+  assert.ok(openedRedBagHtml.includes('data-sac-view="ouvert"'));
+  assert.ok(openedRedBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-ouvert.png'));
+  assert.ok(openedRedBagHtml.includes('Plaque centrale · Face A'));
+
+  const rightRedBagHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'lateral-droit']);
+  assert.ok(rightRedBagHtml.includes('data-sac-view="droite"'));
+  assert.ok(rightRedBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-cote-droit.png'));
+  assert.ok(rightRedBagHtml.includes('alt="Sac rouge vu du côté droit — Compartiment latéral droit"'));
 
   const selectedCompartmentHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia', 'ampoulier']);
   assert.equal((selectedCompartmentHtml.match(/class="container-compartment-panel"/g) || []).length, 1);
