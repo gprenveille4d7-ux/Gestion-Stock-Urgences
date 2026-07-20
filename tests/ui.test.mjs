@@ -133,10 +133,14 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
 
   const inventoryHtml = renderApp(store.state, { ...ui, search: '', inventoryCategory: 'bags', inventoryExpanded: false }, ['inventory']);
   assert.ok(inventoryHtml.includes('Catégories d’inventaires'));
+  assert.ok(inventoryHtml.includes('class="inventory-hero"'));
+  assert.ok(inventoryHtml.includes('class="inventory-kpis"'));
   assert.ok(inventoryHtml.includes('Sacs &amp; Kits'));
   assert.ok(inventoryHtml.includes('Frigos &amp; Valises'));
   assert.ok(inventoryHtml.includes('Voir tous les sacs & kits'));
   assert.equal((inventoryHtml.match(/class="inventory-list-row"/g) || []).length, 6);
+  assert.equal((inventoryHtml.match(/class="inventory-bag-card"/g) || []).length, 6);
+  assert.ok(inventoryHtml.includes('data-inventory-filter="review"'));
   for (const containerId of ['sac-rouge-solutes', 'sac-bleu-respi', 'sac-vert-pedia', 'sac-noir-mater', 'sac-plaies', 'sac-orange-damage-control']) {
     assert.ok(inventoryHtml.includes(`data-nav="container/${containerId}"`), containerId);
   }

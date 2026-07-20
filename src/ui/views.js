@@ -327,11 +327,29 @@ function renderChariotInventoryCard(reference) {
 function renderInventoryListRow(state, container) {
   const itemCount = container.sections.reduce((sum, section) => sum + section.items.length, 0);
   const availability = deriveAvailability(container.id, state);
-  return `<button type="button" class="inventory-list-row" data-nav="container/${container.id}" aria-label="${escapeHtml(container.label)}, ${itemCount} éléments, ${escapeHtml(availability.label)}">
-    <span class="inventory-list-icon" data-color="${escapeHtml(container.color)}">${icon('bag', 22)}</span>
-    <span class="inventory-list-copy"><strong>${escapeHtml(container.label)}</strong><small>${itemCount} élément${itemCount > 1 ? 's' : ''}</small></span>
-    <span class="inventory-list-chevron">${icon('chevron', 18)}</span>
-  </button>`;
+  const photo = bagPhotoConfig(container.id)?.views?.face || '';
+  const subtitles = {
+    'sac-rouge-solutes': 'Solutés',
+    'sac-bleu-respi': 'Respiratoire',
+    'sac-vert-pedia': 'Pédiatrie',
+    'sac-noir-mater': 'Matériel',
+    'sac-plaies': 'Soins & Pansements',
+    'sac-orange-damage-control': 'Damage Control'
+  };
+  const completedAudits = state.audits.filter((audit) => audit.containerId === container.id && audit.status === 'completed');
+  const latestAudit = [...completedAudits].sort((left, right) => new Date(right.completedAt || 0) - new Date(left.completedAt || 0))[0];
+  const ready = ['pret', 'pret_avec_action_a_anticiper'].includes(availability.status);
+  const progress = ready ? 100 : availability.status === 'indisponible' ? 20 : 55;
+  const numberLabel = container.label.match(/n[°º]?\s*\d+/i)?.[0]?.replace(/\s+/g, '') || '';
+  return `<article class="inventory-bag-card" data-color="${escapeHtml(container.color)}">
+    <button type="button" class="inventory-list-row" data-nav="container/${container.id}" aria-label="${escapeHtml(container.label)}, ${itemCount} éléments, ${escapeHtml(availability.label)}">
+      <span class="inventory-bag-visual">${photo ? `<img src="${escapeHtml(photo)}" alt="" loading="lazy" decoding="async">` : `<span class="inventory-bag-placeholder">${icon('bag', 48)}</span>`}${numberLabel ? `<b>${escapeHtml(numberLabel)}</b>` : ''}</span>
+      <span class="inventory-list-copy"><strong>${escapeHtml(container.label)}</strong><em>${escapeHtml(subtitles[container.id] || container.kind)}</em><small>${icon('bag', 13)} ${itemCount} élément${itemCount > 1 ? 's' : ''}</small></span>
+      <span class="inventory-list-chevron">${icon('chevron', 21)}</span>
+      <span class="inventory-card-meta"><span class="${ready ? 'is-ready' : 'is-review'}">${icon(ready ? 'check' : 'alert', 12)} ${escapeHtml(ready ? 'Conforme' : availability.label)}</span><span>${icon('calendar', 12)} ${latestAudit ? formatDate(latestAudit.completedAt, { dateStyle: 'short' }) : 'À planifier'}</span></span>
+      <span class="inventory-card-progress"><i style="width:${progress}%"></i><b>${progress}%</b></span>
+    </button>
+  </article>`;
 }
 
 function renderOtherInventoryRow(route, iconName, label, detail, color = 'non-renseignee') {
@@ -349,29 +367,60 @@ function renderInventory(state, ui) {
   const results = query ? all.filter((item) => normalizeSearch(`${item.label} ${item.sourceText || ''} ${item.containerLabel} ${item.sectionLabel} ${item.productCode || ''}`).includes(query)).slice(0, 80) : [];
   const chariots = state.chariotReference?.references || [];
   const activeCategory = ui.inventoryCategory === 'cold' ? 'cold' : 'bags';
+  const activeFilter = ['review', 'recent', 'expiry'].includes(ui.inventoryFilter) ? ui.inventoryFilter : 'all';
   const expanded = Boolean(ui.inventoryExpanded);
   const bags = SMUR_CONTAINERS.filter((container) => !['valise', 'armoire'].includes(container.kind));
   const coldCases = SMUR_CONTAINERS.filter((container) => ['valise', 'armoire'].includes(container.kind));
   const featuredIds = ['sac-rouge-solutes', 'sac-bleu-respi', 'sac-vert-pedia', 'sac-noir-mater', 'sac-plaies', 'sac-orange-damage-control'];
   const featuredBags = featuredIds.map((id) => bags.find((container) => container.id === id)).filter(Boolean);
-  const visibleContainers = activeCategory === 'cold' ? coldCases : expanded ? bags : featuredBags;
+  const categoryContainers = activeCategory === 'cold' ? coldCases : expanded ? bags : featuredBags;
+  const recentCutoff = Date.now() - 30 * 86400000;
+  const recentContainerIds = new Set(state.audits.filter((audit) => audit.status === 'completed' && new Date(audit.completedAt || 0).getTime() >= recentCutoff).map((audit) => audit.containerId));
+  const expiryContainerIds = new Set(expiryModels(state).active.filter((lot) => lot.daysRemaining <= 90).map((lot) => lot.containerId));
+  const visibleContainers = categoryContainers.filter((container) => {
+    if (activeFilter === 'review') return !['pret', 'pret_avec_action_a_anticiper'].includes(deriveAvailability(container.id, state).status);
+    if (activeFilter === 'recent') return recentContainerIds.has(container.id);
+    if (activeFilter === 'expiry') return expiryContainerIds.has(container.id);
+    return true;
+  });
+  const categoryItemCount = categoryContainers.reduce((sum, container) => sum + container.sections.reduce((sectionSum, section) => sectionSum + section.items.length, 0), 0);
+  const conformCount = categoryContainers.filter((container) => ['pret', 'pret_avec_action_a_anticiper'].includes(deriveAvailability(container.id, state).status)).length;
+  const reviewCount = categoryContainers.length - conformCount;
+  const conformity = categoryContainers.length ? Math.round((conformCount / categoryContainers.length) * 100) : 100;
+  const activeAudits = state.audits.filter((audit) => audit.status === 'in_progress').length;
   const otherRows = expanded ? [
     ...RESERVE_ZONE_IDS.map((zoneId) => findZone(zoneId)).filter(Boolean).map((zone) => renderOtherInventoryRow(`reserve/${zone.id}`, 'map', zone.label, 'Réserve à cartographier', 'non-renseignee')),
     ...chariots.map((reference) => renderOtherInventoryRow(`chariot/${reference.id}`, 'clipboard', reference.label, `${reference.containers.reduce((sum, section) => sum + section.items.length, 0)} éléments`, 'non-renseignee'))
   ].join('') : '';
   const chariotWarning = expanded && !chariots.length ? `<div class="p0-reference-banner historical-warning">${icon('alert', 18)}<div><strong>Référentiel chariots indisponible</strong><span>Les inventaires XLSX n’ont pas pu être chargés. Réessayez en ligne ou vérifiez le cache PWA.</span></div></div>` : '';
-  return `${header('Inventaires', '', '', 'home')}
+  return `<header class="inventory-hero">
+      <div><h1 class="page-title" tabindex="-1">Inventaires</h1><strong>SMUR <span>•</span> Urgences</strong><p>Tout le matériel. À jour. Prêt à partir.</p></div>
+      <img src="./assets/branding/releve-logo.jpg" alt="" width="130" height="96">
+      <button type="button" class="inventory-filter-launch" data-inventory-expand="${expanded ? 'false' : 'true'}" aria-label="${expanded ? 'Masquer la recherche' : 'Rechercher et filtrer'}">${icon('settings', 21)}</button>
+    </header>
     <div class="inventory-category-tabs" role="tablist" aria-label="Catégories d’inventaires">
-      <button type="button" role="tab" class="${activeCategory === 'bags' ? 'active' : ''}" aria-selected="${activeCategory === 'bags'}" data-inventory-category="bags">Sacs &amp; Kits</button>
-      <button type="button" role="tab" class="${activeCategory === 'cold' ? 'active' : ''}" aria-selected="${activeCategory === 'cold'}" data-inventory-category="cold">Frigos &amp; Valises</button>
+      <button type="button" role="tab" class="${activeCategory === 'bags' ? 'active' : ''}" aria-selected="${activeCategory === 'bags'}" data-inventory-category="bags">${icon('bag', 18)} Sacs &amp; Kits</button>
+      <button type="button" role="tab" class="${activeCategory === 'cold' ? 'active' : ''}" aria-selected="${activeCategory === 'cold'}" data-inventory-category="cold">${icon('clipboard', 18)} Frigos &amp; Valises</button>
     </div>
+    <div class="inventory-filter-chips" aria-label="Filtres des inventaires">
+      <button type="button" class="${activeFilter === 'all' ? 'active' : ''}" data-inventory-filter="all">${icon('settings', 14)} Tous</button>
+      <button type="button" class="${activeFilter === 'review' ? 'active' : ''}" data-inventory-filter="review">${icon('alert', 14)} À vérifier <b>${reviewCount}</b></button>
+      <button type="button" class="${activeFilter === 'recent' ? 'active' : ''}" data-inventory-filter="recent">${icon('check', 14)} Contrôlés récemment</button>
+      <button type="button" class="${activeFilter === 'expiry' ? 'active' : ''}" data-inventory-filter="expiry">${icon('clock', 14)} Péremptions proches</button>
+    </div>
+    <section class="inventory-kpis" aria-label="Synthèse des inventaires">
+      <div><span>${icon('bag', 22)}</span><strong>${categoryContainers.length}<small>${activeCategory === 'bags' ? 'Sacs & kits' : 'Frigos & valises'}</small></strong></div>
+      <div><span>${icon('map', 22)}</span><strong>${categoryItemCount}<small>Éléments</small></strong></div>
+      <div><span>${icon('check', 22)}</span><strong>${conformity}%<small>Conformes</small></strong></div>
+      <div><span>${icon('clipboard', 22)}</span><strong>${activeAudits}<small>Contrôles en cours</small></strong></div>
+    </section>
     ${expanded ? `<label class="p0-search inventory-search">${icon('search', 19)}<span class="sr-only">Rechercher dans le référentiel</span><input id="reference-search" type="search" value="${escapeHtml(ui.search)}" placeholder="Produit, matériel ou emplacement…" autocomplete="off"></label>` : ''}
     ${query ? `<section class="section inventory-search-section"><div class="section-head"><h2>${results.length} résultat${results.length > 1 ? 's' : ''}${results.length === 80 ? ' affichés' : ''}</h2></div><div class="p0-search-results">${results.map((item) => {
       const container = item.sourceType === 'pdf' ? findContainer(item.containerId) : null;
       const zone = container ? findZone(container.stockZoneId) : null;
       const route = item.sourceType === 'pdf' ? `container/${item.containerId}/${sectionToken(item.sectionId)}` : `chariot/${item.inventoryId}/${item.sectionId}`;
       return `<article class="p0-search-result"><div><strong>${escapeHtml(item.label)}</strong>${item.sourceStatus === 'source-ambiguity-to-validate' ? `<span class="data-quality-badge">${icon('alert', 12)} Libellé source à valider</span>` : ''}<small>${escapeHtml(item.containerLabel)} › ${escapeHtml(item.sectionLabel)}</small><small>${Number(item.expectedQuantity)} attendu · ${item.sourceType === 'xlsx' ? `inventaire XLSX actif · ${escapeHtml(item.documentRef || 'référence source non renseignée')} ${escapeHtml(item.revision || '')}` : `affectation de zone à confirmer : ${zone?.label || 'non renseignée'}`}</small></div><button class="small-button" data-nav="${escapeHtml(route)}">Voir</button></article>`;
-    }).join('') || '<div class="empty-state"><h3>Aucun résultat</h3><p>Essayez un libellé plus court.</p></div>'}</div></section>` : `<section class="inventory-list" aria-label="${activeCategory === 'bags' ? 'Sacs et kits' : 'Frigos et valises'}">${visibleContainers.map((container) => renderInventoryListRow(state, container)).join('') || '<div class="empty-state"><h3>Aucun inventaire</h3><p>Aucun contenant n’est disponible dans cette catégorie.</p></div>'}</section>`}
+    }).join('') || '<div class="empty-state"><h3>Aucun résultat</h3><p>Essayez un libellé plus court.</p></div>'}</div></section>` : `<section class="inventory-list" aria-label="${activeCategory === 'bags' ? 'Sacs et kits' : 'Frigos et valises'}">${visibleContainers.map((container) => renderInventoryListRow(state, container)).join('') || '<div class="empty-state"><h3>Aucun inventaire</h3><p>Aucun contenant ne correspond à ce filtre.</p></div>'}</section>`}
     ${activeCategory === 'bags' && !query ? `<button type="button" class="primary-button inventory-show-all" data-inventory-expand="${expanded ? 'false' : 'true'}">${expanded ? 'Réduire la liste' : 'Voir tous les sacs & kits'}</button>` : ''}
     ${expanded && !query && otherRows ? `<section class="section inventory-other-section"><div class="section-head"><h2>Autres inventaires</h2></div><div class="inventory-list compact">${otherRows}</div>${chariotWarning}</section>` : ''}`;
 }
