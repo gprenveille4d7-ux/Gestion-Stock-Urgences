@@ -141,7 +141,6 @@ function homeExpiryIndicator(tone, value, label) {
 function homeQuickAction(route, iconName, label, detail) {
   return `<button type="button" class="home-quick-action" data-nav="${route}"><span class="home-quick-icon">${icon(iconName, 21)}</span><span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(detail)}</small></span>${icon('chevron', 18)}</button>`;
 }
-
 function renderHome(state) {
   const summary = summarizeAvailability(state, SMUR_CONTAINERS);
   const openActions = state.actions.filter((action) => !['done', 'cancelled'].includes(action.status));
