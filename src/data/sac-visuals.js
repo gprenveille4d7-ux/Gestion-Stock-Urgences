@@ -12,7 +12,8 @@ export const SAC_ROUGE_VIEWS = Object.freeze({
   dessus: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-dessus.png`,
   ouvert: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-ouvert.png`,
   amovible: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-amovible.png`,
-  ampoulier: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-ampoulier.png`
+  ampoulier: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-ampoulier.png`,
+  plaqueFaceB: `${SAC_ROUGE_ASSET_ROOT}/sac-rouge-plaque-face-b.png`
 });
 
 export const SAC_ROUGE_VIEW_LABELS = Object.freeze({
@@ -25,7 +26,8 @@ export const SAC_ROUGE_VIEW_LABELS = Object.freeze({
   dessus: 'Sac rouge vu du dessus',
   ouvert: 'Sac rouge ouvert',
   amovible: 'Sac amovible rouge ouvert',
-  ampoulier: 'Ampoulier jaune extrait du sac rouge'
+  ampoulier: 'Ampoulier jaune extrait du sac rouge',
+  plaqueFaceB: 'Plaque centrale du sac rouge vue côté Face B'
 });
 
 export const SAC_ROUGE_REMOVABLE_SECTION_IDS = Object.freeze([
@@ -41,7 +43,7 @@ export const SAC_ROUGE_SECTION_VIEWS = Object.freeze({
   'kit-atb': 'amovible',
   aiguilles: 'amovible',
   'plaque-a': 'ouvert',
-  'plaque-b': 'ouvert',
+  'plaque-b': 'plaqueFaceB',
   'ampoulier-gauche': 'ampoulier',
   'ampoulier-droit': 'ampoulier',
   'ampoulier-interne': 'ampoulier',
