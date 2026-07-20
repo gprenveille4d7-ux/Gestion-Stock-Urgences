@@ -121,7 +121,7 @@ function actionCard(action) {
 function topbar(state, ui) {
   return `<div class="topbar">
     <button class="brand brand-button" data-nav="home" aria-label="Accueil">
-      <span class="brand-mark">${icon('activity', 22)}</span><span class="brand-copy"><strong>Relève</strong><small>SMUR · Urgences</small></span>
+      <span class="brand-mark brand-logo"><img src="./assets/branding/releve-logo.jpg" alt="" width="38" height="38"></span><span class="brand-copy"><strong>Relève</strong><small>SMUR · Urgences</small></span>
     </button>
     <div class="topbar-actions"><span class="p0-connectivity ${ui.online ? 'online' : 'offline'}" role="status" aria-live="polite" aria-atomic="true" aria-label="État réseau : ${ui.online ? 'en ligne' : 'hors ligne'}">${icon(ui.online ? 'wifi' : 'offline', 16)}<span>${ui.online ? 'En ligne' : 'Hors ligne'}</span></span><button class="icon-button" data-nav="profile" aria-label="Profil">${icon('user')}</button></div>
   </div>`;
@@ -136,17 +136,20 @@ function bottomNav(route) {
 }
 
 function homePrimaryMenu(tone, route, iconName, label, detail) {
-  return `<button type="button" class="home-primary-menu ${tone}" data-nav="${escapeHtml(route)}"><span class="home-primary-icon">${icon(iconName, 23)}</span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(detail)}</small></button>`;
+  return `<button type="button" class="home-primary-menu ${tone}" data-nav="${escapeHtml(route)}"><span class="home-primary-icon">${icon(iconName, 26)}</span><span class="home-primary-copy"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(detail)}</small></span><span class="home-primary-arrow">${icon('chevron', 19)}</span></button>`;
 }
 
 function homeQuickAction(route, iconName, label, detail) {
   return `<button type="button" class="home-quick-action" data-nav="${route}"><span class="home-quick-icon">${icon(iconName, 21)}</span><span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(detail)}</small></span>${icon('chevron', 18)}</button>`;
 }
+
+function homePriorityCard(tone, route, iconName, value, label, detail, actionLabel) {
+  return `<button type="button" class="home-priority-card ${tone}" data-nav="${escapeHtml(route)}"><span class="home-priority-icon">${icon(iconName, 23)}</span><span class="home-priority-copy"><strong>${escapeHtml(value)}</strong><b>${escapeHtml(label)}</b><small>${escapeHtml(detail)}</small><em>${escapeHtml(actionLabel)} ${icon('chevron', 14)}</em></span></button>`;
+}
+
 function renderHome(state) {
   const summary = summarizeAvailability(state, SMUR_CONTAINERS);
   const openActions = state.actions.filter((action) => !['done', 'cancelled'].includes(action.status));
-  const priorityRank = { critique: 4, haute: 3, normale: 2, planifiee: 1 };
-  const prioritized = [...openActions].sort((a, b) => (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0) || new Date(a.createdAt) - new Date(b.createdAt)).slice(0, 4);
   const expiry = expiryModels(state);
   const nextLots = expiry.active.filter((lot) => lot.daysRemaining <= expiry.thresholds.anticipationDays).slice(0, 3);
   const readyCount = summary.pret + summary.pret_avec_action_a_anticiper;
@@ -164,19 +167,24 @@ function renderHome(state) {
   const userRole = state.user?.team || state.user?.function || state.user?.role || 'Équipe locale';
   const chariotReferences = state.chariotReference?.references || [];
   const primaryChariotRoute = chariotReferences[0] ? `chariot/${chariotReferences[0].id}` : 'inventory';
-  return `<header class="home-welcome">
-      <p class="eyebrow">Gestion Stock Urgences</p>
-      <h1 class="page-title" tabindex="-1">Bonjour ${escapeHtml(userName)}</h1>
-      <p>${escapeHtml(userRole)} <span aria-hidden="true">·</span> <span class="${state.persistent ? 'local-active' : 'local-temporary'}">${state.persistent ? 'Données locales actives' : 'Stockage temporaire'}</span></p>
+  const urgentExpiryCount = expiry.active.filter((lot) => lot.daysRemaining < 30).length;
+  const pendingReturns = openActions.filter((action) => /retour|usage/i.test(`${action.type} ${action.title}`)).length;
+  const conformity = SMUR_CONTAINERS.length ? Math.round((readyCount / SMUR_CONTAINERS.length) * 100) : 100;
+  const syncLabel = state.sync?.pending ? `${state.sync.pending} en attente` : 'Synchronisé';
+  return `<header class="home-hero">
+      <div class="home-hero-content">
+        <img class="home-hero-logo" src="./assets/branding/releve-logo.jpg" alt="Logo Relève SMUR Urgences" width="78" height="78">
+        <h1 class="page-title" tabindex="-1">Bonjour&nbsp;!</h1>
+        <p class="home-hero-question">Prêt à assurer <strong>la mission</strong>&nbsp;?</p>
+        <div class="home-hero-badges" aria-label="État de l’application">
+          <span class="${state.persistent ? 'is-active' : 'is-warning'}">${icon(state.persistent ? 'check' : 'alert', 16)} ${state.persistent ? 'Données locales actives' : 'Stockage temporaire'}</span>
+          <span>${icon('activity', 16)} ${escapeHtml(syncLabel)}</span>
+        </div>
+        <p class="sr-only">Gestion Stock Urgences · Bonjour ${escapeHtml(userName)} · ${escapeHtml(userRole)} · État général : ${escapeHtml(generalLabel)}${latestAudit ? ` · Dernier contrôle complet le ${escapeHtml(formatDate(latestAudit.completedAt))}` : ''}</p>
+      </div>
+      <span class="home-hero-pulse" aria-hidden="true"></span>
     </header>
-    <section class="home-general-card ${generalTone}" aria-labelledby="home-general-title">
-      <div class="home-general-heading"><span class="home-general-icon">${icon(generalTone === 'success' ? 'check' : 'alert', 20)}</span><div><p>État général</p><h2 id="home-general-title">${escapeHtml(generalLabel)}</h2></div></div>
-      <dl class="home-general-stats">
-        <div><dt>Contenants prêts</dt><dd>${readyCount}<span> / ${SMUR_CONTAINERS.length}</span></dd></div>
-        <div><dt>Contrôles en cours</dt><dd>${activeAudits.length}</dd></div>
-      </dl>
-      <p class="home-last-control">${latestAudit ? `Dernier contrôle complet le ${escapeHtml(formatDate(latestAudit.completedAt))}` : 'Aucun contrôle complet enregistré'}</p>
-    </section>
+    <div class="home-dashboard">
     <section class="home-section" aria-labelledby="home-primary-title">
       <div class="section-head"><h2 id="home-primary-title">Accès principaux</h2></div>
       <div class="home-primary-grid" aria-label="Menus principaux">
@@ -189,14 +197,20 @@ function renderHome(state) {
     <section class="home-section" aria-labelledby="home-actions-title">
       <div class="section-head"><h2 id="home-actions-title">Actions rapides</h2></div>
       <div class="home-quick-grid">
-        ${homeQuickAction('return', 'plus', "Retour d’intervention", 'Déclarer ce qui a été ouvert ou utilisé')}
+        ${homeQuickAction('return', 'back', "Retour d’intervention", 'Déclarer ce qui a été ouvert ou utilisé')}
         ${homeQuickAction('audits', 'clipboard', 'Commencer un contrôle', 'Choisir un contenant et vérifier son contenu')}
         ${homeQuickAction('actions', 'bag', 'Réarmement SMUR', `${openActions.length} action${openActions.length > 1 ? 's' : ''} à traiter`)}
         ${homeQuickAction('stats', 'chart', 'Statistiques', 'Consulter les indicateurs d’activité')}
       </div>
     </section>
-    <section class="section"><div class="section-head"><h2>Priorités opérationnelles</h2><button class="text-button" data-nav="actions">Tout voir</button></div><div class="action-list">${prioritized.length ? prioritized.map(actionCard).join('') : '<div class="empty-state"><h3>Aucune action ouverte</h3><p>Les contenants connus sont sans action active.</p></div>'}</div></section>
-    <section class="section"><div class="section-head"><h2>Prochaines péremptions</h2><button class="text-button" data-nav="expiry">Gérer</button></div><div class="card">${nextLots.map((lot) => `<button type="button" class="p0-list-row expiry-home-row" data-nav="expiry/lot/${encodeURIComponent(lot.id)}"><span><strong>${escapeHtml(lot.item?.label || 'Produit du référentiel')}</strong><small>${escapeHtml(lot.item?.containerLabel || 'Contenant à confirmer')} · lot ${escapeHtml(lot.lotNumber)}</small></span><strong class="p0-days ${lot.daysRemaining <= 0 ? 'danger' : ''}">${lot.daysRemaining} j</strong></button>`).join('') || '<div class="expiry-home-empty"><p>Aucun lot suivi pour le moment</p><button type="button" class="small-button" data-nav="expiry/add">Commencer la saisie</button></div>'}</div></section>`;
+    <section class="home-section"><div class="section-head"><h2>Priorités opérationnelles</h2><button class="text-button" data-nav="actions">Tout voir</button></div><div class="home-priority-grid">
+      ${homePriorityCard('red', 'audits', 'alert', reviewCount, 'À contrôler', 'en priorité', 'Voir la liste')}
+      ${homePriorityCard('orange', 'expiry', 'clock', urgentExpiryCount, 'Péremption', '< 30 jours', 'Voir la liste')}
+      ${homePriorityCard('violet', 'return', 'clipboard', pendingReturns, 'Retours', 'en attente', 'Voir la liste')}
+      ${homePriorityCard('green', 'stats', 'check', `${conformity}%`, 'Conformité cible', 'Qualité des soins', 'Voir les stats')}
+    </div></section>
+    <section class="home-section home-expiry-section"><div class="section-head"><h2>Prochaines péremptions</h2></div><div class="card">${nextLots.map((lot) => `<button type="button" class="p0-list-row expiry-home-row" data-nav="expiry/lot/${encodeURIComponent(lot.id)}"><span><strong>${escapeHtml(lot.item?.label || 'Produit du référentiel')}</strong><small>${escapeHtml(lot.item?.containerLabel || 'Contenant à confirmer')} · lot ${escapeHtml(lot.lotNumber)}</small></span><strong class="p0-days ${lot.daysRemaining <= 0 ? 'danger' : ''}">${lot.daysRemaining} j</strong></button>`).join('') || `<div class="expiry-home-empty"><span class="home-expiry-icon">${icon('calendar', 22)}</span><div><strong>Aucun lot suivi pour le moment</strong><p>Ajoutez vos lots pour un suivi optimal des péremptions.</p></div><button type="button" class="small-button" data-nav="expiry/add">Commencer la saisie ${icon('chevron', 16)}</button></div>`}</div></section>
+    </div>`;
 }
 
 function renderReturn(state, ui) {

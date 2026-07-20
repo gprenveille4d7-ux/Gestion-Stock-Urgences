@@ -56,7 +56,10 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(homeHtml.includes(`Bonjour ${state.user.displayName}`));
   assert.ok(homeHtml.includes(state.user.role));
   assert.ok(homeHtml.includes('État général'));
+  assert.ok(homeHtml.includes('assets/branding/releve-logo.jpg'));
+  assert.ok(homeHtml.includes('class="home-hero"'));
   assert.equal((homeHtml.match(/class="home-primary-menu /g) || []).length, 4);
+  assert.equal((homeHtml.match(/class="home-priority-card /g) || []).length, 4);
   for (const [label, route] of [["Retour d’intervention", 'return'], ['Commencer un contrôle', 'audits'], ['Réarmement SMUR', 'actions'], ['Statistiques', 'stats']]) {
     assert.ok(homeHtml.includes(label), label);
     assert.ok(homeHtml.includes(`class="home-quick-action" data-nav="${route}"`), route);
