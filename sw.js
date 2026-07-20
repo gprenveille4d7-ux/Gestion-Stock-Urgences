@@ -1,10 +1,10 @@
 const CACHE_PREFIX = 'releve-smur-';
-const CACHE = 'releve-smur-v1.0.0-20260720-pictogrammes-ampoulier';
+const CACHE = 'releve-smur-v1.0.0-20260720-plaque-face-b';
 const NETWORK_TIMEOUT_MS = 4000;
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg',
   './assets/plan-urgences-falaise.png', './assets/icon-180.png', './assets/icon-192.png', './assets/icon-512.png',
-  './assets/sacs/sac-rouge/sac-rouge-face.png', './assets/sacs/sac-rouge/sac-rouge-trois-quarts-gauche.png', './assets/sacs/sac-rouge/sac-rouge-cote-gauche.png', './assets/sacs/sac-rouge/sac-rouge-trois-quarts-droit.png', './assets/sacs/sac-rouge/sac-rouge-cote-droit.png', './assets/sacs/sac-rouge/sac-rouge-dos.png', './assets/sacs/sac-rouge/sac-rouge-dessus.png', './assets/sacs/sac-rouge/sac-rouge-ouvert.png', './assets/sacs/sac-rouge/sac-rouge-amovible.png', './assets/sacs/sac-rouge/sac-rouge-ampoulier.png',
+  './assets/sacs/sac-rouge/sac-rouge-face.png', './assets/sacs/sac-rouge/sac-rouge-trois-quarts-gauche.png', './assets/sacs/sac-rouge/sac-rouge-cote-gauche.png', './assets/sacs/sac-rouge/sac-rouge-trois-quarts-droit.png', './assets/sacs/sac-rouge/sac-rouge-cote-droit.png', './assets/sacs/sac-rouge/sac-rouge-dos.png', './assets/sacs/sac-rouge/sac-rouge-dessus.png', './assets/sacs/sac-rouge/sac-rouge-ouvert.png', './assets/sacs/sac-rouge/sac-rouge-amovible.png', './assets/sacs/sac-rouge/sac-rouge-ampoulier.png', './assets/sacs/sac-rouge/sac-rouge-plaque-face-b.png',
   './assets/sacs/sac-bleu/sac-bleu-face.png', './assets/sacs/sac-bleu/sac-bleu-cote-gauche.png', './assets/sacs/sac-bleu/sac-bleu-cote-droit.png', './assets/sacs/sac-bleu/sac-bleu-dos.png', './assets/sacs/sac-bleu/sac-bleu-ouvert.png',
   './assets/sacs/sac-vert/sac-vert-face.png', './assets/sacs/sac-vert/sac-vert-cote-gauche.png', './assets/sacs/sac-vert/sac-vert-cote-droit.png', './assets/sacs/sac-vert/sac-vert-dos.png', './assets/sacs/sac-vert/sac-vert-ouvert.png',
   './src/config.js', './src/main.js',

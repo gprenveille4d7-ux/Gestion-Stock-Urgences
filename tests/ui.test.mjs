@@ -218,6 +218,11 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(rightRedBagHtml.includes('./assets/sacs/sac-rouge/sac-rouge-cote-droit.png'));
   assert.ok(rightRedBagHtml.includes('alt="Sac rouge vu du côté droit — Compartiment latéral droit"'));
 
+  const redBagFaceBHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', 'plaque-b']);
+  assert.ok(redBagFaceBHtml.includes('data-sac-view="plaqueFaceB"'));
+  assert.ok(redBagFaceBHtml.includes('./assets/sacs/sac-rouge/sac-rouge-plaque-face-b.png'));
+  assert.ok(redBagFaceBHtml.includes('alt="Plaque centrale du sac rouge vue côté Face B — Plaque centrale · Face B"'));
+
   for (const ampoulierSection of ['ampoulier-gauche', 'ampoulier-droit', 'ampoulier-interne']) {
     const ampoulierHtml = renderApp(store.state, ui, ['container', 'sac-rouge-solutes', ampoulierSection]);
     assert.ok(ampoulierHtml.includes('data-sac-view="ampoulier"'), ampoulierSection);
