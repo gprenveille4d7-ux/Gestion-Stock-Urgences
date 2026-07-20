@@ -3,6 +3,7 @@ import { flattenActiveChariotReference } from '../data/chariot-adapter.js';
 import { OPERATIONAL_ASSETS } from '../data/operational-assets.js';
 import { EXCLUDED_SOURCE_CONTENT, SOURCE_DOCUMENTS } from '../data/source-manifest.js';
 import { findContainer, findReferenceItem, findZone, REFERENCE_ITEMS, SERVICE_ZONES, SMUR_CONTAINERS } from '../data/reference.js';
+import { SAC_ROUGE_CONTAINER_ID, SAC_ROUGE_PRELOAD_IMAGES, SAC_ROUGE_VIEWS, SAC_ROUGE_VIEW_LABELS, sacRougeViewForSection } from '../data/sac-visuals.js';
 import { getChariotDiagram, getContainerDiagram, getReserveDiagram, RESERVE_ZONE_IDS } from '../data/visual-schemas.js';
 import { deriveAvailability, summarizeAvailability } from '../domain/availability.js';
 import { computeExpiryDashboard, daysUntil, EXPIRY_PANELS } from '../domain/expiry.js';
@@ -379,6 +380,33 @@ function renderContainerSectionAccordion(container, section, index, isSelected) 
   </article>`;
 }
 
+function renderContainerHero(container, selectedSection, itemCount, availability) {
+  if (container.id !== SAC_ROUGE_CONTAINER_ID) {
+    return `<section class="container-detail-hero" data-color="${escapeHtml(container.color)}">
+      <div class="container-bag-illustration" aria-hidden="true">
+        <span class="container-bag-handle"></span>
+        <span class="container-bag-body">${icon('bag', 82)}<i></i></span>
+      </div>
+      <strong>${itemCount} élément${itemCount > 1 ? 's' : ''} au total</strong>
+      ${statusPill(availability.status, availability.label)}
+    </section>`;
+  }
+
+  const viewKey = sacRougeViewForSection(selectedSection?.id);
+  const imagePath = SAC_ROUGE_VIEWS[viewKey];
+  const caption = selectedSection && viewKey !== 'face' ? selectedSection.label : 'Sac rouge · Vue générale';
+  const alt = selectedSection && viewKey !== 'face'
+    ? `${SAC_ROUGE_VIEW_LABELS[viewKey]} — ${selectedSection.label}`
+    : SAC_ROUGE_VIEW_LABELS.face;
+  return `<section class="sac-visual-explorer" aria-label="Visualiseur photographique du sac rouge">
+    <div class="sac-visual-explorer__visual" data-sac-view="${escapeHtml(viewKey)}">
+      <img class="sac-visual-explorer__image" src="${escapeHtml(imagePath)}" alt="${escapeHtml(alt)}" width="1254" height="1254" decoding="async">
+      <div class="sac-visual-explorer__caption" aria-live="polite"><span><strong>${escapeHtml(caption)}</strong><small>${selectedSection && viewKey !== 'face' ? `${selectedSection.items.length} élément${selectedSection.items.length > 1 ? 's' : ''}` : `${itemCount} éléments au total`}</small></span>${statusPill(availability.status, availability.label)}</div>
+    </div>
+    <div class="sac-visual-preload" aria-hidden="true">${SAC_ROUGE_PRELOAD_IMAGES.filter((path) => path !== imagePath).map((path) => `<img src="${escapeHtml(path)}" alt="" width="1" height="1" decoding="async">`).join('')}</div>
+  </section>`;
+}
+
 function renderContainerDetail(state, containerId, sectionId) {
   const container = findContainer(containerId);
   if (!container) return `${header('Contenant introuvable', '', 'Erreur', 'inventory')}<div class="empty-state"><p>Ce contenant n’existe pas dans le référentiel chargé.</p></div>`;
@@ -387,14 +415,7 @@ function renderContainerDetail(state, containerId, sectionId) {
   const itemCount = container.sections.reduce((sum, section) => sum + section.items.length, 0);
   const selectedIndex = selectedSection ? container.sections.indexOf(selectedSection) : -1;
   return `${header(container.label, '', '', 'inventory')}
-    <section class="container-detail-hero" data-color="${escapeHtml(container.color)}">
-      <div class="container-bag-illustration" aria-hidden="true">
-        <span class="container-bag-handle"></span>
-        <span class="container-bag-body">${icon('bag', 82)}<i></i></span>
-      </div>
-      <strong>${itemCount} élément${itemCount > 1 ? 's' : ''} au total</strong>
-      ${statusPill(availability.status, availability.label)}
-    </section>
+    ${renderContainerHero(container, selectedSection, itemCount, availability)}
     <section class="container-compartments" aria-labelledby="container-compartments-title">
       <h2 id="container-compartments-title">Compartiments</h2>
       <div class="container-compartment-list">
