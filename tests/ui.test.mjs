@@ -202,6 +202,11 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(redBagHtml.includes('data-viewer-fullscreen-open'));
   assert.ok(redBagHtml.includes('data-viewer-gallery'));
   assert.ok(redBagHtml.includes('data-viewer-gallery-count'));
+  assert.ok(redBagHtml.includes('data-viewer-swipe'));
+  assert.ok(redBagHtml.includes('data-viewer-swipe-prev="container/sac-rouge-solutes/lateral-droit"'));
+  assert.ok(redBagHtml.includes('data-viewer-swipe-next="container/sac-rouge-solutes/amovible"'));
+  assert.ok(redBagHtml.includes('Balayez pour parcourir les vues'));
+  assert.ok(redBagHtml.includes('class="dynamic-inventory-viewer__compact-image"'));
   assert.ok(redBagHtml.includes('aria-current="true"'));
   assert.ok(redBagHtml.includes('data-container-nav="container/sac-rouge-solutes/amovible"'));
   assert.ok(redBagHtml.includes('0 / 10 contrôlés'));

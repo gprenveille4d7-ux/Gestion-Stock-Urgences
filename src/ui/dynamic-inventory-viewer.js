@@ -39,6 +39,23 @@ function renderProgress(value, label, className) {
   </div>`;
 }
 
+function viewerRoute(containerId, entry) {
+  return entry?.sectionId ? `container/${containerId}/${entry.sectionId}` : `container/${containerId}`;
+}
+
+function viewerSwipeState(container, viewKey) {
+  const entries = bagViewerNavigation(container.id);
+  if (entries.length < 2) return { entries, activeIndex: 0, attributes: '' };
+  const activeIndex = Math.max(0, entries.findIndex((entry) => entry.view === viewKey));
+  const previous = entries[(activeIndex - 1 + entries.length) % entries.length];
+  const next = entries[(activeIndex + 1) % entries.length];
+  return {
+    entries,
+    activeIndex,
+    attributes: ` data-viewer-swipe data-viewer-swipe-prev="${escapeHtml(viewerRoute(container.id, previous))}" data-viewer-swipe-next="${escapeHtml(viewerRoute(container.id, next))}"`
+  };
+}
+
 function renderFullscreenGallery(container, config, viewKey, caption) {
   const entries = bagViewerNavigation(container.id);
   const slides = entries.length ? entries : [{ label: caption, view: viewKey, sectionId: null }];
@@ -93,13 +110,19 @@ export function DynamicInventoryViewer({
   const preloadImages = bagPreloadImages(container.id).filter((path) => path === config.views.face || path === imagePath);
   const fallbackNote = imagePath === config.views.face ? '' : '<span class="dynamic-inventory-viewer__missing" data-viewer-missing hidden>Vue détaillée bientôt disponible</span>';
 
-  return `<section class="dynamic-inventory-viewer" data-dynamic-inventory-viewer data-view-key="${escapeHtml(viewKey)}" data-sac-view="${escapeHtml(viewKey)}" aria-label="Visionneuse dynamique du ${escapeHtml(config.name)}">
+  const swipe = viewerSwipeState(container, viewKey);
+  const swipeLabel = swipe.entries.length > 1
+    ? `<div class="dynamic-inventory-viewer__swipe-guide" aria-hidden="true"><span>${icon('chevron', 13)}</span><span>Balayez pour parcourir les vues</span><b>${swipe.activeIndex + 1}/${swipe.entries.length}</b><span>${icon('chevron', 13)}</span></div>`
+    : '';
+
+  return `<section class="dynamic-inventory-viewer" data-dynamic-inventory-viewer data-view-key="${escapeHtml(viewKey)}" data-sac-view="${escapeHtml(viewKey)}"${swipe.attributes} aria-label="Visionneuse dynamique du ${escapeHtml(config.name)}">
     <div class="dynamic-inventory-viewer__panel dynamic-inventory-viewer__expanded">
       <button type="button" class="dynamic-inventory-viewer__image-button" data-viewer-fullscreen-open aria-label="Afficher ${escapeHtml(caption)} en plein écran">
         <img class="dynamic-inventory-viewer__image" src="${escapeHtml(imagePath)}" data-viewer-image data-fallback-src="${escapeHtml(config.views.face)}" alt="${escapeHtml(alt)}" decoding="async" fetchpriority="high">
         ${fallbackNote}
         <span class="dynamic-inventory-viewer__expand" aria-hidden="true">${icon('expand', 18)}</span>
       </button>
+      ${swipeLabel}
       <div class="dynamic-inventory-viewer__caption">
         <span><em>${escapeHtml(container.label)}</em><strong>${escapeHtml(caption)}</strong><small>${escapeHtml(scopeLabel)}</small></span>
         ${statusHtml}
@@ -107,8 +130,10 @@ export function DynamicInventoryViewer({
       ${renderProgress(progressValue, progressLabel, 'dynamic-inventory-viewer__large-progress')}
       ${renderViewerNavigation(container, viewKey)}
     </div>
-    <div class="dynamic-inventory-viewer__panel dynamic-inventory-viewer__compact" aria-live="polite" aria-hidden="true">
-      <img src="${escapeHtml(imagePath)}" data-viewer-image data-fallback-src="${escapeHtml(config.views.face)}" alt="" width="54" height="54" aria-hidden="true">
+    <div class="dynamic-inventory-viewer__panel dynamic-inventory-viewer__compact${viewKey === 'face' ? '' : ' has-overview'}" aria-live="polite" aria-hidden="true">
+      <button type="button" class="dynamic-inventory-viewer__compact-image" data-viewer-fullscreen-open aria-label="Afficher la photo en plein écran">
+        <img src="${escapeHtml(imagePath)}" data-viewer-image data-fallback-src="${escapeHtml(config.views.face)}" alt="" width="88" height="68" aria-hidden="true">
+      </button>
       <span><em>${escapeHtml(container.label)}</em><strong>${escapeHtml(caption)}</strong><small>${escapeHtml(progressLabel)}</small></span>
       ${progressValue === null ? statusHtml : renderProgress(progressValue, progressLabel, 'dynamic-inventory-viewer__progress')}
       ${viewKey === 'face' ? '' : `<button type="button" class="dynamic-inventory-viewer__overview" data-container-nav="container/${escapeHtml(container.id)}" aria-label="Revenir à la vue générale">${icon('home', 17)}</button>`}
