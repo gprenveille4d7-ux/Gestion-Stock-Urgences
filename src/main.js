@@ -30,6 +30,8 @@ let pendingScrollRestore = null;
 let viewerScrollFrame = 0;
 let viewerCompact = false;
 let fullscreenViewerState = null;
+let inlineViewerSwipeState = null;
+let suppressFullscreenOpenUntil = 0;
 const channel = 'BroadcastChannel' in globalThis ? new BroadcastChannel('releve-smur-updates') : null;
 
 function syncDynamicInventoryViewer() {
@@ -203,6 +205,7 @@ appRoot.addEventListener('click', async (event) => {
   const target = event.target.closest('button, [data-nav]');
   if (!target || target.disabled) return;
   if (target.dataset.viewerFullscreenOpen !== undefined) {
+    if (Date.now() < suppressFullscreenOpenUntil) return;
     openInventoryFullscreen(target.closest('[data-dynamic-inventory-viewer]'), target);
     return;
   }
@@ -467,15 +470,44 @@ appRoot.addEventListener('error', (event) => {
 }, true);
 
 appRoot.addEventListener('touchstart', (event) => {
-  if (!fullscreenViewerState || !event.target.closest('[data-viewer-gallery]')) return;
-  fullscreenViewerState.touchStartX = event.changedTouches[0]?.clientX ?? null;
+  if (fullscreenViewerState && event.target.closest('[data-viewer-gallery]')) {
+    fullscreenViewerState.touchStartX = event.changedTouches[0]?.clientX ?? null;
+    return;
+  }
+  const swipeArea = event.target.closest('.dynamic-inventory-viewer__image-button, .dynamic-inventory-viewer__compact-image');
+  const viewer = swipeArea?.closest('[data-viewer-swipe]');
+  const touch = event.changedTouches[0];
+  if (!viewer || !touch) return;
+  inlineViewerSwipeState = {
+    viewer,
+    startX: touch.clientX,
+    startY: touch.clientY
+  };
 }, { passive: true });
 
 appRoot.addEventListener('touchend', (event) => {
-  if (!fullscreenViewerState || fullscreenViewerState.touchStartX === null || !event.target.closest('[data-viewer-gallery]')) return;
-  const delta = (event.changedTouches[0]?.clientX ?? fullscreenViewerState.touchStartX) - fullscreenViewerState.touchStartX;
-  fullscreenViewerState.touchStartX = null;
-  if (Math.abs(delta) >= 48) stepFullscreenGallery(delta < 0 ? 1 : -1);
+  if (fullscreenViewerState && fullscreenViewerState.touchStartX !== null && event.target.closest('[data-viewer-gallery]')) {
+    const delta = (event.changedTouches[0]?.clientX ?? fullscreenViewerState.touchStartX) - fullscreenViewerState.touchStartX;
+    fullscreenViewerState.touchStartX = null;
+    if (Math.abs(delta) >= 48) stepFullscreenGallery(delta < 0 ? 1 : -1);
+    return;
+  }
+  if (!inlineViewerSwipeState) return;
+  const state = inlineViewerSwipeState;
+  inlineViewerSwipeState = null;
+  const touch = event.changedTouches[0];
+  if (!touch || !state.viewer.isConnected) return;
+  const deltaX = touch.clientX - state.startX;
+  const deltaY = touch.clientY - state.startY;
+  if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
+  const route = deltaX < 0 ? state.viewer.dataset.viewerSwipeNext : state.viewer.dataset.viewerSwipePrev;
+  if (!route) return;
+  suppressFullscreenOpenUntil = Date.now() + 450;
+  navigateContainerWithoutScrollJump(route);
+}, { passive: true });
+appRoot.addEventListener('touchcancel', () => {
+  inlineViewerSwipeState = null;
+  if (fullscreenViewerState) fullscreenViewerState.touchStartX = null;
 }, { passive: true });
 window.addEventListener('scroll', scheduleViewerSync, { passive: true });
 window.addEventListener('resize', setupDynamicInventoryViewer, { passive: true });
