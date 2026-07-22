@@ -71,6 +71,7 @@ export const BAG_PHOTO_CONFIGS = Object.freeze({
     sectionViews: SAC_ROUGE_SECTION_VIEWS,
     navigation: Object.freeze([
       Object.freeze({ label: 'Vue générale', view: 'face', sectionId: null }),
+      Object.freeze({ label: 'Perfusion', view: 'amovible', sectionId: 'amovible' }),
       Object.freeze({ label: 'Plaque A', view: 'plaqueFaceA', sectionId: 'plaque-a' }),
       Object.freeze({ label: 'Plaque B', view: 'plaqueFaceB', sectionId: 'plaque-b' }),
       Object.freeze({ label: 'Ampoulier', view: 'ampoulier', sectionId: 'ampoulier-gauche' }),

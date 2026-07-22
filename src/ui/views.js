@@ -433,18 +433,51 @@ function renderContainerSectionPanel(container, section, className = 'container-
   </section>`;
 }
 
-function renderContainerSectionAccordion(container, section, index, isSelected) {
+function compartmentControlState(state, container, section) {
+  const audit = state.audits.find((candidate) => candidate.containerId === container.id
+    && candidate.status === 'in_progress'
+    && candidate.sectionId === section.id)
+    || state.audits.find((candidate) => candidate.containerId === container.id
+      && candidate.status === 'in_progress'
+      && !candidate.sectionId)
+    || state.audits.find((candidate) => candidate.containerId === container.id
+      && candidate.status === 'completed'
+      && (candidate.sectionId === section.id || !candidate.sectionId));
+  if (!audit) return { count: 0, total: section.items.length, value: 0, status: 'not-started', label: 'Non commencé' };
+  const itemIds = new Set(section.items.map((item) => item.id));
+  const observations = state.observations.filter((observation) => observation.auditId === audit.id && itemIds.has(observation.itemId));
+  const count = new Set(observations.map((observation) => observation.itemId)).size;
+  const hasAnomaly = observations.some((observation) => observation.result && observation.result !== 'conforme');
+  const complete = audit.status === 'completed' || count >= section.items.length;
+  return {
+    count,
+    total: section.items.length,
+    value: section.items.length ? Math.round((count / section.items.length) * 100) : 0,
+    status: hasAnomaly ? 'anomaly' : complete ? 'complete' : count ? 'in-progress' : 'not-started',
+    label: hasAnomaly ? 'Anomalie signalée' : complete ? 'Terminé' : count ? 'En cours' : 'Non commencé'
+  };
+}
+
+function renderCompartmentMeta(progress) {
+  return `<span class="container-compartment-meta" data-control-status="${progress.status}">
+    <small>${progress.count} / ${progress.total} contrôlés</small>
+    <span><i aria-hidden="true"></i>${escapeHtml(progress.label)}</span>
+  </span>`;
+}
+
+function renderContainerSectionAccordion(state, container, section, index, isSelected) {
   const sectionRoute = `container/${container.id}/${sectionToken(section.id)}`;
   const toggleRoute = isSelected ? `container/${container.id}` : sectionRoute;
   const detailId = `container-compartment-detail-${sectionToken(section.id)}`;
+  const control = compartmentControlState(state, container, section);
   return `<article class="container-compartment-item${isSelected ? ' active' : ''}">
     <button type="button" class="container-compartment-row${isSelected ? ' active' : ''}" data-container-nav="${escapeHtml(toggleRoute)}" aria-expanded="${isSelected}" aria-controls="${escapeHtml(detailId)}">
       <span class="container-compartment-icon" data-tone="${index % 4}">${icon(index % 3 === 0 ? 'activity' : index % 3 === 1 ? 'bag' : 'plus', 17)}</span>
-      <span class="container-compartment-label">${escapeHtml(section.label)}</span>
-      <span class="container-compartment-count">${section.items.length} élément${section.items.length > 1 ? 's' : ''}</span>
+      <span class="container-compartment-copy"><span class="container-compartment-label">${escapeHtml(section.label)}</span><small>${section.items.length} élément${section.items.length > 1 ? 's' : ''}</small></span>
+      ${renderCompartmentMeta(control)}
       <span class="container-compartment-chevron">${icon('chevron', 16)}</span>
     </button>
-    ${isSelected ? `<div id="${escapeHtml(detailId)}">${renderContainerSectionPanel(container, section)}</div>` : ''}
+    ${isSelected ? `<div id="${escapeHtml(detailId)}" class="container-compartment-reveal">${renderContainerSectionPanel(container, section)}</div>` : ''}
   </article>`;
 }
 
@@ -453,29 +486,39 @@ function removableSectionLabel(section) {
   return section.label;
 }
 
-function renderSacRougeRemovableAccordion(container, sections, selectedSection, groupSelected) {
+function renderSacRougeRemovableAccordion(state, container, sections, selectedSection, groupSelected) {
   const isOpen = groupSelected || Boolean(selectedSection);
   const total = sections.reduce((sum, section) => sum + section.items.length, 0);
+  const sectionControls = sections.map((section) => compartmentControlState(state, container, section));
+  const controlled = sectionControls.reduce((sum, control) => sum + control.count, 0);
+  const groupControl = {
+    count: controlled,
+    total,
+    value: total ? Math.round((controlled / total) * 100) : 0,
+    status: sectionControls.some((control) => control.status === 'anomaly') ? 'anomaly' : controlled >= total ? 'complete' : controlled ? 'in-progress' : 'not-started',
+    label: sectionControls.some((control) => control.status === 'anomaly') ? 'Anomalie signalée' : controlled >= total ? 'Terminé' : controlled ? 'En cours' : 'Non commencé'
+  };
   const groupRoute = `container/${container.id}/amovible`;
   const toggleRoute = groupSelected ? `container/${container.id}` : groupRoute;
   return `<article class="container-compartment-item container-removable-group${isOpen ? ' active' : ''}">
     <button type="button" class="container-compartment-row container-removable-row${isOpen ? ' active' : ''}" data-container-nav="${escapeHtml(toggleRoute)}" aria-expanded="${isOpen}" aria-controls="container-removable-detail">
       <span class="container-compartment-icon" data-tone="1">${icon('bag', 17)}</span>
-      <span class="container-compartment-label">Sac amovible rouge</span>
-      <span class="container-compartment-count">${sections.length} kits · ${total} éléments</span>
+      <span class="container-compartment-copy"><span class="container-compartment-label">Sac amovible rouge</span><small>${sections.length} kits · ${total} éléments</small></span>
+      ${renderCompartmentMeta(groupControl)}
       <span class="container-compartment-chevron">${icon('chevron', 16)}</span>
     </button>
     ${isOpen ? `<div id="container-removable-detail" class="container-removable-panel">${sections.map((section, index) => {
       const isSelected = selectedSection?.id === section.id;
       const sectionRoute = `container/${container.id}/${sectionToken(section.id)}`;
+      const control = compartmentControlState(state, container, section);
       return `<article class="container-subcompartment-item${isSelected ? ' active' : ''}">
         <button type="button" class="container-subcompartment-row${isSelected ? ' active' : ''}" data-container-nav="${escapeHtml(isSelected ? groupRoute : sectionRoute)}" aria-expanded="${isSelected}">
           <span class="container-compartment-icon" data-tone="${index % 4}">${icon(index === 2 ? 'plus' : 'bag', 15)}</span>
-          <span class="container-compartment-label">${escapeHtml(removableSectionLabel(section))}</span>
-          <span class="container-compartment-count">${section.items.length} élément${section.items.length > 1 ? 's' : ''}</span>
+          <span class="container-compartment-copy"><span class="container-compartment-label">${escapeHtml(removableSectionLabel(section))}</span><small>${section.items.length} élément${section.items.length > 1 ? 's' : ''}</small></span>
+          ${renderCompartmentMeta(control)}
           <span class="container-compartment-chevron">${icon('chevron', 15)}</span>
         </button>
-        ${isSelected ? renderContainerSectionPanel(container, section, 'container-compartment-panel container-subcompartment-panel') : ''}
+        ${isSelected ? `<div class="container-compartment-reveal">${renderContainerSectionPanel(container, section, 'container-compartment-panel container-subcompartment-panel')}</div>` : ''}
       </article>`;
     }).join('')}</div>` : ''}
   </article>`;
@@ -539,10 +582,10 @@ function renderContainerDetail(state, containerId, sectionId) {
           const token = sectionToken(section.id);
           if (container.id === SAC_ROUGE_CONTAINER_ID && SAC_ROUGE_REMOVABLE_SECTION_IDS.includes(token)) {
             return token === SAC_ROUGE_REMOVABLE_SECTION_IDS[0]
-              ? renderSacRougeRemovableAccordion(container, removableSections, selectedRemovableSection, groupSelected)
+              ? renderSacRougeRemovableAccordion(state, container, removableSections, selectedRemovableSection, groupSelected)
               : '';
           }
-          return renderContainerSectionAccordion(container, section, index, selectedIndex === index);
+          return renderContainerSectionAccordion(state, container, section, index, selectedIndex === index);
         }).join('')}
       </div>
     </section>
