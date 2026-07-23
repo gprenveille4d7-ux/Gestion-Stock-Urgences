@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
-import { emergencyAmpouleCaseTransition, emergencyAmpouleItemPlacement } from '../src/features/emergency-ampoule-case/web.js';
+import { emergencyAmpouleCaseTransition, emergencyAmpouleCompartmentFocusPlacement, emergencyAmpouleItemPlacement } from '../src/features/emergency-ampoule-case/web.js';
 
 const ROOT = new URL('../assets/sacs/sac-rouge/ampoulier/', import.meta.url);
 
@@ -68,6 +68,31 @@ test('une ampoule tournée conserve sa taille et son centre au lieu d’être co
   });
   assert.equal(placement.x + placement.width / 2, source.x + source.width / 2);
   assert.equal(placement.y + placement.height / 2, source.y + source.height / 2);
+});
+
+test('les traitements sont étalés au centre de chaque compartiment avec des marges', () => {
+  const placement = { x: 0, y: 0, width: 92, height: 19, rotation: 90 };
+  const leftCenters = [1, 2, 3, 4].map((orderFromLeft) => {
+    const result = emergencyAmpouleCompartmentFocusPlacement(
+      { zoneId: 'compartiment-gauche', orderFromLeft },
+      placement,
+      4
+    );
+    return result.x + result.width / 2;
+  });
+  const rightCenters = [1, 2, 3, 4].map((orderFromLeft) => {
+    const result = emergencyAmpouleCompartmentFocusPlacement(
+      { zoneId: 'compartiment-droit', orderFromLeft },
+      placement,
+      4
+    );
+    return result.x + result.width / 2;
+  });
+
+  assert.deepEqual(leftCenters, [216, 328, 440, 552]);
+  assert.deepEqual(rightCenters, [984, 1096, 1208, 1320]);
+  assert.equal(leftCenters[0], 768 - leftCenters.at(-1));
+  assert.equal(rightCenters[0] - 768, 1536 - rightCenters.at(-1));
 });
 
 test('le rendu du module ne contient aucune liste permanente', async () => {

@@ -110,6 +110,19 @@ export function emergencyAmpouleItemPlacement(position, size) {
   };
 }
 
+export function emergencyAmpouleCompartmentFocusPlacement(item, placement, rowCount) {
+  const count = Math.max(1, Number(rowCount) || 1);
+  const order = Math.min(count, Math.max(1, Number(item?.orderFromLeft) || 1));
+  const spacing = count >= 4 ? 112 : count === 3 ? 155 : count === 2 ? 180 : 0;
+  const cropStart = item?.zoneId === 'compartiment-droit' ? OVERVIEW_SIZE.width / 2 : 0;
+  const cropCenter = OVERVIEW_SIZE.width / 4;
+  const targetCenter = cropStart + cropCenter + (order - (count + 1) / 2) * spacing;
+  return {
+    ...placement,
+    x: targetCenter - placement.width / 2
+  };
+}
+
 function itemLabel(item) {
   return [item.name, item.characteristics].filter(Boolean).join(' · ');
 }
@@ -206,10 +219,14 @@ function renderTabs(state) {
   </nav>`;
 }
 
-function renderItem(item, state, size, isNet) {
+function renderItem(item, state, size, isNet, visibleItems) {
   const position = isNet ? item.focusPosition : item.position;
   if (!position) return '';
-  const placement = emergencyAmpouleItemPlacement(position, size);
+  let placement = emergencyAmpouleItemPlacement(position, size);
+  if (!isNet && state.mode !== 'overview') {
+    const rowCount = visibleItems.filter((candidate) => candidate.zoneId === item.zoneId && String(candidate.row) === String(item.row)).length;
+    placement = emergencyAmpouleCompartmentFocusPlacement(item, placement, rowCount);
+  }
   const selected = item.id === state.itemId;
   const dimmed = Boolean(state.itemId && !selected);
   const showAnchoredLabel = state.mode === 'zoneFocus' && !state.itemId;
@@ -268,7 +285,7 @@ function renderScene(state, manifest, showGuides) {
     <div class="emergency-ampoule-case__scene" style="--scene-ratio:${config.size.width}/${config.size.height}">
       <div class="emergency-ampoule-case__scene-inner">
         <img class="emergency-ampoule-case__base" src="${escapeHtml(config.view.asset)}" alt="${escapeHtml(stateTitle(state, manifest))}" decoding="async">
-        ${config.items.map((item) => renderItem(item, state, config.size, config.isNet)).join('')}
+        ${config.items.map((item) => renderItem(item, state, config.size, config.isNet, config.items)).join('')}
       </div>
       ${state.mode === 'overview' ? renderOverviewHotspots(showGuides) : ''}
     </div>
