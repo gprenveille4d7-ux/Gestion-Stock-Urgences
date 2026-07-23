@@ -199,6 +199,9 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(redBagHtml.includes('dynamic-inventory-viewer__expanded'));
   assert.ok(redBagHtml.includes('dynamic-inventory-viewer__compact'));
   assert.ok(redBagHtml.includes('aria-hidden="true"'));
+  assert.ok(redBagHtml.includes('data-viewer-main-media'));
+  assert.ok(redBagHtml.includes('data-viewer-compact-media'));
+  assert.ok(redBagHtml.includes('data-viewer-fullscreen-image'));
   assert.ok(redBagHtml.includes('data-viewer-fullscreen-open'));
   assert.ok(redBagHtml.includes('data-viewer-gallery'));
   assert.ok(redBagHtml.includes('data-viewer-gallery-count'));
@@ -413,5 +416,16 @@ test('la feuille de style impose une grille iPhone 2 × 2 et colore toute la sur
     assert.ok(css.includes(`.expiry-panel.${tone} { background: ${color}; }`));
   }
   assert.match(css, /\.expiry-panel\s*\{[^}]*min-height:\s*138px/s);
+});
+
+test('la photo devient une miniature rebondissante contrôlée par appui long', async () => {
+  const mainSource = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../styles.css', import.meta.url), 'utf8');
+  assert.ok(mainSource.includes('VIEWER_LONG_PRESS_MS = 420'));
+  assert.ok(mainSource.includes('mainMedia.getBoundingClientRect().bottom <= compactTop'));
+  assert.ok(mainSource.includes("event.target.closest('[data-viewer-fullscreen-image]')"));
+  assert.ok(mainSource.includes("event.target.closest('[data-viewer-compact-media]')"));
+  assert.ok(css.includes('@keyframes dynamic-viewer-compact-bounce'));
+  assert.ok(css.includes('.dynamic-inventory-viewer__compact-image.is-pressing'));
 });
 

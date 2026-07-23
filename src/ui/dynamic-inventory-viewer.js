@@ -60,7 +60,7 @@ function renderFullscreenGallery(container, config, viewKey, caption) {
   const entries = bagViewerNavigation(container.id);
   const slides = entries.length ? entries : [{ label: caption, view: viewKey, sectionId: null }];
   const activeIndex = Math.max(0, slides.findIndex((entry) => entry.view === viewKey));
-  return `<div class="dynamic-inventory-viewer__fullscreen" data-viewer-fullscreen data-active-slide="${activeIndex}" hidden role="dialog" aria-modal="true" aria-label="${escapeHtml(caption)} en plein écran">
+  return `<div class="dynamic-inventory-viewer__fullscreen" data-viewer-fullscreen data-active-slide="${activeIndex}" hidden role="dialog" aria-modal="true" aria-label="${escapeHtml(caption)} en plein écran. Toucher l’image pour la réduire.">
     <div class="dynamic-inventory-viewer__fullscreen-bar">
       <span class="dynamic-inventory-viewer__gallery-count" data-viewer-gallery-count aria-live="polite">${activeIndex + 1} / ${slides.length}</span>
       <button type="button" class="dynamic-inventory-viewer__close" data-viewer-fullscreen-close aria-label="Fermer le plein écran">${icon('close', 22)}</button>
@@ -70,7 +70,7 @@ function renderFullscreenGallery(container, config, viewKey, caption) {
         const path = config.views[entry.view] || config.views.face;
         const route = entry.sectionId ? `container/${container.id}/${entry.sectionId}` : `container/${container.id}`;
         return `<figure class="dynamic-inventory-viewer__slide${index === activeIndex ? ' active' : ''}" data-viewer-slide data-container-route="${escapeHtml(route)}" data-slide-label="${escapeHtml(entry.label)}"${index === activeIndex ? '' : ' hidden'}>
-          <img src="${escapeHtml(path)}" data-viewer-image data-fallback-src="${escapeHtml(config.views.face)}" alt="${escapeHtml(config.labels[entry.view] || entry.label)}" decoding="async">
+          <img src="${escapeHtml(path)}" data-viewer-image data-viewer-fullscreen-image data-fallback-src="${escapeHtml(config.views.face)}" alt="${escapeHtml(config.labels[entry.view] || entry.label)}" decoding="async">
           <figcaption>${escapeHtml(entry.label)}</figcaption>
         </figure>`;
       }).join('')}
@@ -117,7 +117,7 @@ export function DynamicInventoryViewer({
 
   return `<section class="dynamic-inventory-viewer" data-dynamic-inventory-viewer data-view-key="${escapeHtml(viewKey)}" data-sac-view="${escapeHtml(viewKey)}"${swipe.attributes} aria-label="Visionneuse dynamique du ${escapeHtml(config.name)}">
     <div class="dynamic-inventory-viewer__panel dynamic-inventory-viewer__expanded">
-      <button type="button" class="dynamic-inventory-viewer__image-button" data-viewer-fullscreen-open aria-label="Afficher ${escapeHtml(caption)} en plein écran">
+      <button type="button" class="dynamic-inventory-viewer__image-button" data-viewer-main-media data-viewer-fullscreen-open aria-label="Afficher ${escapeHtml(caption)} en plein écran">
         <img class="dynamic-inventory-viewer__image" src="${escapeHtml(imagePath)}" data-viewer-image data-fallback-src="${escapeHtml(config.views.face)}" alt="${escapeHtml(alt)}" decoding="async" fetchpriority="high">
         ${fallbackNote}
         <span class="dynamic-inventory-viewer__expand" aria-hidden="true">${icon('expand', 18)}</span>
@@ -131,7 +131,7 @@ export function DynamicInventoryViewer({
       ${renderViewerNavigation(container, viewKey)}
     </div>
     <div class="dynamic-inventory-viewer__panel dynamic-inventory-viewer__compact${viewKey === 'face' ? '' : ' has-overview'}" aria-live="polite" aria-hidden="true">
-      <button type="button" class="dynamic-inventory-viewer__compact-image" data-viewer-fullscreen-open aria-label="Afficher la photo en plein écran">
+      <button type="button" class="dynamic-inventory-viewer__compact-image" data-viewer-compact-media aria-label="Maintenir pour agrandir la photo">
         <img src="${escapeHtml(imagePath)}" data-viewer-image data-fallback-src="${escapeHtml(config.views.face)}" alt="" width="88" height="68" aria-hidden="true">
       </button>
       <span><em>${escapeHtml(container.label)}</em><strong>${escapeHtml(caption)}</strong><small>${escapeHtml(progressLabel)}</small></span>

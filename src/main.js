@@ -32,18 +32,23 @@ let viewerCompact = false;
 let fullscreenViewerState = null;
 let inlineViewerSwipeState = null;
 let suppressFullscreenOpenUntil = 0;
+let suppressFullscreenCloseUntil = 0;
+let viewerLongPressState = null;
+const VIEWER_LONG_PRESS_MS = 420;
+const VIEWER_LONG_PRESS_MOVE_PX = 12;
 const channel = 'BroadcastChannel' in globalThis ? new BroadcastChannel('releve-smur-updates') : null;
 
 function syncDynamicInventoryViewer() {
   viewerScrollFrame = 0;
   const viewer = document.querySelector('[data-dynamic-inventory-viewer]');
   if (!viewer) return;
-  const scrollY = Math.max(0, window.scrollY);
-  if (!viewerCompact && scrollY > 80) viewerCompact = true;
-  if (viewerCompact && scrollY < 24) viewerCompact = false;
+  const mainMedia = viewer.querySelector('[data-viewer-main-media]');
+  const compact = viewer.querySelector('.dynamic-inventory-viewer__compact');
+  const compactTop = compact ? Number.parseFloat(getComputedStyle(compact).top) || 0 : 0;
+  viewerCompact = Boolean(mainMedia && mainMedia.getBoundingClientRect().bottom <= compactTop);
   viewer.classList.toggle('is-compact', viewerCompact);
   viewer.dataset.compact = String(viewerCompact);
-  viewer.querySelector('.dynamic-inventory-viewer__compact')?.setAttribute('aria-hidden', String(!viewerCompact));
+  compact?.setAttribute('aria-hidden', String(!viewerCompact));
 }
 
 function setupDynamicInventoryViewer() {
@@ -144,6 +149,40 @@ function closeInventoryFullscreen() {
   });
 }
 
+function cancelViewerLongPress(pointerId = null) {
+  if (!viewerLongPressState || (pointerId !== null && viewerLongPressState.pointerId !== pointerId)) return;
+  window.clearTimeout(viewerLongPressState.timer);
+  viewerLongPressState.button.classList.remove('is-pressing');
+  viewerLongPressState = null;
+}
+
+function startViewerLongPress(event, button) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return;
+  cancelViewerLongPress();
+  const state = {
+    pointerId: event.pointerId,
+    button,
+    startX: event.clientX,
+    startY: event.clientY,
+    activated: false,
+    timer: 0
+  };
+  button.classList.add('is-pressing');
+  state.timer = window.setTimeout(() => {
+    if (viewerLongPressState !== state || !button.isConnected) return;
+    state.activated = true;
+    suppressFullscreenOpenUntil = Date.now() + 800;
+    button.classList.remove('is-pressing');
+    try {
+      navigator.vibrate?.(18);
+    } catch {
+      // La vibration est optionnelle et peut être refusée par iOS.
+    }
+    openInventoryFullscreen(button.closest('[data-dynamic-inventory-viewer]'), button);
+  }, VIEWER_LONG_PRESS_MS);
+  viewerLongPressState = state;
+}
+
 function showToast(message, tone = 'saved', action = null) {
   const toast = document.createElement('div');
   toast.className = `toast ${tone}`;
@@ -202,8 +241,26 @@ async function perform(operation, successMessage = '') {
 }
 
 appRoot.addEventListener('click', async (event) => {
+  const fullscreenImage = event.target.closest('[data-viewer-fullscreen-image]');
+  if (fullscreenImage && fullscreenViewerState) {
+    if (Date.now() < suppressFullscreenCloseUntil) return;
+    closeInventoryFullscreen();
+    return;
+  }
   const target = event.target.closest('button, [data-nav]');
   if (!target || target.disabled) return;
+  if (target.dataset.viewerCompactMedia !== undefined) {
+    if (Date.now() < suppressFullscreenOpenUntil) return;
+    if (event.detail === 0) {
+      openInventoryFullscreen(target.closest('[data-dynamic-inventory-viewer]'), target);
+      return;
+    }
+    target.classList.remove('is-tap-bounce');
+    void target.offsetWidth;
+    target.classList.add('is-tap-bounce');
+    window.setTimeout(() => target.classList.remove('is-tap-bounce'), 320);
+    return;
+  }
   if (target.dataset.viewerFullscreenOpen !== undefined) {
     if (Date.now() < suppressFullscreenOpenUntil) return;
     openInventoryFullscreen(target.closest('[data-dynamic-inventory-viewer]'), target);
@@ -489,7 +546,10 @@ appRoot.addEventListener('touchend', (event) => {
   if (fullscreenViewerState && fullscreenViewerState.touchStartX !== null && event.target.closest('[data-viewer-gallery]')) {
     const delta = (event.changedTouches[0]?.clientX ?? fullscreenViewerState.touchStartX) - fullscreenViewerState.touchStartX;
     fullscreenViewerState.touchStartX = null;
-    if (Math.abs(delta) >= 48) stepFullscreenGallery(delta < 0 ? 1 : -1);
+    if (Math.abs(delta) >= 48) {
+      suppressFullscreenCloseUntil = Date.now() + 450;
+      stepFullscreenGallery(delta < 0 ? 1 : -1);
+    }
     return;
   }
   if (!inlineViewerSwipeState) return;
@@ -509,6 +569,22 @@ appRoot.addEventListener('touchcancel', () => {
   inlineViewerSwipeState = null;
   if (fullscreenViewerState) fullscreenViewerState.touchStartX = null;
 }, { passive: true });
+appRoot.addEventListener('pointerdown', (event) => {
+  const button = event.target.closest('[data-viewer-compact-media]');
+  if (button) startViewerLongPress(event, button);
+});
+appRoot.addEventListener('pointermove', (event) => {
+  const state = viewerLongPressState;
+  if (!state || state.pointerId !== event.pointerId) return;
+  if (Math.hypot(event.clientX - state.startX, event.clientY - state.startY) > VIEWER_LONG_PRESS_MOVE_PX) {
+    cancelViewerLongPress(event.pointerId);
+  }
+}, { passive: true });
+appRoot.addEventListener('pointerup', (event) => cancelViewerLongPress(event.pointerId));
+appRoot.addEventListener('pointercancel', (event) => cancelViewerLongPress(event.pointerId));
+appRoot.addEventListener('contextmenu', (event) => {
+  if (event.target.closest('[data-viewer-compact-media]')) event.preventDefault();
+});
 window.addEventListener('scroll', scheduleViewerSync, { passive: true });
 window.addEventListener('resize', setupDynamicInventoryViewer, { passive: true });
 window.addEventListener('keydown', (event) => {
