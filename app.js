@@ -1,1 +1,1 @@
-import './src/main.js?v=20260723-ampoulier-sac-rouge-v5';
+import './src/main.js?v=20260723-ampoulier-filets-v6';

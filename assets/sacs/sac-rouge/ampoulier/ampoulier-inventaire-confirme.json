@@ -2,8 +2,8 @@
   "moduleId": "ampoulier-urgence",
   "label": "Ampoulier d’urgence",
   "closedAsset": "./ampoulier-ferme-face.png",
-  "openAsset": "./ampoulier-ouvert-vide-gabarit.png",
-  "previewAsset": "./ampoulier-ouvert-compose.png",
+  "openAsset": "./ampoulier-v2-vue-generale-vide.png",
+  "previewAsset": "./ampoulier-v2-vue-generale-compose.png",
   "readingRule": "Compartiments gauche et droit : rangées du haut vers le bas, éléments de gauche à droite.",
   "interaction": {
     "openOnClick": true,
@@ -278,7 +278,8 @@
             }
           ]
         }
-      ]
+      ],
+      "viewId": "vue-generale"
     },
     {
       "id": "compartiment-droit",
@@ -571,7 +572,8 @@
             }
           ]
         }
-      ]
+      ],
+      "viewId": "vue-generale"
     },
     {
       "id": "filet-central-gauche",
@@ -592,7 +594,16 @@
             "height": 54,
             "rotation": 0,
             "zIndex": 40
-          }
+          },
+          "focusPosition": {
+            "x": 260,
+            "y": 105,
+            "width": 300,
+            "height": 88,
+            "rotation": 0,
+            "zIndex": 20
+          },
+          "viewId": "filet-gauche"
         },
         {
           "id": "exacyl-acide-tranexamique",
@@ -608,7 +619,16 @@
             "height": 53,
             "rotation": 0,
             "zIndex": 41
-          }
+          },
+          "focusPosition": {
+            "x": 260,
+            "y": 320,
+            "width": 300,
+            "height": 88,
+            "rotation": 0,
+            "zIndex": 21
+          },
+          "viewId": "filet-gauche"
         },
         {
           "id": "depakine-400mg",
@@ -624,7 +644,16 @@
             "height": 54,
             "rotation": 0,
             "zIndex": 42
-          }
+          },
+          "focusPosition": {
+            "x": 260,
+            "y": 535,
+            "width": 300,
+            "height": 88,
+            "rotation": 0,
+            "zIndex": 22
+          },
+          "viewId": "filet-gauche"
         },
         {
           "id": "xanax-0-5mg",
@@ -640,7 +669,16 @@
             "height": 54,
             "rotation": 0,
             "zIndex": 43
-          }
+          },
+          "focusPosition": {
+            "x": 260,
+            "y": 750,
+            "width": 300,
+            "height": 88,
+            "rotation": 0,
+            "zIndex": 23
+          },
+          "viewId": "filet-gauche"
         },
         {
           "id": "ephedrine-30mg-10ml",
@@ -656,7 +694,16 @@
             "height": 54,
             "rotation": 0,
             "zIndex": 44
-          }
+          },
+          "focusPosition": {
+            "x": 260,
+            "y": 965,
+            "width": 300,
+            "height": 88,
+            "rotation": 0,
+            "zIndex": 24
+          },
+          "viewId": "filet-gauche"
         }
       ]
     },
@@ -679,7 +726,16 @@
             "height": 54,
             "rotation": 0,
             "zIndex": 40
-          }
+          },
+          "focusPosition": {
+            "x": 260,
+            "y": 105,
+            "width": 300,
+            "height": 88,
+            "rotation": 0,
+            "zIndex": 20
+          },
+          "viewId": "filet-droit"
         },
         {
           "id": "perfuseur-3-voies",
@@ -695,7 +751,16 @@
             "height": 54,
             "rotation": 0,
             "zIndex": 41
-          }
+          },
+          "focusPosition": {
+            "x": 260,
+            "y": 320,
+            "width": 300,
+            "height": 88,
+            "rotation": 0,
+            "zIndex": 21
+          },
+          "viewId": "filet-droit"
         },
         {
           "id": "perfuseur-volumed",
@@ -711,7 +776,16 @@
             "height": 54,
             "rotation": 0,
             "zIndex": 42
-          }
+          },
+          "focusPosition": {
+            "x": 260,
+            "y": 535,
+            "width": 300,
+            "height": 88,
+            "rotation": 0,
+            "zIndex": 22
+          },
+          "viewId": "filet-droit"
         },
         {
           "id": "dispositif-transfert",
@@ -727,7 +801,16 @@
             "height": 54,
             "rotation": 0,
             "zIndex": 43
-          }
+          },
+          "focusPosition": {
+            "x": 260,
+            "y": 750,
+            "width": 300,
+            "height": 88,
+            "rotation": 0,
+            "zIndex": 23
+          },
+          "viewId": "filet-droit"
         },
         {
           "id": "penthrox",
@@ -743,7 +826,16 @@
             "height": 54,
             "rotation": 0,
             "zIndex": 44
-          }
+          },
+          "focusPosition": {
+            "x": 260,
+            "y": 965,
+            "width": 300,
+            "height": 88,
+            "rotation": 0,
+            "zIndex": 24
+          },
+          "viewId": "filet-droit"
         }
       ]
     }
@@ -753,5 +845,51 @@
     "Les quantités des filets centraux sont des caractéristiques de stock et non des duplications de fichiers.",
     "Les textes sont rendus par l’interface afin de garantir les libellés exacts.",
     "Les photographies fournies sont conservées uniquement comme références."
-  ]
+  ],
+  "exploration": {
+    "version": 2,
+    "defaultView": "vue-generale",
+    "occlusionPolicy": "Les filets centraux ne sont jamais superposés à la vue générale.",
+    "views": [
+      {
+        "id": "vue-generale",
+        "label": "Vue générale",
+        "asset": "./ampoulier-v2-vue-generale-vide.png",
+        "previewAsset": "./ampoulier-v2-vue-generale-compose.png",
+        "zones": [
+          "compartiment-gauche",
+          "compartiment-droit"
+        ]
+      },
+      {
+        "id": "filet-gauche",
+        "label": "Filet gauche",
+        "asset": "./ampoulier-filet-central-gauche-vide.png",
+        "previewAsset": "./ampoulier-v2-filet-central-gauche-compose.png",
+        "zones": [
+          "filet-central-gauche"
+        ]
+      },
+      {
+        "id": "filet-droit",
+        "label": "Filet droit",
+        "asset": "./ampoulier-filet-central-droit-vide.png",
+        "previewAsset": "./ampoulier-v2-filet-central-droit-compose.png",
+        "zones": [
+          "filet-central-droit"
+        ]
+      }
+    ],
+    "navigation": {
+      "mode": "direct-manipulation",
+      "overviewHotspots": [
+        "compartiment-gauche",
+        "compartiment-droit",
+        "filet-central-gauche",
+        "filet-central-droit"
+      ],
+      "detailPresentation": "contextual-bottom-sheet",
+      "labels": "anchored-to-selected-item-only"
+    }
+  }
 }
