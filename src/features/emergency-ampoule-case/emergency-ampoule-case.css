@@ -273,6 +273,8 @@
   --item-height: 6%;
   --item-rotation: 0deg;
   --item-z: 20;
+  --item-scale: 1;
+  --label-counter-scale: 1;
   position: absolute;
   left: var(--item-x);
   top: var(--item-y);
@@ -283,7 +285,7 @@
   border: 0;
   background: transparent;
   cursor: pointer;
-  transform: rotate(var(--item-rotation));
+  transform: rotate(var(--item-rotation)) scale(var(--item-scale));
   transform-origin: center;
   transition: opacity .18s ease, filter .18s ease, transform .18s ease;
   -webkit-tap-highlight-color: transparent;
@@ -313,7 +315,7 @@
   z-index: 2;
   max-width: 104px;
   display: none;
-  transform: translateX(-50%) rotate(calc(-1 * var(--item-rotation)));
+  transform: translateX(-50%) rotate(calc(-1 * var(--item-rotation))) scale(var(--label-counter-scale));
   padding: 3px 5px;
   border: 1px solid rgba(214, 221, 230, .9);
   border-radius: 6px;
@@ -332,9 +334,20 @@
   display: block;
 }
 
+.emergency-ampoule-case__item.is-compartment-item {
+  --item-scale: 1.6;
+  --label-counter-scale: .625;
+}
+
+.emergency-ampoule-case__scene-shell.is-focus-left .emergency-ampoule-case__item.is-compartment-item,
+.emergency-ampoule-case__scene-shell.is-focus-right .emergency-ampoule-case__item.is-compartment-item {
+  --item-scale: 2.15;
+  --label-counter-scale: .465;
+}
+
 .emergency-ampoule-case__item.is-selected {
   z-index: 60;
-  transform: rotate(var(--item-rotation)) translateY(-4px) scale(1.06);
+  transform: rotate(var(--item-rotation)) scale(var(--item-scale)) translateY(-4px) scale(1.06);
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, .98)) drop-shadow(0 0 7px rgba(191, 21, 43, .44));
 }
 
@@ -428,13 +441,11 @@
 }
 
 .emergency-ampoule-case__scene-shell.is-focus-left .emergency-ampoule-case__scene-inner {
-  transform: scale(2.02);
-  transform-origin: 24% 51%;
+  transform: scale(1);
 }
 
 .emergency-ampoule-case__scene-shell.is-focus-right .emergency-ampoule-case__scene-inner {
-  transform: scale(2.02);
-  transform-origin: 76% 51%;
+  transform: scale(1);
 }
 
 .emergency-ampoule-case__scene-shell.is-net .emergency-ampoule-case__scene {

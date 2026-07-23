@@ -213,6 +213,7 @@ function renderItem(item, state, size, isNet) {
   const selected = item.id === state.itemId;
   const dimmed = Boolean(state.itemId && !selected);
   const showAnchoredLabel = state.mode === 'zoneFocus' && !state.itemId;
+  const itemKind = isNet ? ' is-net-item' : ' is-compartment-item';
   const style = [
     `--item-x:${percent(placement.x, size.width)}`,
     `--item-y:${percent(placement.y, size.height)}`,
@@ -221,7 +222,7 @@ function renderItem(item, state, size, isNet) {
     `--item-rotation:${placement.rotation}deg`,
     `--item-z:${Math.min(49, Math.max(10, Number(position.zIndex) || 20))}`
   ].join(';');
-  return `<button type="button" class="emergency-ampoule-case__item${selected ? ' is-selected' : ''}${dimmed ? ' is-dimmed' : ''}${showAnchoredLabel ? ' has-label' : ''}" style="${style}" data-ampoule-item="${escapeHtml(item.id)}" aria-pressed="${selected}" aria-label="${escapeHtml(itemLabel(item))}">
+  return `<button type="button" class="emergency-ampoule-case__item${itemKind}${selected ? ' is-selected' : ''}${dimmed ? ' is-dimmed' : ''}${showAnchoredLabel ? ' has-label' : ''}" style="${style}" data-ampoule-item="${escapeHtml(item.id)}" aria-pressed="${selected}" aria-label="${escapeHtml(itemLabel(item))}">
     <img src="${escapeHtml(item.asset)}" alt="" draggable="false" decoding="async">
     <span>${escapeHtml(item.name)}</span>
   </button>`;
