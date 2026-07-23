@@ -17,7 +17,7 @@ function boxChoice() {
 
 function cartFront(cart, notice) {
   return `<section class="ecm-stage">
-    <p class="ecm-instruction">Les cinq tiroirs sont repérés sur le chariot. Le tiroir 1 possède déjà sa vue interactive.</p>
+    <p class="ecm-instruction">Les cinq tiroirs sont repérés sur le chariot. Les tiroirs 1 et 2 possèdent leur vue interactive.</p>
     <div class="ecm-cart-canvas">
       <img src="${escapeHtml(cart.frontAsset)}" alt="${escapeHtml(cart.label)}">
       ${cart.drawers.map((drawer, index) => `<button type="button" class="ecm-drawer-hitbox ${drawer.available ? 'is-available' : 'is-pending'}" data-ecm-action="open-drawer" data-ecm-drawer="${escapeHtml(drawer.id)}" style="left:${drawer.hitArea.x}%;top:${drawer.hitArea.y}%;width:${drawer.hitArea.width}%;height:${drawer.hitArea.height}%" aria-label="${escapeHtml(drawer.available ? `Ouvrir ${drawer.label}` : `${drawer.label}, contenu non encore documenté`)}"><b aria-hidden="true">${index + 1}</b><span>${escapeHtml(drawer.label)}</span></button>`).join('')}
@@ -52,7 +52,7 @@ function drawerView(drawer, selectedItem) {
   return `<section class="ecm-stage">
     <p class="ecm-instruction">Touchez un matériel pour afficher sa fiche. Les repères sous le tiroir restent utilisables tant que les détourages définitifs ne sont pas ajoutés.</p>
     <div class="ecm-drawer-canvas ${selectedItem ? 'has-selection' : ''}">
-      <img class="ecm-drawer-background" src="${escapeHtml(drawer.topAsset)}" alt="Tiroir 1 ouvert, sans compartiment">
+      <img class="ecm-drawer-background" src="${escapeHtml(drawer.topAsset)}" alt="Vue de dessus de ${escapeHtml(drawer.label)}">
       ${positionedItems.map((item) => {
         const selected = selectedItem?.id === item.id;
         return `<button type="button" class="ecm-visual-item ${selected ? 'is-selected' : ''}" data-ecm-action="select-item" data-ecm-item="${escapeHtml(item.id)}" aria-label="${escapeHtml(`Afficher ${item.name}${item.specification ? `, ${item.specification}` : ''}`)}" aria-pressed="${selected}" style="left:${item.position.x}%;top:${item.position.y}%;width:${item.position.width}%;height:${item.position.height}%;z-index:${selected ? 100 : item.position.zIndex || 1};--item-rotation:${item.position.rotation || 0}deg"><img src="${escapeHtml(item.asset)}" alt=""></button>`;

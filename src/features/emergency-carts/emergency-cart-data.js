@@ -43,6 +43,54 @@ const intubationItems = [
   positionedItem({ id: 'lidocaine-spray-canule-longue', name: 'Lidocaïne spray avec canule longue', category: 'Médicament', file: 'lidocaine-spray-canule.png', x: 80.9, y: 66.6, width: 5.2, aspectRatio: 2.383, zIndex: 55 })
 ];
 
+function drawer02Item(id, name, specification, file, x, y, width, height, zIndex) {
+  const scale = 100 / 1254;
+  return {
+    id,
+    name,
+    specification: specification || '',
+    category: 'Médicaments et injection',
+    location: 'Tiroir 2 · Médicaments et injection',
+    asset: `${ASSET_ROOT}/tiroir-02/items/${file}`,
+    position: {
+      x: Number((x * scale).toFixed(3)),
+      y: Number((y * scale).toFixed(3)),
+      width: Number((width * scale).toFixed(3)),
+      height: Number((height * scale).toFixed(3)),
+      rotation: 0,
+      zIndex
+    }
+  };
+}
+
+const medicationItems = [
+  drawer02Item('adrenaline-1mg', 'Adrénaline', '1 mg', 'adrenaline-1mg.png', 213, 910, 155, 32, 10),
+  drawer02Item('adrenaline-5mg', 'Adrénaline', '5 mg', 'adrenaline-5mg.png', 213, 790, 155, 32, 11),
+  drawer02Item('atropine', 'Atropine', '', 'atropine.png', 213, 669, 155, 32, 12),
+  drawer02Item('cordarone-150mg', 'Cordarone', '150 mg', 'cordarone-150mg.png', 213, 549, 155, 32, 13),
+  drawer02Item('rivotril', 'Rivotril', '', 'rivotril.png', 213, 428, 155, 32, 14),
+  drawer02Item('valium-10mg', 'Valium', '10 mg', 'valium-10mg.png', 213, 308, 155, 33, 15),
+  drawer02Item('lasilix-20mg', 'Lasilix', '20 mg', 'lasilix-20mg.png', 213, 187, 155, 33, 16),
+  drawer02Item('isuprel', 'Isuprel', '', 'isuprel.png', 434, 910, 155, 32, 10),
+  drawer02Item('solumedrol-40mg', 'Solu-Médrol', '40 mg', 'solumedrol-40mg.png', 457, 790, 109, 43, 11),
+  drawer02Item('solumedrol-120mg', 'Solu-Médrol', '120 mg', 'solumedrol-120mg.png', 457, 669, 109, 43, 12),
+  drawer02Item('noradrenaline-8mg', 'Noradrénaline', '8 mg', 'noradrenaline-8mg.png', 434, 549, 155, 32, 13),
+  drawer02Item('sulfate-magnesium', 'Sulfate de magnésium', '', 'sulfate-magnesium.png', 434, 428, 155, 31, 14),
+  drawer02Item('midazolam-50mg', 'Midazolam', '50 mg', 'midazolam-50mg.png', 434, 308, 155, 32, 15),
+  drawer02Item('g30', 'G30 %', '', 'g30.png', 434, 187, 155, 31, 16),
+  drawer02Item('risordan-10mg', 'Risordan', '10 mg', 'risordan-10mg.png', 655, 910, 155, 32, 10),
+  drawer02Item('naloxone', 'Naloxone', '', 'naloxone.png', 655, 790, 155, 32, 11),
+  drawer02Item('natispray', 'Natispray', '', 'natispray.png', 701, 669, 63, 68, 12),
+  drawer02Item('flumazenil', 'Flumazénil', '', 'flumazenil.png', 655, 549, 155, 32, 13),
+  drawer02Item('eppi-20ml', 'EPPi', '20 mL', 'eppi-20ml.png', 655, 428, 155, 31, 14),
+  drawer02Item('sufenta-250ug', 'Sufenta', '250 µg', 'sufenta-250ug.png', 655, 308, 155, 32, 15),
+  drawer02Item('propofol-200mg', 'Propofol', '200 mg', 'propofol-200mg.png', 655, 187, 155, 32, 16),
+  drawer02Item('etomidate', 'Étomidate', '', 'etomidate.png', 876, 820, 155, 32, 10),
+  drawer02Item('aiguille-rose', 'Aiguille rose', '', 'aiguille-rose.png', 876, 609, 155, 41, 11),
+  drawer02Item('seringue-5ml', 'Seringue', '5 mL', 'seringue-5ml.png', 886, 398, 136, 43, 12),
+  drawer02Item('seringue-10ml', 'Seringue', '10 mL', 'seringue-10ml.png', 886, 187, 136, 43, 13)
+];
+
 const drawerHitAreas = [
   { x: 26.5, y: 18, width: 47, height: 6.5 },
   { x: 26.5, y: 24.7, width: 47, height: 6.3 },
@@ -53,15 +101,32 @@ const drawerHitAreas = [
 
 const drawers = drawerHitAreas.map((hitArea, index) => {
   const drawerNumber = index + 1;
-  const available = drawerNumber === 1;
+  const drawerConfig = drawerNumber === 1
+    ? {
+        label: 'Tiroir 1 · Intubation',
+        category: 'Intubation',
+        topAsset: `${ASSET_ROOT}/tiroir-01-intubation-vide-gabarit.png`,
+        previewAsset: `${ASSET_ROOT}/tiroir-01-intubation-compose.png`,
+        items: intubationItems
+      }
+    : drawerNumber === 2
+      ? {
+          label: 'Tiroir 2 · Médicaments et injection',
+          category: 'Médicaments et injection',
+          topAsset: `${ASSET_ROOT}/tiroir-02-medicaments-vide-gabarit.png`,
+          previewAsset: `${ASSET_ROOT}/tiroir-02-medicaments-compose.png`,
+          items: medicationItems
+        }
+      : null;
+  const available = Boolean(drawerConfig);
   return {
     id: `tiroir-${String(drawerNumber).padStart(2, '0')}`,
-    label: available ? 'Tiroir 1 · Intubation' : `Tiroir ${drawerNumber}`,
-    category: available ? 'Intubation' : 'Contenu à documenter',
-    topAsset: available ? `${ASSET_ROOT}/tiroir-01-intubation-vide-gabarit.png` : '',
-    previewAsset: available ? `${ASSET_ROOT}/tiroir-01-intubation-compose.png` : '',
+    label: drawerConfig?.label || `Tiroir ${drawerNumber}`,
+    category: drawerConfig?.category || 'Contenu à documenter',
+    topAsset: drawerConfig?.topAsset || '',
+    previewAsset: drawerConfig?.previewAsset || '',
     hitArea,
-    items: available ? intubationItems : [],
+    items: drawerConfig?.items || [],
     available
   };
 });

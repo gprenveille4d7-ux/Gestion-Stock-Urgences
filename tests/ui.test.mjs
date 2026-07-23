@@ -435,18 +435,24 @@ test('la photo devient une miniature rebondissante contrôlée par appui long', 
   assert.ok(css.includes('.dynamic-inventory-viewer__compact-image.is-pressing'));
 });
 
-test('le module chariots adultes expose les box 3 et 4 et les 19 matériels individualisés', async () => {
+test('le module chariots adultes expose les box 3 et 4 avec les tiroirs 1 et 2 individualisés', async () => {
   assert.deepEqual(Object.keys(emergencyCarts), ['3', '4']);
   for (const box of [3, 4]) {
     assert.equal(emergencyCarts[box].drawers.length, 5);
     assert.equal(emergencyCarts[box].drawers[0].items.length, 19);
     assert.equal(emergencyCarts[box].drawers[0].available, true);
     assert.ok(emergencyCarts[box].drawers[0].previewAsset?.includes('tiroir-01-intubation-compose.png'));
-    assert.equal(emergencyCarts[box].drawers.slice(1).every((drawer) => !drawer.available), true);
+    assert.equal(emergencyCarts[box].drawers[1].items.length, 25);
+    assert.equal(emergencyCarts[box].drawers[1].available, true);
+    assert.ok(emergencyCarts[box].drawers[1].previewAsset?.includes('tiroir-02-medicaments-compose.png'));
+    assert.equal(emergencyCarts[box].drawers[1].items.every((item) => item.asset && item.position), true);
+    assert.equal(emergencyCarts[box].drawers.slice(2).every((drawer) => !drawer.available), true);
     assert.equal(emergencyCarts[box].drawers[0].items.every((item) => item.asset && item.position), true);
   }
   assert.ok(emergencyCarts[3].drawers[0].items.some((item) => item.id === 'filtre-respiratoire'));
   assert.ok(emergencyCarts[3].drawers[0].items.some((item) => item.id === 'raccord-cannele'));
+  assert.ok(emergencyCarts[3].drawers[1].items.some((item) => item.id === 'adrenaline-1mg'));
+  assert.ok(emergencyCarts[3].drawers[1].items.some((item) => item.id === 'seringue-10ml'));
   const source = await readFile(new URL('../src/features/emergency-carts/web.js', import.meta.url), 'utf8');
   assert.ok(source.includes("event.key !== 'Escape'"));
   assert.ok(source.includes("data-ecm-action=\"open-drawer\""));

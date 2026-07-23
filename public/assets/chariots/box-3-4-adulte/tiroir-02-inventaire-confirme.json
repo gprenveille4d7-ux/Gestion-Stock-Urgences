@@ -1,0 +1,433 @@
+{
+  "drawerId": "tiroir-02",
+  "label": "Tiroir 2 — Médicaments et injection",
+  "appliesTo": [
+    "box-3-adulte",
+    "box-4-adulte"
+  ],
+  "layout": "four-vertical-columns",
+  "orderingRule": "Dans chaque rangée, les éléments sont listés du bas vers le haut.",
+  "topAsset": "./tiroir-02-medicaments-vide-gabarit.png",
+  "previewAsset": "./tiroir-02-medicaments-compose.png",
+  "interaction": {
+    "itemEffect": {
+      "scale": 1.06,
+      "highlight": "soft",
+      "durationMs": 180
+    },
+    "detailsFields": [
+      "name",
+      "characteristics"
+    ]
+  },
+  "columns": [
+    {
+      "id": "rangee-1",
+      "label": "Rangée 1",
+      "order": "bottom-to-top",
+      "items": [
+        {
+          "id": "adrenaline-1mg",
+          "name": "Adrénaline",
+          "characteristics": "1 mg",
+          "asset": "./tiroir-02/items/adrenaline-1mg.png",
+          "orderFromBottom": 1,
+          "position": {
+            "x": 213,
+            "y": 910,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 10
+          }
+        },
+        {
+          "id": "adrenaline-5mg",
+          "name": "Adrénaline",
+          "characteristics": "5 mg",
+          "asset": "./tiroir-02/items/adrenaline-5mg.png",
+          "orderFromBottom": 2,
+          "position": {
+            "x": 213,
+            "y": 790,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 11
+          }
+        },
+        {
+          "id": "atropine",
+          "name": "Atropine",
+          "characteristics": null,
+          "asset": "./tiroir-02/items/atropine.png",
+          "orderFromBottom": 3,
+          "position": {
+            "x": 213,
+            "y": 669,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 12
+          }
+        },
+        {
+          "id": "cordarone-150mg",
+          "name": "Cordarone",
+          "characteristics": "150 mg",
+          "asset": "./tiroir-02/items/cordarone-150mg.png",
+          "orderFromBottom": 4,
+          "position": {
+            "x": 213,
+            "y": 549,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 13
+          }
+        },
+        {
+          "id": "rivotril",
+          "name": "Rivotril",
+          "characteristics": null,
+          "asset": "./tiroir-02/items/rivotril.png",
+          "orderFromBottom": 5,
+          "position": {
+            "x": 213,
+            "y": 428,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 14
+          }
+        },
+        {
+          "id": "valium-10mg",
+          "name": "Valium",
+          "characteristics": "10 mg",
+          "asset": "./tiroir-02/items/valium-10mg.png",
+          "orderFromBottom": 6,
+          "position": {
+            "x": 213,
+            "y": 308,
+            "width": 155,
+            "height": 33,
+            "rotation": 0,
+            "zIndex": 15
+          }
+        },
+        {
+          "id": "lasilix-20mg",
+          "name": "Lasilix",
+          "characteristics": "20 mg",
+          "asset": "./tiroir-02/items/lasilix-20mg.png",
+          "orderFromBottom": 7,
+          "position": {
+            "x": 213,
+            "y": 187,
+            "width": 155,
+            "height": 33,
+            "rotation": 0,
+            "zIndex": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": "rangee-2",
+      "label": "Rangée 2",
+      "order": "bottom-to-top",
+      "items": [
+        {
+          "id": "isuprel",
+          "name": "Isuprel",
+          "characteristics": null,
+          "asset": "./tiroir-02/items/isuprel.png",
+          "orderFromBottom": 1,
+          "position": {
+            "x": 434,
+            "y": 910,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 10
+          }
+        },
+        {
+          "id": "solumedrol-40mg",
+          "name": "Solu-Médrol",
+          "characteristics": "40 mg",
+          "asset": "./tiroir-02/items/solumedrol-40mg.png",
+          "orderFromBottom": 2,
+          "position": {
+            "x": 457,
+            "y": 790,
+            "width": 109,
+            "height": 43,
+            "rotation": 0,
+            "zIndex": 11
+          }
+        },
+        {
+          "id": "solumedrol-120mg",
+          "name": "Solu-Médrol",
+          "characteristics": "120 mg",
+          "asset": "./tiroir-02/items/solumedrol-120mg.png",
+          "orderFromBottom": 3,
+          "position": {
+            "x": 457,
+            "y": 669,
+            "width": 109,
+            "height": 43,
+            "rotation": 0,
+            "zIndex": 12
+          }
+        },
+        {
+          "id": "noradrenaline-8mg",
+          "name": "Noradrénaline",
+          "characteristics": "8 mg",
+          "asset": "./tiroir-02/items/noradrenaline-8mg.png",
+          "orderFromBottom": 4,
+          "position": {
+            "x": 434,
+            "y": 549,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 13
+          }
+        },
+        {
+          "id": "sulfate-magnesium",
+          "name": "Sulfate de magnésium",
+          "characteristics": null,
+          "asset": "./tiroir-02/items/sulfate-magnesium.png",
+          "orderFromBottom": 5,
+          "position": {
+            "x": 434,
+            "y": 428,
+            "width": 155,
+            "height": 31,
+            "rotation": 0,
+            "zIndex": 14
+          }
+        },
+        {
+          "id": "midazolam-50mg",
+          "name": "Midazolam",
+          "characteristics": "50 mg",
+          "asset": "./tiroir-02/items/midazolam-50mg.png",
+          "orderFromBottom": 6,
+          "position": {
+            "x": 434,
+            "y": 308,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 15
+          }
+        },
+        {
+          "id": "g30",
+          "name": "G30 %",
+          "characteristics": null,
+          "asset": "./tiroir-02/items/g30.png",
+          "orderFromBottom": 7,
+          "position": {
+            "x": 434,
+            "y": 187,
+            "width": 155,
+            "height": 31,
+            "rotation": 0,
+            "zIndex": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": "rangee-3",
+      "label": "Rangée 3",
+      "order": "bottom-to-top",
+      "items": [
+        {
+          "id": "risordan-10mg",
+          "name": "Risordan",
+          "characteristics": "10 mg",
+          "asset": "./tiroir-02/items/risordan-10mg.png",
+          "orderFromBottom": 1,
+          "position": {
+            "x": 655,
+            "y": 910,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 10
+          }
+        },
+        {
+          "id": "naloxone",
+          "name": "Naloxone",
+          "characteristics": null,
+          "asset": "./tiroir-02/items/naloxone.png",
+          "orderFromBottom": 2,
+          "position": {
+            "x": 655,
+            "y": 790,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 11
+          }
+        },
+        {
+          "id": "natispray",
+          "name": "Natispray",
+          "characteristics": null,
+          "asset": "./tiroir-02/items/natispray.png",
+          "orderFromBottom": 3,
+          "position": {
+            "x": 701,
+            "y": 669,
+            "width": 63,
+            "height": 68,
+            "rotation": 0,
+            "zIndex": 12
+          }
+        },
+        {
+          "id": "flumazenil",
+          "name": "Flumazénil",
+          "characteristics": null,
+          "asset": "./tiroir-02/items/flumazenil.png",
+          "orderFromBottom": 4,
+          "position": {
+            "x": 655,
+            "y": 549,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 13
+          }
+        },
+        {
+          "id": "eppi-20ml",
+          "name": "EPPi",
+          "characteristics": "20 mL",
+          "asset": "./tiroir-02/items/eppi-20ml.png",
+          "orderFromBottom": 5,
+          "position": {
+            "x": 655,
+            "y": 428,
+            "width": 155,
+            "height": 31,
+            "rotation": 0,
+            "zIndex": 14
+          }
+        },
+        {
+          "id": "sufenta-250ug",
+          "name": "Sufenta",
+          "characteristics": "250 µg",
+          "asset": "./tiroir-02/items/sufenta-250ug.png",
+          "orderFromBottom": 6,
+          "position": {
+            "x": 655,
+            "y": 308,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 15
+          }
+        },
+        {
+          "id": "propofol-200mg",
+          "name": "Propofol",
+          "characteristics": "200 mg",
+          "asset": "./tiroir-02/items/propofol-200mg.png",
+          "orderFromBottom": 7,
+          "position": {
+            "x": 655,
+            "y": 187,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": "rangee-4",
+      "label": "Rangée 4",
+      "order": "bottom-to-top",
+      "items": [
+        {
+          "id": "etomidate",
+          "name": "Étomidate",
+          "characteristics": null,
+          "asset": "./tiroir-02/items/etomidate.png",
+          "orderFromBottom": 1,
+          "position": {
+            "x": 876,
+            "y": 820,
+            "width": 155,
+            "height": 32,
+            "rotation": 0,
+            "zIndex": 10
+          }
+        },
+        {
+          "id": "aiguille-rose",
+          "name": "Aiguille rose",
+          "characteristics": null,
+          "asset": "./tiroir-02/items/aiguille-rose.png",
+          "orderFromBottom": 2,
+          "position": {
+            "x": 876,
+            "y": 609,
+            "width": 155,
+            "height": 41,
+            "rotation": 0,
+            "zIndex": 11
+          }
+        },
+        {
+          "id": "seringue-5ml",
+          "name": "Seringue",
+          "characteristics": "5 mL",
+          "asset": "./tiroir-02/items/seringue-5ml.png",
+          "orderFromBottom": 3,
+          "position": {
+            "x": 886,
+            "y": 398,
+            "width": 136,
+            "height": 43,
+            "rotation": 0,
+            "zIndex": 12
+          }
+        },
+        {
+          "id": "seringue-10ml",
+          "name": "Seringue",
+          "characteristics": "10 mL",
+          "asset": "./tiroir-02/items/seringue-10ml.png",
+          "orderFromBottom": 4,
+          "position": {
+            "x": 886,
+            "y": 187,
+            "width": 136,
+            "height": 43,
+            "rotation": 0,
+            "zIndex": 13
+          }
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Les 25 éléments sont des PNG transparents indépendants.",
+    "La photographie fournie sert uniquement de référence.",
+    "Les libellés et dosages exacts sont rendus par l’interface, pas intégrés aux images."
+  ]
+}

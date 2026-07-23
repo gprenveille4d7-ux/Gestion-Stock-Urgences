@@ -26,6 +26,11 @@ Le filtre respiratoire et le raccord cannelé disposent chacun de leur propre
 asset, position et zone tactile. Tous les matériels du tiroir 1 possèdent donc
 un détourage visuel utilisable dans la vue interactive.
 
+Le tiroir 2 contient 25 éléments individualisés répartis dans quatre colonnes.
+Les médicaments et dispositifs sont positionnés selon le manifeste confirmé,
+avec leur nom et leur dosage rendus par l’interface. Les tiroirs 1 et 2 partagent
+leurs assets entre les chariots adultes des box 3 et 4.
+
 ## Copie dans le projet
 
 Copier exactement :
