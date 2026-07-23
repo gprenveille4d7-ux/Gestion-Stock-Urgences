@@ -157,14 +157,30 @@
   position: absolute;
   min-width: 44px;
   min-height: 44px;
-  border: 2px solid transparent;
+  border: 2px solid rgba(255, 255, 255, 0.72);
   border-radius: 10px;
-  background: transparent;
+  background: rgba(23, 33, 43, 0.16);
   cursor: pointer;
   transition:
     border-color 180ms ease,
     background 180ms ease,
     transform 180ms ease;
+}
+
+.ecm-drawer-hitbox > b {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: rgba(23, 33, 43, 0.78);
+  box-shadow: 0 3px 10px rgba(23, 33, 43, 0.28);
+  font-size: 0.72rem;
+  translate: 0 -50%;
 }
 
 .ecm-drawer-hitbox span {
@@ -182,12 +198,20 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   background: rgba(23, 33, 43, 0.72);
-  opacity: 0;
+  opacity: 1;
   transition: opacity 180ms ease;
 }
 
 .ecm-drawer-hitbox.is-pending {
   cursor: help;
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(23, 33, 43, 0.08);
+}
+
+.ecm-drawer-hitbox.is-available {
+  border-color: rgba(255, 255, 255, 0.96);
+  background: rgba(200, 38, 49, 0.24);
+  box-shadow: 0 0 0 2px rgba(200, 38, 49, 0.22);
 }
 
 .ecm-drawer-hitbox:hover,
@@ -239,6 +263,29 @@
   text-align: left;
   background: rgba(255, 255, 255, 0.9);
   cursor: pointer;
+}
+
+.ecm-drawer-preview {
+  width: 64px;
+  height: 50px;
+  flex: 0 0 auto;
+  border: 1px solid var(--ecm-line);
+  border-radius: 9px;
+  background: #eef2f4;
+  object-fit: cover;
+}
+
+.ecm-drawer-number {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--ecm-muted);
+  background: #e8edf1;
+  font-size: 0.78rem;
+  font-weight: 900;
 }
 
 .ecm-drawer-list button.is-pending {

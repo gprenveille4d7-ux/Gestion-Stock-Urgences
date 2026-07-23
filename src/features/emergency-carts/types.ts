@@ -28,6 +28,7 @@ export type EmergencyCartDrawer = {
   label: string;
   category: string;
   topAsset?: string;
+  previewAsset?: string;
   hitArea: ItemPosition;
   items: EmergencyCartItem[];
   available: boolean;

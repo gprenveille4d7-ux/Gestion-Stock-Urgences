@@ -441,6 +441,7 @@ test('le module chariots adultes expose les box 3 et 4 et les 19 matériels indi
     assert.equal(emergencyCarts[box].drawers.length, 5);
     assert.equal(emergencyCarts[box].drawers[0].items.length, 19);
     assert.equal(emergencyCarts[box].drawers[0].available, true);
+    assert.ok(emergencyCarts[box].drawers[0].previewAsset?.includes('tiroir-01-intubation-compose.png'));
     assert.equal(emergencyCarts[box].drawers.slice(1).every((drawer) => !drawer.available), true);
     assert.equal(emergencyCarts[box].drawers[0].items.every((item) => item.asset && item.position), true);
   }
@@ -450,5 +451,6 @@ test('le module chariots adultes expose les box 3 et 4 et les 19 matériels indi
   assert.ok(source.includes("event.key !== 'Escape'"));
   assert.ok(source.includes("data-ecm-action=\"open-drawer\""));
   assert.ok(source.includes("data-ecm-action=\"select-item\""));
+  assert.ok(source.includes('ecm-drawer-preview'));
 });
 

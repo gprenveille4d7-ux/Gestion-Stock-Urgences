@@ -59,6 +59,7 @@ const drawers = drawerHitAreas.map((hitArea, index) => {
     label: available ? 'Tiroir 1 · Intubation' : `Tiroir ${drawerNumber}`,
     category: available ? 'Intubation' : 'Contenu à documenter',
     topAsset: available ? `${ASSET_ROOT}/tiroir-01-intubation-vide-gabarit.png` : '',
+    previewAsset: available ? `${ASSET_ROOT}/tiroir-01-intubation-compose.png` : '',
     hitArea,
     items: available ? intubationItems : [],
     available

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'releve-smur-';
-const CACHE = 'releve-smur-v1.0.0-20260723-emergency-carts-drawer1-v2';
+const CACHE = 'releve-smur-v1.0.0-20260723-emergency-carts-drawer-visuals-v3';
 const NETWORK_TIMEOUT_MS = 4000;
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg',
@@ -10,6 +10,7 @@ const CORE_ASSETS = [
   './assets/sacs/sac-vert/sac-vert-face.png', './assets/sacs/sac-vert/sac-vert-cote-gauche.png', './assets/sacs/sac-vert/sac-vert-cote-droit.png', './assets/sacs/sac-vert/sac-vert-dos.png', './assets/sacs/sac-vert/sac-vert-ouvert.png',
   './public/assets/chariots/box-3-4-adulte/chariot-face.png',
   './public/assets/chariots/box-3-4-adulte/tiroir-01-intubation-vide-gabarit.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01-intubation-compose.png',
   './public/assets/chariots/box-3-4-adulte/tiroir-01/items/sonde-intubation-6-5.png',
   './public/assets/chariots/box-3-4-adulte/tiroir-01/items/sonde-intubation-7.png',
   './public/assets/chariots/box-3-4-adulte/tiroir-01/items/sonde-intubation-7-5.png',
