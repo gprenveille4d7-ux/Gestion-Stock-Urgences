@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
-import { emergencyAmpouleCaseTransition, emergencyAmpouleCompartmentFocusPlacement, emergencyAmpouleItemPlacement } from '../src/features/emergency-ampoule-case/web.js';
+import { emergencyAmpouleCaseTransition, emergencyAmpouleItemPlacement } from '../src/features/emergency-ampoule-case/web.js';
 
 const ROOT = new URL('../assets/sacs/sac-rouge/ampoulier/', import.meta.url);
 
@@ -70,29 +70,32 @@ test('une ampoule tournée conserve sa taille et son centre au lieu d’être co
   assert.equal(placement.y + placement.height / 2, source.y + source.height / 2);
 });
 
-test('les traitements sont étalés au centre de chaque compartiment avec des marges', () => {
-  const placement = { x: 0, y: 0, width: 92, height: 19, rotation: 90 };
-  const leftCenters = [1, 2, 3, 4].map((orderFromLeft) => {
-    const result = emergencyAmpouleCompartmentFocusPlacement(
-      { zoneId: 'compartiment-gauche', orderFromLeft },
-      placement,
-      4
-    );
-    return result.x + result.width / 2;
-  });
-  const rightCenters = [1, 2, 3, 4].map((orderFromLeft) => {
-    const result = emergencyAmpouleCompartmentFocusPlacement(
-      { zoneId: 'compartiment-droit', orderFromLeft },
-      placement,
-      4
-    );
-    return result.x + result.width / 2;
-  });
+test('les positions uniques du manifeste étalent les traitements avec des marges', async () => {
+  const manifest = JSON.parse(await readFile(new URL('ampoulier-inventaire-confirme.json', ROOT), 'utf8'));
+  const [left, right] = manifest.zones;
+  const centers = (row) => row.items.map((item) => item.position.x + item.position.width / 2);
 
-  assert.deepEqual(leftCenters, [216, 328, 440, 552]);
-  assert.deepEqual(rightCenters, [984, 1096, 1208, 1320]);
-  assert.equal(leftCenters[0], 768 - leftCenters.at(-1));
-  assert.equal(rightCenters[0] - 768, 1536 - rightCenters.at(-1));
+  assert.deepEqual(left.rows.map(centers), [
+    [216, 384, 552],
+    [216, 384, 552],
+    [216, 384, 552],
+    [300, 468],
+    [216, 384, 552]
+  ]);
+  assert.deepEqual(right.rows.map(centers), [
+    [984, 1152, 1320],
+    [968, 1088, 1208, 1328],
+    [984, 1152, 1320],
+    [984, 1152, 1320],
+    [984, 1152, 1320]
+  ]);
+
+  for (const center of left.rows.flatMap(centers)) {
+    assert.ok(center >= 216 && center <= 552);
+  }
+  for (const center of right.rows.flatMap(centers)) {
+    assert.ok(center >= 968 && center <= 1328);
+  }
 });
 
 test('le rendu du module ne contient aucune liste permanente', async () => {
@@ -103,6 +106,7 @@ test('le rendu du module ne contient aucune liste permanente', async () => {
   assert.ok(source.includes("state.mode === 'overview'"));
   assert.ok(source.includes("manifest.zones.filter((zone) => zone.viewId === 'vue-generale')"));
   assert.ok(source.includes('focusPosition'));
+  assert.equal(source.includes('emergencyAmpouleCompartmentFocusPlacement'), false);
   assert.ok(stylesheet.includes('@media (prefers-reduced-motion: reduce)'));
   assert.ok(stylesheet.includes('env(safe-area-inset-bottom'));
   assert.ok(stylesheet.includes('--item-scale: 2'));

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'releve-smur-';
-const CACHE = 'releve-smur-v1.0.0-20260723-repartition-compartiments-v11';
+const CACHE = 'releve-smur-v1.0.0-20260723-etagement-compartiments-v12';
 const NETWORK_TIMEOUT_MS = 4000;
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg',
