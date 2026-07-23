@@ -9,6 +9,7 @@ import { deriveAvailability, summarizeAvailability } from '../domain/availabilit
 import { computeExpiryDashboard, daysUntil, EXPIRY_PANELS } from '../domain/expiry.js';
 import { actionZoneId, planRoute } from '../domain/route-planner.js';
 import { computeStatistics } from '../domain/statistics.js';
+import { isEmergencyAmpouleCaseSection, renderEmergencyAmpouleCaseHost } from '../features/emergency-ampoule-case/web.js';
 import { renderEmergencyCartsHost } from '../features/emergency-carts/web.js';
 import { escapeHtml, formatDate, formatRelative, icon, normalizeSearch } from './utils.js';
 import { renderSchemaThumbnail, renderVisualSchema } from './visual-schema.js';
@@ -577,6 +578,7 @@ function renderContainerDetail(state, containerId, sectionId) {
     : null;
   return `${header(container.label, '', '', 'inventory')}
     ${renderContainerHero(container, selectedSection, itemCount, availability, groupSelected, progress)}
+    ${isEmergencyAmpouleCaseSection(container.id, selectedSection?.id) ? renderEmergencyAmpouleCaseHost() : ''}
     <section class="container-compartments" aria-labelledby="container-compartments-title">
       <h2 id="container-compartments-title">Compartiments</h2>
       <div class="container-compartment-list">

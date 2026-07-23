@@ -1,0 +1,757 @@
+{
+  "moduleId": "ampoulier-urgence",
+  "label": "Ampoulier d’urgence",
+  "closedAsset": "./ampoulier-ferme-face.png",
+  "openAsset": "./ampoulier-ouvert-vide-gabarit.png",
+  "previewAsset": "./ampoulier-ouvert-compose.png",
+  "readingRule": "Compartiments gauche et droit : rangées du haut vers le bas, éléments de gauche à droite.",
+  "interaction": {
+    "openOnClick": true,
+    "itemEffect": {
+      "scale": 1.06,
+      "highlight": "soft",
+      "durationMs": 180
+    },
+    "detailsFields": [
+      "name",
+      "characteristics",
+      "quantityTarget"
+    ]
+  },
+  "zones": [
+    {
+      "id": "compartiment-gauche",
+      "label": "Compartiment gauche",
+      "order": "top-to-bottom",
+      "rows": [
+        {
+          "id": "rangee-1",
+          "order": "left-to-right",
+          "items": [
+            {
+              "id": "midazolam-5mg",
+              "name": "Midazolam",
+              "characteristics": "5 mg",
+              "asset": "./ampoulier/items/midazolam-5mg.png",
+              "row": 1,
+              "orderFromLeft": 1,
+              "position": {
+                "x": 195,
+                "y": 265,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 20
+              }
+            },
+            {
+              "id": "valium-10mg",
+              "name": "Valium",
+              "characteristics": "10 mg",
+              "asset": "./ampoulier/items/valium-10mg.png",
+              "row": 1,
+              "orderFromLeft": 2,
+              "position": {
+                "x": 293,
+                "y": 265,
+                "width": 20,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 20
+              }
+            },
+            {
+              "id": "loxapac-50mg",
+              "name": "Loxapac",
+              "characteristics": "50 mg",
+              "asset": "./ampoulier/items/loxapac-50mg.png",
+              "row": 1,
+              "orderFromLeft": 3,
+              "position": {
+                "x": 391,
+                "y": 265,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 20
+              }
+            }
+          ]
+        },
+        {
+          "id": "rangee-2",
+          "order": "left-to-right",
+          "items": [
+            {
+              "id": "tildiem",
+              "name": "Tildiem",
+              "characteristics": null,
+              "asset": "./ampoulier/items/tildiem.png",
+              "row": 2,
+              "orderFromLeft": 1,
+              "position": {
+                "x": 186,
+                "y": 441,
+                "width": 36,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 21
+              }
+            },
+            {
+              "id": "flumazenil",
+              "name": "Flumazénil",
+              "characteristics": null,
+              "asset": "./ampoulier/items/flumazenil.png",
+              "row": 2,
+              "orderFromLeft": 2,
+              "position": {
+                "x": 293,
+                "y": 441,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 21
+              }
+            },
+            {
+              "id": "naloxone",
+              "name": "Naloxone",
+              "characteristics": null,
+              "asset": "./ampoulier/items/naloxone.png",
+              "row": 2,
+              "orderFromLeft": 3,
+              "position": {
+                "x": 391,
+                "y": 441,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 21
+              }
+            }
+          ]
+        },
+        {
+          "id": "rangee-3",
+          "order": "left-to-right",
+          "items": [
+            {
+              "id": "nalbuphine",
+              "name": "Nalbuphine",
+              "characteristics": null,
+              "asset": "./ampoulier/items/nalbuphine.png",
+              "row": 3,
+              "orderFromLeft": 1,
+              "position": {
+                "x": 195,
+                "y": 616,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 22
+              }
+            },
+            {
+              "id": "primperan",
+              "name": "Primpéran",
+              "characteristics": null,
+              "asset": "./ampoulier/items/primperan.png",
+              "row": 3,
+              "orderFromLeft": 2,
+              "position": {
+                "x": 293,
+                "y": 616,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 22
+              }
+            },
+            {
+              "id": "gluconate-calcium",
+              "name": "Gluconate de calcium",
+              "characteristics": null,
+              "asset": "./ampoulier/items/gluconate-calcium.png",
+              "row": 3,
+              "orderFromLeft": 3,
+              "position": {
+                "x": 392,
+                "y": 616,
+                "width": 18,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 22
+              }
+            }
+          ]
+        },
+        {
+          "id": "rangee-4",
+          "order": "left-to-right",
+          "items": [
+            {
+              "id": "g30",
+              "name": "G30 %",
+              "characteristics": null,
+              "asset": "./ampoulier/items/g30.png",
+              "row": 4,
+              "orderFromLeft": 1,
+              "position": {
+                "x": 220,
+                "y": 791,
+                "width": 18,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 23
+              }
+            },
+            {
+              "id": "bicarbonate-sodium",
+              "name": "Bicarbonate de sodium",
+              "characteristics": null,
+              "asset": "./ampoulier/items/bicarbonate-sodium.png",
+              "row": 4,
+              "orderFromLeft": 2,
+              "position": {
+                "x": 367,
+                "y": 791,
+                "width": 18,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 23
+              }
+            }
+          ]
+        },
+        {
+          "id": "rangee-5",
+          "order": "left-to-right",
+          "items": [
+            {
+              "id": "solumedrol-120mg",
+              "name": "Solu-Médrol",
+              "characteristics": "120 mg",
+              "asset": "./ampoulier/items/solumedrol-120mg.png",
+              "row": 5,
+              "orderFromLeft": 1,
+              "position": {
+                "x": 186,
+                "y": 966,
+                "width": 36,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 24
+              }
+            },
+            {
+              "id": "solumedrol-40mg",
+              "name": "Solu-Médrol",
+              "characteristics": "40 mg",
+              "asset": "./ampoulier/items/solumedrol-40mg.png",
+              "row": 5,
+              "orderFromLeft": 2,
+              "position": {
+                "x": 285,
+                "y": 966,
+                "width": 36,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 24
+              }
+            },
+            {
+              "id": "pantoprazole-40mg",
+              "name": "Pantoprazole",
+              "characteristics": "40 mg",
+              "asset": "./ampoulier/items/pantoprazole-40mg.png",
+              "row": 5,
+              "orderFromLeft": 3,
+              "position": {
+                "x": 383,
+                "y": 966,
+                "width": 36,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 24
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "compartiment-droit",
+      "label": "Compartiment droit",
+      "order": "top-to-bottom",
+      "rows": [
+        {
+          "id": "rangee-1",
+          "order": "left-to-right",
+          "items": [
+            {
+              "id": "adrenaline-5mg",
+              "name": "Adrénaline",
+              "characteristics": "5 mg",
+              "asset": "./ampoulier/items/adrenaline-5mg.png",
+              "row": 1,
+              "orderFromLeft": 1,
+              "position": {
+                "x": 1125,
+                "y": 265,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 20
+              }
+            },
+            {
+              "id": "cordarone-150mg",
+              "name": "Cordarone",
+              "characteristics": "150 mg",
+              "asset": "./ampoulier/items/cordarone-150mg.png",
+              "row": 1,
+              "orderFromLeft": 2,
+              "position": {
+                "x": 1223,
+                "y": 265,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 20
+              }
+            },
+            {
+              "id": "xylocard-1000mg",
+              "name": "Xylocard",
+              "characteristics": "1 000 mg",
+              "asset": "./ampoulier/items/xylocard-1000mg.png",
+              "row": 1,
+              "orderFromLeft": 3,
+              "position": {
+                "x": 1313,
+                "y": 265,
+                "width": 36,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 20
+              }
+            }
+          ]
+        },
+        {
+          "id": "rangee-2",
+          "order": "left-to-right",
+          "items": [
+            {
+              "id": "salbutamol-fort-5mg",
+              "name": "Salbutamol fort",
+              "characteristics": "5 mg",
+              "asset": "./ampoulier/items/salbutamol-fort-5mg.png",
+              "row": 2,
+              "orderFromLeft": 1,
+              "position": {
+                "x": 1112,
+                "y": 441,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 21
+              }
+            },
+            {
+              "id": "adrenaline-1mg",
+              "name": "Adrénaline",
+              "characteristics": "1 mg",
+              "asset": "./ampoulier/items/adrenaline-1mg.png",
+              "row": 2,
+              "orderFromLeft": 2,
+              "position": {
+                "x": 1186,
+                "y": 441,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 21
+              }
+            },
+            {
+              "id": "bricanyl",
+              "name": "Bricanyl",
+              "characteristics": null,
+              "asset": "./ampoulier/items/bricanyl.png",
+              "row": 2,
+              "orderFromLeft": 3,
+              "position": {
+                "x": 1260,
+                "y": 441,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 21
+              }
+            },
+            {
+              "id": "polaramine",
+              "name": "Polaramine",
+              "characteristics": null,
+              "asset": "./ampoulier/items/polaramine.png",
+              "row": 2,
+              "orderFromLeft": 4,
+              "position": {
+                "x": 1334,
+                "y": 441,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 21
+              }
+            }
+          ]
+        },
+        {
+          "id": "rangee-3",
+          "order": "left-to-right",
+          "items": [
+            {
+              "id": "furosemide-20mg",
+              "name": "Furosémide",
+              "characteristics": "20 mg",
+              "asset": "./ampoulier/items/furosemide-20mg.png",
+              "row": 3,
+              "orderFromLeft": 1,
+              "position": {
+                "x": 1125,
+                "y": 616,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 22
+              }
+            },
+            {
+              "id": "loxen-10mg",
+              "name": "Loxen",
+              "characteristics": "10 mg",
+              "asset": "./ampoulier/items/loxen-10mg.png",
+              "row": 3,
+              "orderFromLeft": 2,
+              "position": {
+                "x": 1223,
+                "y": 616,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 22
+              }
+            },
+            {
+              "id": "risordan-10mg",
+              "name": "Risordan",
+              "characteristics": "10 mg",
+              "asset": "./ampoulier/items/risordan-10mg.png",
+              "row": 3,
+              "orderFromLeft": 3,
+              "position": {
+                "x": 1321,
+                "y": 616,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 22
+              }
+            }
+          ]
+        },
+        {
+          "id": "rangee-4",
+          "order": "left-to-right",
+          "items": [
+            {
+              "id": "digoxine",
+              "name": "Digoxine",
+              "characteristics": null,
+              "asset": "./ampoulier/items/digoxine.png",
+              "row": 4,
+              "orderFromLeft": 1,
+              "position": {
+                "x": 1125,
+                "y": 791,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 23
+              }
+            },
+            {
+              "id": "atropine",
+              "name": "Atropine",
+              "characteristics": null,
+              "asset": "./ampoulier/items/atropine.png",
+              "row": 4,
+              "orderFromLeft": 2,
+              "position": {
+                "x": 1223,
+                "y": 791,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 23
+              }
+            },
+            {
+              "id": "isuprel",
+              "name": "Isuprel",
+              "characteristics": null,
+              "asset": "./ampoulier/items/isuprel.png",
+              "row": 4,
+              "orderFromLeft": 3,
+              "position": {
+                "x": 1313,
+                "y": 791,
+                "width": 36,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 23
+              }
+            }
+          ]
+        },
+        {
+          "id": "rangee-5",
+          "order": "left-to-right",
+          "items": [
+            {
+              "id": "noradrenaline-8mg",
+              "name": "Noradrénaline",
+              "characteristics": "8 mg",
+              "asset": "./ampoulier/items/noradrenaline-8mg.png",
+              "row": 5,
+              "orderFromLeft": 1,
+              "position": {
+                "x": 1125,
+                "y": 966,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 24
+              }
+            },
+            {
+              "id": "dopamine-200mg",
+              "name": "Dopamine",
+              "characteristics": "200 mg",
+              "asset": "./ampoulier/items/dopamine-200mg.png",
+              "row": 5,
+              "orderFromLeft": 2,
+              "position": {
+                "x": 1223,
+                "y": 966,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 24
+              }
+            },
+            {
+              "id": "dobutamine",
+              "name": "Dobutamine",
+              "characteristics": null,
+              "asset": "./ampoulier/items/dobutamine.png",
+              "row": 5,
+              "orderFromLeft": 3,
+              "position": {
+                "x": 1321,
+                "y": 966,
+                "width": 19,
+                "height": 92,
+                "rotation": 90,
+                "zIndex": 24
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "filet-central-gauche",
+      "label": "Filet central gauche",
+      "order": "top-to-bottom",
+      "items": [
+        {
+          "id": "lidocaine-200mg",
+          "name": "Lidocaïne",
+          "characteristics": "200 mg",
+          "quantityTarget": 4,
+          "asset": "./ampoulier/items/lidocaine-200mg.png",
+          "orderFromTop": 1,
+          "position": {
+            "x": 536,
+            "y": 455,
+            "width": 137,
+            "height": 54,
+            "rotation": 0,
+            "zIndex": 40
+          }
+        },
+        {
+          "id": "exacyl-acide-tranexamique",
+          "name": "Exacyl",
+          "characteristics": "Ac. tranexamique",
+          "quantityTarget": 5,
+          "asset": "./ampoulier/items/exacyl-acide-tranexamique.png",
+          "orderFromTop": 2,
+          "position": {
+            "x": 477,
+            "y": 577,
+            "width": 255,
+            "height": 53,
+            "rotation": 0,
+            "zIndex": 41
+          }
+        },
+        {
+          "id": "depakine-400mg",
+          "name": "Dépakine",
+          "characteristics": "400 mg",
+          "quantityTarget": 4,
+          "asset": "./ampoulier/items/depakine-400mg.png",
+          "orderFromTop": 3,
+          "position": {
+            "x": 536,
+            "y": 699,
+            "width": 137,
+            "height": 54,
+            "rotation": 0,
+            "zIndex": 42
+          }
+        },
+        {
+          "id": "xanax-0-5mg",
+          "name": "Xanax",
+          "characteristics": "0,5 mg",
+          "quantityTarget": 5,
+          "asset": "./ampoulier/items/xanax-0-5mg.png",
+          "orderFromTop": 4,
+          "position": {
+            "x": 533,
+            "y": 821,
+            "width": 143,
+            "height": 54,
+            "rotation": 0,
+            "zIndex": 43
+          }
+        },
+        {
+          "id": "ephedrine-30mg-10ml",
+          "name": "Éphédrine",
+          "characteristics": "30 mg/10 mL · seringue préremplie",
+          "quantityTarget": 2,
+          "asset": "./ampoulier/items/ephedrine-30mg-10ml.png",
+          "orderFromTop": 5,
+          "position": {
+            "x": 519,
+            "y": 943,
+            "width": 171,
+            "height": 54,
+            "rotation": 0,
+            "zIndex": 44
+          }
+        }
+      ]
+    },
+    {
+      "id": "filet-central-droit",
+      "label": "Filet central droit",
+      "order": "top-to-bottom",
+      "items": [
+        {
+          "id": "nacl-50cc",
+          "name": "NaCl",
+          "characteristics": "50 cc",
+          "quantityTarget": 2,
+          "asset": "./ampoulier/items/nacl-50cc.png",
+          "orderFromTop": 1,
+          "position": {
+            "x": 866,
+            "y": 455,
+            "width": 130,
+            "height": 54,
+            "rotation": 0,
+            "zIndex": 40
+          }
+        },
+        {
+          "id": "perfuseur-3-voies",
+          "name": "Perfuseur 3 voies",
+          "characteristics": null,
+          "quantityTarget": 2,
+          "asset": "./ampoulier/items/perfuseur-3-voies.png",
+          "orderFromTop": 2,
+          "position": {
+            "x": 838,
+            "y": 577,
+            "width": 186,
+            "height": 54,
+            "rotation": 0,
+            "zIndex": 41
+          }
+        },
+        {
+          "id": "perfuseur-volumed",
+          "name": "Perfuseur Volumed",
+          "characteristics": null,
+          "quantityTarget": 1,
+          "asset": "./ampoulier/items/perfuseur-volumed.png",
+          "orderFromTop": 3,
+          "position": {
+            "x": 838,
+            "y": 699,
+            "width": 186,
+            "height": 54,
+            "rotation": 0,
+            "zIndex": 42
+          }
+        },
+        {
+          "id": "dispositif-transfert",
+          "name": "Dispositif de transfert",
+          "characteristics": null,
+          "quantityTarget": 2,
+          "asset": "./ampoulier/items/dispositif-transfert.png",
+          "orderFromTop": 4,
+          "position": {
+            "x": 837,
+            "y": 821,
+            "width": 188,
+            "height": 54,
+            "rotation": 0,
+            "zIndex": 43
+          }
+        },
+        {
+          "id": "penthrox",
+          "name": "Penthrox",
+          "characteristics": null,
+          "quantityTarget": 1,
+          "asset": "./ampoulier/items/penthrox.png",
+          "orderFromTop": 5,
+          "position": {
+            "x": 876,
+            "y": 943,
+            "width": 110,
+            "height": 54,
+            "rotation": 0,
+            "zIndex": 44
+          }
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Les 40 références sont des assets indépendants.",
+    "Les quantités des filets centraux sont des caractéristiques de stock et non des duplications de fichiers.",
+    "Les textes sont rendus par l’interface afin de garantir les libellés exacts.",
+    "Les photographies fournies sont conservées uniquement comme références."
+  ]
+}

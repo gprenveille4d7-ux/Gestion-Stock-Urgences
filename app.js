@@ -1,1 +1,1 @@
-import './src/main.js?v=20260723-emergency-carts-drawer2-v4';
+import './src/main.js?v=20260723-ampoulier-sac-rouge-v5';

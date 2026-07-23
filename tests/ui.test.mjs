@@ -262,6 +262,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
     assert.ok(ampoulierHtml.includes('data-sac-view="ampoulier"'), ampoulierSection);
     assert.ok(ampoulierHtml.includes('./assets/sacs/sac-rouge/sac-rouge-ampoulier.png'), ampoulierSection);
     assert.ok(ampoulierHtml.includes('Ampoulier jaune extrait du sac rouge'), ampoulierSection);
+    assert.ok(ampoulierHtml.includes('data-emergency-ampoule-case-root'), ampoulierSection);
     assert.ok(ampoulierHtml.includes('class="inventory-pictogram"'), ampoulierSection);
   }
 
