@@ -80,7 +80,9 @@ test('le rendu du module ne contient aucune liste permanente', async () => {
   assert.ok(source.includes('focusPosition'));
   assert.ok(stylesheet.includes('@media (prefers-reduced-motion: reduce)'));
   assert.ok(stylesheet.includes('env(safe-area-inset-bottom'));
-  assert.ok(stylesheet.includes('--item-scale: 2.15'));
+  assert.ok(stylesheet.includes('--item-scale: 2'));
+  assert.ok(stylesheet.includes('--item-scale: 3'));
+  assert.ok(stylesheet.includes('transform: scale(.88)'));
   assert.equal(stylesheet.includes('transform: scale(2.02)'), false);
   assert.ok(source.includes('is-compartment-item'));
   assert.ok(stylesheet.includes('rotate(var(--item-rotation))'));

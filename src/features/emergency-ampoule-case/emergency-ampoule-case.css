@@ -335,14 +335,14 @@
 }
 
 .emergency-ampoule-case__item.is-compartment-item {
-  --item-scale: 1.6;
-  --label-counter-scale: .625;
+  --item-scale: 2;
+  --label-counter-scale: .5;
 }
 
 .emergency-ampoule-case__scene-shell.is-focus-left .emergency-ampoule-case__item.is-compartment-item,
 .emergency-ampoule-case__scene-shell.is-focus-right .emergency-ampoule-case__item.is-compartment-item {
-  --item-scale: 2.15;
-  --label-counter-scale: .465;
+  --item-scale: 3;
+  --label-counter-scale: .333;
 }
 
 .emergency-ampoule-case__item.is-selected {
@@ -441,11 +441,13 @@
 }
 
 .emergency-ampoule-case__scene-shell.is-focus-left .emergency-ampoule-case__scene-inner {
-  transform: scale(1);
+  transform: scale(.88);
+  transform-origin: 50% 50%;
 }
 
 .emergency-ampoule-case__scene-shell.is-focus-right .emergency-ampoule-case__scene-inner {
-  transform: scale(1);
+  transform: scale(.88);
+  transform-origin: 50% 50%;
 }
 
 .emergency-ampoule-case__scene-shell.is-net .emergency-ampoule-case__scene {
