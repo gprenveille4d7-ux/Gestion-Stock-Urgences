@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'releve-smur-';
-const CACHE = 'releve-smur-v1.0.0-20260723-photo-sticky-bounce-v2';
+const CACHE = 'releve-smur-v1.0.0-20260723-emergency-carts-drawer1-v2';
 const NETWORK_TIMEOUT_MS = 4000;
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg',
@@ -8,12 +8,34 @@ const CORE_ASSETS = [
   './assets/sacs/sac-rouge/sac-rouge-face.png', './assets/sacs/sac-rouge/sac-rouge-trois-quarts-gauche.png', './assets/sacs/sac-rouge/sac-rouge-cote-gauche.png', './assets/sacs/sac-rouge/sac-rouge-trois-quarts-droit.png', './assets/sacs/sac-rouge/sac-rouge-cote-droit.png', './assets/sacs/sac-rouge/sac-rouge-dos.png', './assets/sacs/sac-rouge/sac-rouge-dessus.png', './assets/sacs/sac-rouge/sac-rouge-ouvert.png', './assets/sacs/sac-rouge/sac-rouge-amovible.png', './assets/sacs/sac-rouge/sac-rouge-ampoulier.png', './assets/sacs/sac-rouge/sac-rouge-plaque-face-a.png', './assets/sacs/sac-rouge/sac-rouge-plaque-face-b.png',
   './assets/sacs/sac-bleu/sac-bleu-face.png', './assets/sacs/sac-bleu/sac-bleu-cote-gauche.png', './assets/sacs/sac-bleu/sac-bleu-cote-droit.png', './assets/sacs/sac-bleu/sac-bleu-dos.png', './assets/sacs/sac-bleu/sac-bleu-ouvert.png',
   './assets/sacs/sac-vert/sac-vert-face.png', './assets/sacs/sac-vert/sac-vert-cote-gauche.png', './assets/sacs/sac-vert/sac-vert-cote-droit.png', './assets/sacs/sac-vert/sac-vert-dos.png', './assets/sacs/sac-vert/sac-vert-ouvert.png',
+  './public/assets/chariots/box-3-4-adulte/chariot-face.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01-intubation-vide-gabarit.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/sonde-intubation-6-5.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/sonde-intubation-7.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/sonde-intubation-7-5.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/lame-laryngoscope-2.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/lame-laryngoscope-3.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/lame-laryngoscope-4.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/mandrin-intubation.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/mandrin-eschmann.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/canule-oropharyngee-petite.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/canule-oropharyngee-moyenne.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/canule-oropharyngee-grande.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/lacet-fixation.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/pince-magill.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/ventoline.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/leukoplast.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/seringue-omnifix-60ml.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/filtre-respiratoire.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/raccord-cannele.png',
+  './public/assets/chariots/box-3-4-adulte/tiroir-01/items/lidocaine-spray-canule.png',
   './src/config.js', './src/main.js',
   './src/application/operational-store.js',
   './src/data/reference.js', './src/data/source-manifest.js', './src/data/operational-assets.js', './src/data/chariot-adapter.js', './src/data/chariot-reference.json', './src/data/visual-schemas.js', './src/data/sac-visuals.js',
   './src/domain/ids.js', './src/domain/availability.js', './src/domain/expiry.js', './src/domain/action-engine.js', './src/domain/conflicts.js', './src/domain/priority.js', './src/domain/route-planner.js', './src/domain/statistics.js', './src/domain/validation.js',
   './src/infrastructure/database.js', './src/infrastructure/repository.js', './src/infrastructure/sync-adapter.js',
-  './src/ui/utils.js', './src/ui/visual-schema.js', './src/ui/dynamic-inventory-viewer.js', './src/ui/views.js'
+  './src/ui/utils.js', './src/ui/visual-schema.js', './src/ui/dynamic-inventory-viewer.js', './src/ui/views.js',
+  './src/features/emergency-carts/emergency-carts.css', './src/features/emergency-carts/emergency-cart-data.js', './src/features/emergency-carts/web.js'
 ];
 
 self.addEventListener('install', (event) => {

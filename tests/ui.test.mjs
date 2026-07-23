@@ -6,6 +6,7 @@ import { SMUR_CONTAINERS } from '../src/data/reference.js';
 import { getContainerDiagram } from '../src/data/visual-schemas.js';
 import { renderVisualSchema } from '../src/ui/visual-schema.js';
 import { renderApp } from '../src/ui/views.js';
+import { emergencyCarts } from '../src/features/emergency-carts/emergency-cart-data.js';
 
 test('toutes les routes P0 produisent un écran exploitable sans valeur invalide', async () => {
   const chariots = JSON.parse(await readFile(new URL('../src/data/chariot-reference.json', import.meta.url), 'utf8'));
@@ -67,6 +68,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   for (const label of ['Inventaire SMUR', 'Chariot d’urgence', 'Les Réserves', 'Péremptions']) assert.ok(homeHtml.includes(label), label);
   assert.ok(homeHtml.includes('data-nav="inventory"'));
   assert.ok(homeHtml.includes('data-nav="reserve/reserve-smur"'));
+  assert.ok(homeHtml.includes('data-nav="emergency-carts"'));
 
   for (const container of SMUR_CONTAINERS) {
     const overview = renderApp(store.state, { ...ui, search: '' }, ['container', container.id]);
@@ -171,6 +173,10 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   assert.ok(containerHtml.includes('id="container-compartments-title"'));
   assert.ok(containerHtml.includes('Voir l’inventaire complet'));
   assert.equal((containerHtml.match(/class="container-compartment-row/g) || []).length, 11);
+
+  const emergencyCartsHtml = renderApp(store.state, ui, ['emergency-carts']);
+  assert.ok(emergencyCartsHtml.includes('data-emergency-carts-root'));
+  assert.ok(emergencyCartsHtml.includes('data-route="emergency-carts"'));
   assert.ok(containerHtml.includes('data-container-nav="container/sac-vert-pedia/ampoulier"'));
 
   const openedGreenBagHtml = renderApp(store.state, ui, ['container', 'sac-vert-pedia', 'ampoulier']);
@@ -427,5 +433,22 @@ test('la photo devient une miniature rebondissante contrôlée par appui long', 
   assert.ok(mainSource.includes("event.target.closest('[data-viewer-compact-media]')"));
   assert.ok(css.includes('@keyframes dynamic-viewer-compact-bounce'));
   assert.ok(css.includes('.dynamic-inventory-viewer__compact-image.is-pressing'));
+});
+
+test('le module chariots adultes expose les box 3 et 4 et les 19 matériels individualisés', async () => {
+  assert.deepEqual(Object.keys(emergencyCarts), ['3', '4']);
+  for (const box of [3, 4]) {
+    assert.equal(emergencyCarts[box].drawers.length, 5);
+    assert.equal(emergencyCarts[box].drawers[0].items.length, 19);
+    assert.equal(emergencyCarts[box].drawers[0].available, true);
+    assert.equal(emergencyCarts[box].drawers.slice(1).every((drawer) => !drawer.available), true);
+    assert.equal(emergencyCarts[box].drawers[0].items.every((item) => item.asset && item.position), true);
+  }
+  assert.ok(emergencyCarts[3].drawers[0].items.some((item) => item.id === 'filtre-respiratoire'));
+  assert.ok(emergencyCarts[3].drawers[0].items.some((item) => item.id === 'raccord-cannele'));
+  const source = await readFile(new URL('../src/features/emergency-carts/web.js', import.meta.url), 'utf8');
+  assert.ok(source.includes("event.key !== 'Escape'"));
+  assert.ok(source.includes("data-ecm-action=\"open-drawer\""));
+  assert.ok(source.includes("data-ecm-action=\"select-item\""));
 });
 

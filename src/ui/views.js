@@ -9,6 +9,7 @@ import { deriveAvailability, summarizeAvailability } from '../domain/availabilit
 import { computeExpiryDashboard, daysUntil, EXPIRY_PANELS } from '../domain/expiry.js';
 import { actionZoneId, planRoute } from '../domain/route-planner.js';
 import { computeStatistics } from '../domain/statistics.js';
+import { renderEmergencyCartsHost } from '../features/emergency-carts/web.js';
 import { escapeHtml, formatDate, formatRelative, icon, normalizeSearch } from './utils.js';
 import { renderSchemaThumbnail, renderVisualSchema } from './visual-schema.js';
 import { DynamicInventoryViewer } from './dynamic-inventory-viewer.js';
@@ -132,7 +133,7 @@ function bottomNav(route) {
   const entries = [
     ['home', 'Accueil', 'home'], ['return', 'Retour', 'plus'], ['actions', 'Actions', 'clipboard'], ['inventory', 'Matériel', 'search'], ['profile', 'Profil', 'user']
   ];
-  const active = route === 'action' ? 'actions' : route === 'audit' || route === 'audits' ? 'actions' : ['container', 'reserve', 'chariot'].includes(route) ? 'inventory' : route;
+  const active = route === 'action' ? 'actions' : route === 'audit' || route === 'audits' ? 'actions' : ['container', 'reserve', 'chariot', 'emergency-carts'].includes(route) ? 'inventory' : route;
   return `<nav class="bottom-nav" aria-label="Navigation principale">${entries.map(([id, label, iconName], index) => `<button class="nav-item ${index === 1 ? 'center' : ''} ${active === id ? 'active' : ''}" data-nav="${id}" ${active === id ? 'aria-current="page"' : ''}>${icon(iconName, 20)}<span>${label}</span></button>`).join('')}</nav>`;
 }
 
@@ -167,7 +168,7 @@ function renderHome(state) {
   const userName = state.user?.displayName || 'Utilisateur local';
   const userRole = state.user?.team || state.user?.function || state.user?.role || 'Équipe locale';
   const chariotReferences = state.chariotReference?.references || [];
-  const primaryChariotRoute = chariotReferences[0] ? `chariot/${chariotReferences[0].id}` : 'inventory';
+  const primaryChariotRoute = 'emergency-carts';
   const urgentExpiryCount = expiry.active.filter((lot) => lot.daysRemaining < 30).length;
   const pendingReturns = openActions.filter((action) => /retour|usage/i.test(`${action.type} ${action.title}`)).length;
   const conformity = SMUR_CONTAINERS.length ? Math.round((readyCount / SMUR_CONTAINERS.length) * 100) : 100;
@@ -391,6 +392,7 @@ function renderInventory(state, ui) {
   const activeAudits = state.audits.filter((audit) => audit.status === 'in_progress').length;
   const otherRows = expanded ? [
     ...RESERVE_ZONE_IDS.map((zoneId) => findZone(zoneId)).filter(Boolean).map((zone) => renderOtherInventoryRow(`reserve/${zone.id}`, 'map', zone.label, 'Réserve à cartographier', 'non-renseignee')),
+    renderOtherInventoryRow('emergency-carts', 'clipboard', 'Chariots adultes · Box 3 et 4', 'Vue interactive · 5 tiroirs · intubation', 'non-renseignee'),
     ...chariots.map((reference) => renderOtherInventoryRow(`chariot/${reference.id}`, 'clipboard', reference.label, `${reference.containers.reduce((sum, section) => sum + section.items.length, 0)} éléments`, 'non-renseignee'))
   ].join('') : '';
   const chariotWarning = expanded && !chariots.length ? `<div class="p0-reference-banner historical-warning">${icon('alert', 18)}<div><strong>Référentiel chariots indisponible</strong><span>Les inventaires XLSX n’ont pas pu être chargés. Réessayez en ligne ou vérifiez le cache PWA.</span></div></div>` : '';
@@ -951,6 +953,7 @@ export function renderApp(state, ui, routeParts) {
     case 'container': content = renderContainerDetail(viewState, id, subId); break;
     case 'reserve': content = renderReserveDetail(viewState, id); break;
     case 'chariot': content = renderChariotDetail(viewState, id, subId); break;
+    case 'emergency-carts': content = renderEmergencyCartsHost(); break;
     case 'actions': content = renderActions(viewState, ui); break;
     case 'action': content = renderActionDetail(viewState, id); break;
     case 'audits': content = renderAudits(viewState); break;

@@ -1,0 +1,144 @@
+{
+  "drawerId": "tiroir-01-intubation",
+  "label": "Tiroir 1 · Matériel d’intubation",
+  "layout": "open-individualized",
+  "hasCompartments": false,
+  "backgroundAsset": "./tiroir-01-intubation-vide-gabarit.png",
+  "previewAsset": "./tiroir-01-intubation-compose.png",
+  "inventoryStatus": "minimum-confirme",
+  "items": [
+    {
+      "id": "sonde-intubation-6-5",
+      "name": "Sonde d’intubation",
+      "specification": "6,5",
+      "asset": "./tiroir-01/items/sonde-intubation-6-5.png",
+      "position": { "x": 13.6, "y": 35.5, "width": 46.7, "rotation": 0, "zIndex": 20 }
+    },
+    {
+      "id": "sonde-intubation-7",
+      "name": "Sonde d’intubation",
+      "specification": "7",
+      "asset": "./tiroir-01/items/sonde-intubation-7.png",
+      "position": { "x": 13.6, "y": 44.3, "width": 48.6, "rotation": 0, "zIndex": 21 }
+    },
+    {
+      "id": "sonde-intubation-7-5",
+      "name": "Sonde d’intubation",
+      "specification": "7,5",
+      "asset": "./tiroir-01/items/sonde-intubation-7-5.png",
+      "position": { "x": 13.6, "y": 53.0, "width": 50.6, "rotation": 0, "zIndex": 22 }
+    },
+    {
+      "id": "lame-laryngoscope-2",
+      "name": "Lame de laryngoscope",
+      "specification": "2",
+      "asset": "./tiroir-01/items/lame-laryngoscope-2.png",
+      "position": { "x": 14.0, "y": 25.1, "width": 19.1, "rotation": 0, "zIndex": 10 }
+    },
+    {
+      "id": "lame-laryngoscope-3",
+      "name": "Lame de laryngoscope",
+      "specification": "3",
+      "asset": "./tiroir-01/items/lame-laryngoscope-3.png",
+      "position": { "x": 35.1, "y": 24.7, "width": 20.3, "rotation": 0, "zIndex": 11 }
+    },
+    {
+      "id": "lame-laryngoscope-4",
+      "name": "Lame de laryngoscope",
+      "specification": "4",
+      "asset": "./tiroir-01/items/lame-laryngoscope-4.png",
+      "position": { "x": 57.0, "y": 24.3, "width": 21.5, "rotation": 0, "zIndex": 12 }
+    },
+    {
+      "id": "mandrin-intubation",
+      "name": "Mandrin",
+      "specification": null,
+      "asset": "./tiroir-01/items/mandrin-intubation.png",
+      "position": { "x": 14.0, "y": 18.3, "width": 37.5, "rotation": 0, "zIndex": 8 }
+    },
+    {
+      "id": "mandrin-eschmann",
+      "name": "Mandrin d’Eschmann",
+      "specification": null,
+      "asset": "./tiroir-01/items/mandrin-eschmann.png",
+      "position": { "x": 16.7, "y": 11.6, "width": 63.8, "rotation": 0, "zIndex": 7 }
+    },
+    {
+      "id": "canule-petite",
+      "name": "Canule",
+      "specification": "Petite taille",
+      "asset": "./tiroir-01/items/canule-oropharyngee-petite.png",
+      "position": { "x": 65.4, "y": 35.9, "width": 17.5, "rotation": 0, "zIndex": 30 }
+    },
+    {
+      "id": "canule-moyenne",
+      "name": "Canule",
+      "specification": "Taille moyenne",
+      "asset": "./tiroir-01/items/canule-oropharyngee-moyenne.png",
+      "position": { "x": 64.6, "y": 45.1, "width": 18.7, "rotation": 0, "zIndex": 31 }
+    },
+    {
+      "id": "canule-grande",
+      "name": "Canule",
+      "specification": "Grande taille",
+      "asset": "./tiroir-01/items/canule-oropharyngee-grande.png",
+      "position": { "x": 63.8, "y": 54.6, "width": 19.9, "rotation": 0, "zIndex": 32 }
+    },
+    {
+      "id": "lacet-fixation-sonde",
+      "name": "Lacet de fixation de la sonde",
+      "specification": null,
+      "asset": "./tiroir-01/items/lacet-fixation.png",
+      "position": { "x": 63.4, "y": 14.4, "width": 21.5, "rotation": 0, "zIndex": 9 }
+    },
+    {
+      "id": "pince-magill",
+      "name": "Pince de Magill",
+      "specification": null,
+      "asset": "./tiroir-01/items/pince-magill.png",
+      "position": { "x": 63.0, "y": 63.0, "width": 21.5, "rotation": 0, "zIndex": 40 }
+    },
+    {
+      "id": "ventoline",
+      "name": "Ventoline",
+      "specification": null,
+      "asset": "./tiroir-01/items/ventoline.png",
+      "position": { "x": 15.6, "y": 68.6, "width": 7.2, "rotation": 0, "zIndex": 50 }
+    },
+    {
+      "id": "leukoplast",
+      "name": "Leukoplast",
+      "specification": null,
+      "asset": "./tiroir-01/items/leukoplast.png",
+      "position": { "x": 24.3, "y": 69.2, "width": 6.8, "rotation": 0, "zIndex": 51 }
+    },
+    {
+      "id": "seringue-omnifix-60-ml",
+      "name": "Seringue Omnifix",
+      "specification": "60 mL",
+      "asset": "./tiroir-01/items/seringue-omnifix-60ml.png",
+      "position": { "x": 33.1, "y": 69.8, "width": 18.7, "rotation": 0, "zIndex": 52 }
+    },
+    {
+      "id": "filtre-respiratoire",
+      "name": "Filtre respiratoire",
+      "specification": null,
+      "asset": "./tiroir-01/items/filtre-respiratoire.png",
+      "position": { "x": 53.8, "y": 68.4, "width": 8.8, "rotation": 0, "zIndex": 53 }
+    },
+    {
+      "id": "raccord-cannele",
+      "name": "Raccord cannelé",
+      "specification": null,
+      "asset": "./tiroir-01/items/raccord-cannele.png",
+      "position": { "x": 63.8, "y": 73.4, "width": 11.2, "rotation": 0, "zIndex": 54 }
+    },
+    {
+      "id": "lidocaine-spray-canule-longue",
+      "name": "Lidocaïne spray avec canule longue",
+      "specification": null,
+      "asset": "./tiroir-01/items/lidocaine-spray-canule.png",
+      "position": { "x": 80.9, "y": 66.6, "width": 5.2, "rotation": 0, "zIndex": 55 }
+    }
+  ]
+}

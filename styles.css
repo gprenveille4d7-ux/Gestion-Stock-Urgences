@@ -4351,6 +4351,24 @@ body.inventory-viewer-open .bottom-nav { visibility: hidden; }
   to { opacity: 1; }
 }
 
+/* Intégration native du kit Chariots adultes dans la PWA existante */
+.app-shell[data-route="emergency-carts"] .page {
+  max-width: none;
+  padding: 0 0 86px;
+}
+
+.app-shell[data-route="emergency-carts"] .ecm-shell {
+  min-height: calc(100dvh - 64px);
+}
+
+.app-shell[data-route="emergency-carts"] .ecm-header {
+  padding-top: 4px;
+}
+
+.app-shell[data-route="emergency-carts"] .ecm-detail {
+  bottom: calc(76px + env(safe-area-inset-bottom));
+}
+
 @keyframes dynamic-viewer-compact-bounce {
   0% { opacity: 0; transform: translateY(-18px) scale(.45); }
   58% { opacity: 1; transform: translateY(4px) scale(1.08); }

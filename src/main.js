@@ -1,5 +1,6 @@
 import { SMUR_CONTAINERS } from './data/reference.js';
 import { OperationalStore } from './application/operational-store.js';
+import { mountEmergencyCartsModule } from './features/emergency-carts/web.js';
 import { renderApp } from './ui/views.js';
 import { navigate, routeParts } from './ui/utils.js';
 
@@ -34,6 +35,7 @@ let inlineViewerSwipeState = null;
 let suppressFullscreenOpenUntil = 0;
 let suppressFullscreenCloseUntil = 0;
 let viewerLongPressState = null;
+let cleanupEmergencyCartsModule = null;
 const VIEWER_LONG_PRESS_MS = 420;
 const VIEWER_LONG_PRESS_MOVE_PX = 12;
 const channel = 'BroadcastChannel' in globalThis ? new BroadcastChannel('releve-smur-updates') : null;
@@ -203,9 +205,17 @@ function showToast(message, tone = 'saved', action = null) {
 function render(focusHeading = false) {
   if (!store?.state.ready) return;
   const currentRoute = routeParts()[0];
-  const routeTitles = { home: 'Relève', return: 'Retour', actions: 'Actions', action: 'Action', inventory: 'Matériel', container: 'Contenant', reserve: 'Réserve', chariot: 'Chariot', audits: 'Contrôles', audit: 'Contrôle', expiry: 'Péremptions', defect: 'Défaut', map: 'Carte', stats: 'Analyse', history: 'Historique', profile: 'Profil' };
+  const routeTitles = { home: 'Relève', return: 'Retour', actions: 'Actions', action: 'Action', inventory: 'Matériel', container: 'Contenant', reserve: 'Réserve', chariot: 'Chariot', 'emergency-carts': 'Chariots adultes', audits: 'Contrôles', audit: 'Contrôle', expiry: 'Péremptions', defect: 'Défaut', map: 'Carte', stats: 'Analyse', history: 'Historique', profile: 'Profil' };
+  cleanupEmergencyCartsModule?.();
+  cleanupEmergencyCartsModule = null;
   appRoot.innerHTML = renderApp(store.state, ui, routeParts());
   document.title = `${routeTitles[currentRoute] || 'Relève'} — SMUR / Urgences`;
+  const emergencyCartsRoot = appRoot.querySelector('[data-emergency-carts-root]');
+  if (emergencyCartsRoot) {
+    cleanupEmergencyCartsModule = mountEmergencyCartsModule(emergencyCartsRoot, {
+      onExit: () => navigate('inventory')
+    });
+  }
   setupDynamicInventoryViewer();
   if (focusHeading === true) appRoot.querySelector('.page-title')?.focus();
 }
