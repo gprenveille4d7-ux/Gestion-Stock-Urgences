@@ -341,8 +341,8 @@
 
 .emergency-ampoule-case__scene-shell.is-focus-left .emergency-ampoule-case__item.is-compartment-item,
 .emergency-ampoule-case__scene-shell.is-focus-right .emergency-ampoule-case__item.is-compartment-item {
-  --item-scale: 3;
-  --label-counter-scale: .333;
+  --item-scale: 1.75;
+  --label-counter-scale: .57;
 }
 
 .emergency-ampoule-case__item.is-selected {
@@ -440,14 +440,29 @@
   font-weight: 760;
 }
 
+.emergency-ampoule-case__scene-shell.is-focus-left .emergency-ampoule-case__scene,
+.emergency-ampoule-case__scene-shell.is-focus-right .emergency-ampoule-case__scene {
+  max-width: 430px;
+  margin-inline: auto;
+  aspect-ratio: 1 / 2;
+}
+
+.emergency-ampoule-case__scene-shell.is-focus-left .emergency-ampoule-case__scene-inner,
+.emergency-ampoule-case__scene-shell.is-focus-right .emergency-ampoule-case__scene-inner {
+  position: absolute;
+  top: 0;
+  width: 200%;
+  height: 100%;
+  transform: none;
+  transition: none;
+}
+
 .emergency-ampoule-case__scene-shell.is-focus-left .emergency-ampoule-case__scene-inner {
-  transform: scale(.88);
-  transform-origin: 50% 50%;
+  left: 0;
 }
 
 .emergency-ampoule-case__scene-shell.is-focus-right .emergency-ampoule-case__scene-inner {
-  transform: scale(.88);
-  transform-origin: 50% 50%;
+  left: -100%;
 }
 
 .emergency-ampoule-case__scene-shell.is-net .emergency-ampoule-case__scene {

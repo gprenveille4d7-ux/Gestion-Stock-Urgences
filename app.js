@@ -1,1 +1,1 @@
-import './src/main.js?v=20260723-ampoules-lisibles-v9';
+import './src/main.js?v=20260723-cadrage-gauche-droite-v10';
