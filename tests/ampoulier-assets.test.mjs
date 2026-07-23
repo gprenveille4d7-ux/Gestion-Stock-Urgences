@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
-import { emergencyAmpouleCaseTransition } from '../src/features/emergency-ampoule-case/web.js';
+import { emergencyAmpouleCaseTransition, emergencyAmpouleItemPlacement } from '../src/features/emergency-ampoule-case/web.js';
 
 const ROOT = new URL('../assets/sacs/sac-rouge/ampoulier/', import.meta.url);
 
@@ -55,6 +55,21 @@ test('la machine d’états sépare la vue générale, les zones et la sélectio
   assert.deepEqual(emergencyAmpouleCaseTransition(overview, { type: 'BACK' }), closed);
 });
 
+test('une ampoule tournée conserve sa taille et son centre au lieu d’être comprimée', () => {
+  const source = { x: 195, y: 265, width: 19, height: 92, rotation: 90 };
+  const placement = emergencyAmpouleItemPlacement(source, { width: 1536, height: 1536 });
+
+  assert.deepEqual(placement, {
+    x: 158.5,
+    y: 301.5,
+    width: 92,
+    height: 19,
+    rotation: 90
+  });
+  assert.equal(placement.x + placement.width / 2, source.x + source.width / 2);
+  assert.equal(placement.y + placement.height / 2, source.y + source.height / 2);
+});
+
 test('le rendu du module ne contient aucune liste permanente', async () => {
   const source = await readFile(new URL('../src/features/emergency-ampoule-case/web.js', import.meta.url), 'utf8');
   const stylesheet = await readFile(new URL('../src/features/emergency-ampoule-case/emergency-ampoule-case.css', import.meta.url), 'utf8');
@@ -65,4 +80,6 @@ test('le rendu du module ne contient aucune liste permanente', async () => {
   assert.ok(source.includes('focusPosition'));
   assert.ok(stylesheet.includes('@media (prefers-reduced-motion: reduce)'));
   assert.ok(stylesheet.includes('env(safe-area-inset-bottom'));
+  assert.ok(stylesheet.includes('transform: scale(2.02)'));
+  assert.ok(stylesheet.includes('rotate(var(--item-rotation))'));
 });

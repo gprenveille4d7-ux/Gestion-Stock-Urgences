@@ -91,6 +91,25 @@ function percent(value, total) {
   return `${((Number(value) / total) * 100).toFixed(4)}%`;
 }
 
+export function emergencyAmpouleItemPlacement(position, size) {
+  const x = Number(position?.x) || 0;
+  const y = Number(position?.y) || 0;
+  const width = Number(position?.width) || 0;
+  const height = Number(position?.height) || 0;
+  const rotation = ((Number(position?.rotation) || 0) % 360 + 360) % 360;
+  const swapsAxes = rotation === 90 || rotation === 270;
+  if (!swapsAxes) return { x, y, width, height, rotation };
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+  return {
+    x: centerX - height / 2,
+    y: centerY - width / 2,
+    width: height,
+    height: width,
+    rotation
+  };
+}
+
 function itemLabel(item) {
   return [item.name, item.characteristics].filter(Boolean).join(' · ');
 }
@@ -190,15 +209,16 @@ function renderTabs(state) {
 function renderItem(item, state, size, isNet) {
   const position = isNet ? item.focusPosition : item.position;
   if (!position) return '';
+  const placement = emergencyAmpouleItemPlacement(position, size);
   const selected = item.id === state.itemId;
   const dimmed = Boolean(state.itemId && !selected);
   const showAnchoredLabel = state.mode === 'zoneFocus' && !state.itemId;
   const style = [
-    `--item-x:${percent(position.x, size.width)}`,
-    `--item-y:${percent(position.y, size.height)}`,
-    `--item-width:${percent(position.width, size.width)}`,
-    `--item-height:${percent(position.height, size.height)}`,
-    `--item-rotation:${Number(position.rotation) || 0}deg`,
+    `--item-x:${percent(placement.x, size.width)}`,
+    `--item-y:${percent(placement.y, size.height)}`,
+    `--item-width:${percent(placement.width, size.width)}`,
+    `--item-height:${percent(placement.height, size.height)}`,
+    `--item-rotation:${placement.rotation}deg`,
     `--item-z:${Math.min(49, Math.max(10, Number(position.zIndex) || 20))}`
   ].join(';');
   return `<button type="button" class="emergency-ampoule-case__item${selected ? ' is-selected' : ''}${dimmed ? ' is-dimmed' : ''}${showAnchoredLabel ? ' has-label' : ''}" style="${style}" data-ampoule-item="${escapeHtml(item.id)}" aria-pressed="${selected}" aria-label="${escapeHtml(itemLabel(item))}">

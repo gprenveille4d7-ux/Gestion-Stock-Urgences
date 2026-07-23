@@ -283,6 +283,8 @@
   border: 0;
   background: transparent;
   cursor: pointer;
+  transform: rotate(var(--item-rotation));
+  transform-origin: center;
   transition: opacity .18s ease, filter .18s ease, transform .18s ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -300,7 +302,6 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: rotate(var(--item-rotation));
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .22));
   pointer-events: none;
 }
@@ -312,7 +313,7 @@
   z-index: 2;
   max-width: 104px;
   display: none;
-  transform: translateX(-50%);
+  transform: translateX(-50%) rotate(calc(-1 * var(--item-rotation)));
   padding: 3px 5px;
   border: 1px solid rgba(214, 221, 230, .9);
   border-radius: 6px;
@@ -333,7 +334,7 @@
 
 .emergency-ampoule-case__item.is-selected {
   z-index: 60;
-  transform: translateY(-4px) scale(1.06);
+  transform: rotate(var(--item-rotation)) translateY(-4px) scale(1.06);
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, .98)) drop-shadow(0 0 7px rgba(191, 21, 43, .44));
 }
 
@@ -427,12 +428,12 @@
 }
 
 .emergency-ampoule-case__scene-shell.is-focus-left .emergency-ampoule-case__scene-inner {
-  transform: scale(1.62);
+  transform: scale(2.02);
   transform-origin: 24% 51%;
 }
 
 .emergency-ampoule-case__scene-shell.is-focus-right .emergency-ampoule-case__scene-inner {
-  transform: scale(1.62);
+  transform: scale(2.02);
   transform-origin: 76% 51%;
 }
 
