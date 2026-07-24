@@ -11,6 +11,7 @@ import { actionZoneId, planRoute } from '../domain/route-planner.js';
 import { computeStatistics } from '../domain/statistics.js';
 import { isEmergencyAmpouleCaseSection, renderEmergencyAmpouleCaseHost } from '../features/emergency-ampoule-case/web.js';
 import { renderEmergencyCartsHost } from '../features/emergency-carts/web.js';
+import { renderReserve01KitsHost } from '../features/reserve-01-kits/web.js';
 import { escapeHtml, formatDate, formatRelative, icon, normalizeSearch } from './utils.js';
 import { renderSchemaThumbnail, renderVisualSchema } from './visual-schema.js';
 import { DynamicInventoryViewer } from './dynamic-inventory-viewer.js';
@@ -193,7 +194,7 @@ function renderHome(state) {
       <div class="home-primary-grid" aria-label="Menus principaux">
         ${homePrimaryMenu('red', 'inventory', 'bag', 'Inventaire SMUR', `${SMUR_CONTAINERS.length} sacs et kits référencés`)}
         ${homePrimaryMenu('orange', primaryChariotRoute, 'clipboard', "Chariot d’urgence", `${chariotReferences.length} inventaire${chariotReferences.length > 1 ? 's' : ''} actif${chariotReferences.length > 1 ? 's' : ''}`)}
-        ${homePrimaryMenu('violet', 'reserve/reserve-smur', 'map', 'Les Réserves', `${RESERVE_ZONE_IDS.length} zones de stockage`)}
+        ${homePrimaryMenu('violet', 'reserve/reserve-1', 'map', 'Les Réserves', `Réserve 1 interactive · ${RESERVE_ZONE_IDS.length} zones`)}
         ${homePrimaryMenu('green', 'expiry', 'calendar', 'Péremptions', `${expiry.active.length} lot${expiry.active.length > 1 ? 's' : ''} suivi${expiry.active.length > 1 ? 's' : ''}`)}
       </div>
     </section>
@@ -392,6 +393,7 @@ function renderInventory(state, ui) {
   const conformity = categoryContainers.length ? Math.round((conformCount / categoryContainers.length) * 100) : 100;
   const activeAudits = state.audits.filter((audit) => audit.status === 'in_progress').length;
   const otherRows = expanded ? [
+    renderOtherInventoryRow('reserve/reserve-01-kits', 'map', 'Réserve 1 · Kits d’urgence', '10 caisses · 323 lignes · vue interactive', 'non-renseignee'),
     ...RESERVE_ZONE_IDS.map((zoneId) => findZone(zoneId)).filter(Boolean).map((zone) => renderOtherInventoryRow(`reserve/${zone.id}`, 'map', zone.label, 'Réserve à cartographier', 'non-renseignee')),
     renderOtherInventoryRow('emergency-carts', 'clipboard', 'Chariots adultes · Box 3 et 4', 'Vue interactive · 5 tiroirs · intubation', 'non-renseignee'),
     ...chariots.map((reference) => renderOtherInventoryRow(`chariot/${reference.id}`, 'clipboard', reference.label, `${reference.containers.reduce((sum, section) => sum + section.items.length, 0)} éléments`, 'non-renseignee'))
@@ -596,14 +598,21 @@ function renderContainerDetail(state, containerId, sectionId) {
     <button type="button" class="primary-button container-full-audit" data-start-audit="${container.id}">Voir l’inventaire complet</button>`;
 }
 
-function renderReserveDetail(state, reserveId) {
+function renderReserveDetail(state, reserveId, kitId = '', itemId = '') {
+  if (reserveId === 'reserve-01-kits') return renderReserve01KitsHost(kitId, itemId);
   const zone = findZone(reserveId);
   if (!zone || !RESERVE_ZONE_IDS.includes(zone.id)) return `${header('Réserve introuvable', '', 'Erreur', 'inventory')}`;
   const operationalAssets = realRecords(OPERATIONAL_ASSETS);
   const diagram = getReserveDiagram(zone.id, SMUR_CONTAINERS, operationalAssets);
   const knownContainers = SMUR_CONTAINERS.filter((container) => container.stockZoneId === zone.id);
   const knownAssets = operationalAssets.filter((asset) => asset.homeZoneId === zone.id);
+  const reserve01Entry = zone.id === 'reserve-1' ? `<button type="button" class="reserve01-entry-card" data-nav="reserve/reserve-01-kits">
+    <img src="./assets/chariot-urgences/reserve-01-kits/reserve-01-kits-compose.png" alt="" loading="eager" decoding="async">
+    <span><span>Réserve 1 · étagère droite</span><strong>Kits d’urgence</strong><small>10 caisses sélectionnables · 323 lignes de matériel · inventaire visuel</small></span>
+    ${icon('chevron', 20)}
+  </button>` : '';
   return `${header(zone.label, 'Vue de repérage fondée uniquement sur les rattachements de zone connus.', 'Schéma de réserve', 'inventory')}
+    ${reserve01Entry}
     <p class="reserve-layout-note">Organisation visuelle à préciser · armoires, étagères et bacs à relever sur place.</p>
     ${renderVisualSchema(diagram, {
       kind: 'reserve', label: zone.label,
@@ -947,13 +956,13 @@ function renderProfile(state) {
 
 export function renderApp(state, ui, routeParts) {
   const viewState = operationalViewState(state);
-  const [route = 'home', id, subId] = routeParts;
+  const [route = 'home', id, subId, itemId] = routeParts;
   let content;
   switch (route) {
     case 'return': content = renderReturn(viewState, ui); break;
     case 'inventory': content = renderInventory(viewState, ui); break;
     case 'container': content = renderContainerDetail(viewState, id, subId); break;
-    case 'reserve': content = renderReserveDetail(viewState, id); break;
+    case 'reserve': content = renderReserveDetail(viewState, id, subId, itemId); break;
     case 'chariot': content = renderChariotDetail(viewState, id, subId); break;
     case 'emergency-carts': content = renderEmergencyCartsHost(); break;
     case 'actions': content = renderActions(viewState, ui); break;
@@ -968,5 +977,6 @@ export function renderApp(state, ui, routeParts) {
     case 'profile': content = renderProfile(viewState); break;
     default: content = renderHome(viewState);
   }
-  return `<div class="app-shell" data-route="${escapeHtml(route)}">${topbar(viewState, ui)}<main class="page">${content}</main>${bottomNav(route)}</div>`;
+  const moduleName = route === 'reserve' && id === 'reserve-01-kits' ? 'reserve-01-kits' : '';
+  return `<div class="app-shell" data-route="${escapeHtml(route)}"${moduleName ? ` data-module="${moduleName}"` : ''}>${topbar(viewState, ui)}<main class="page">${content}</main>${bottomNav(route)}</div>`;
 }

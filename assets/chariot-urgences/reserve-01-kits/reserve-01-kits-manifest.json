@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "reserve-01-kits",
+  "label": "Réserve 1 · Kits d’urgence",
+  "data": "./reserve-01-kits-inventaire.json",
+  "entryAsset": "./reserve-01-entree-etagere-droite.png",
+  "annotatedAsset": "./reserve-01-kits-compose.png",
+  "kitAssetDirectory": "./items",
+  "itemAssetDirectory": "./item-assets-v2/items",
+  "itemAssetIndex": "./item-assets-v2/item-assets-index.json",
+  "kitCount": 10,
+  "itemLineCount": 323,
+  "uniqueItemAssetCount": 152,
+  "location": "Réserve 1, étagère à droite en entrant",
+  "physicalOrderStatus": "requires-photo-validation"
+}

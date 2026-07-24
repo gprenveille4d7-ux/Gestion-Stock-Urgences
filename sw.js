@@ -1,10 +1,25 @@
 const CACHE_PREFIX = 'releve-smur-';
-const CACHE = 'releve-smur-v1.0.0-20260723-etagement-compartiments-v12';
+const CACHE = 'releve-smur-v1.0.0-20260724-reserve01-v1';
 const NETWORK_TIMEOUT_MS = 4000;
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg',
   './assets/plan-urgences-falaise.png', './assets/icon-180.png', './assets/icon-192.png', './assets/icon-512.png',
   './assets/branding/releve-logo.jpg', './assets/branding/smur-falaise-vehicle.jpg',
+  './assets/chariot-urgences/reserve-01-kits/reserve-01-kits-inventaire.json',
+  './assets/chariot-urgences/reserve-01-kits/reserve-01-kits-manifest.json',
+  './assets/chariot-urgences/reserve-01-kits/item-assets-v2/item-assets-index.json',
+  './assets/chariot-urgences/reserve-01-kits/reserve-01-entree-etagere-droite.png',
+  './assets/chariot-urgences/reserve-01-kits/reserve-01-kits-compose.png',
+  './assets/chariot-urgences/reserve-01-kits/items/caisse-drain-thoracique-1.png',
+  './assets/chariot-urgences/reserve-01-kits/items/caisse-drain-thoracique-2.png',
+  './assets/chariot-urgences/reserve-01-kits/items/caisse-sous-claviere-1.png',
+  './assets/chariot-urgences/reserve-01-kits/items/caisse-sous-claviere-2.png',
+  './assets/chariot-urgences/reserve-01-kits/items/caisse-chambre-implantable-1.png',
+  './assets/chariot-urgences/reserve-01-kits/items/caisse-chambre-implantable-2.png',
+  './assets/chariot-urgences/reserve-01-kits/items/caisse-ktpa.png',
+  './assets/chariot-urgences/reserve-01-kits/items/caisse-ponction-ascite.png',
+  './assets/chariot-urgences/reserve-01-kits/items/caisse-ponction-pericardique.png',
+  './assets/chariot-urgences/reserve-01-kits/items/caisse-sonde-endocavitaire.png',
   './assets/sacs/sac-rouge/sac-rouge-face.png', './assets/sacs/sac-rouge/sac-rouge-trois-quarts-gauche.png', './assets/sacs/sac-rouge/sac-rouge-cote-gauche.png', './assets/sacs/sac-rouge/sac-rouge-trois-quarts-droit.png', './assets/sacs/sac-rouge/sac-rouge-cote-droit.png', './assets/sacs/sac-rouge/sac-rouge-dos.png', './assets/sacs/sac-rouge/sac-rouge-dessus.png', './assets/sacs/sac-rouge/sac-rouge-ouvert.png', './assets/sacs/sac-rouge/sac-rouge-amovible.png', './assets/sacs/sac-rouge/sac-rouge-ampoulier.png', './assets/sacs/sac-rouge/sac-rouge-plaque-face-a.png', './assets/sacs/sac-rouge/sac-rouge-plaque-face-b.png',
   './assets/sacs/sac-rouge/ampoulier/ampoulier-ferme-face.png',
   './assets/sacs/sac-rouge/ampoulier/ampoulier-inventaire-confirme.json',
@@ -112,7 +127,8 @@ const CORE_ASSETS = [
   './src/infrastructure/database.js', './src/infrastructure/repository.js', './src/infrastructure/sync-adapter.js',
   './src/ui/utils.js', './src/ui/visual-schema.js', './src/ui/dynamic-inventory-viewer.js', './src/ui/views.js',
   './src/features/emergency-ampoule-case/emergency-ampoule-case.css', './src/features/emergency-ampoule-case/web.js',
-  './src/features/emergency-carts/emergency-carts.css', './src/features/emergency-carts/emergency-cart-data.js', './src/features/emergency-carts/web.js'
+  './src/features/emergency-carts/emergency-carts.css', './src/features/emergency-carts/emergency-cart-data.js', './src/features/emergency-carts/web.js',
+  './src/features/reserve-01-kits/reserve-01-kits.css', './src/features/reserve-01-kits/web.js'
 ];
 
 self.addEventListener('install', (event) => {

@@ -2,6 +2,7 @@ import { SMUR_CONTAINERS } from './data/reference.js';
 import { OperationalStore } from './application/operational-store.js';
 import { mountEmergencyAmpouleCase } from './features/emergency-ampoule-case/web.js';
 import { mountEmergencyCartsModule } from './features/emergency-carts/web.js';
+import { mountReserve01Kits } from './features/reserve-01-kits/web.js';
 import { renderApp } from './ui/views.js';
 import { navigate, routeParts } from './ui/utils.js';
 
@@ -38,6 +39,7 @@ let suppressFullscreenCloseUntil = 0;
 let viewerLongPressState = null;
 let cleanupEmergencyAmpouleCase = null;
 let cleanupEmergencyCartsModule = null;
+let cleanupReserve01Kits = null;
 const VIEWER_LONG_PRESS_MS = 420;
 const VIEWER_LONG_PRESS_MOVE_PX = 12;
 const channel = 'BroadcastChannel' in globalThis ? new BroadcastChannel('releve-smur-updates') : null;
@@ -212,6 +214,8 @@ function render(focusHeading = false) {
   cleanupEmergencyAmpouleCase = null;
   cleanupEmergencyCartsModule?.();
   cleanupEmergencyCartsModule = null;
+  cleanupReserve01Kits?.();
+  cleanupReserve01Kits = null;
   appRoot.innerHTML = renderApp(store.state, ui, routeParts());
   document.title = `${routeTitles[currentRoute] || 'Relève'} — SMUR / Urgences`;
   const emergencyCartsRoot = appRoot.querySelector('[data-emergency-carts-root]');
@@ -223,6 +227,10 @@ function render(focusHeading = false) {
   const emergencyAmpouleCaseRoot = appRoot.querySelector('[data-emergency-ampoule-case-root]');
   if (emergencyAmpouleCaseRoot) {
     cleanupEmergencyAmpouleCase = mountEmergencyAmpouleCase(emergencyAmpouleCaseRoot);
+  }
+  const reserve01Root = appRoot.querySelector('[data-reserve01-root]');
+  if (reserve01Root) {
+    cleanupReserve01Kits = mountReserve01Kits(reserve01Root);
   }
   setupDynamicInventoryViewer();
   if (focusHeading === true) appRoot.querySelector('.page-title')?.focus();

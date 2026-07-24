@@ -67,7 +67,7 @@ test('toutes les routes P0 produisent un écran exploitable sans valeur invalide
   }
   for (const label of ['Inventaire SMUR', 'Chariot d’urgence', 'Les Réserves', 'Péremptions']) assert.ok(homeHtml.includes(label), label);
   assert.ok(homeHtml.includes('data-nav="inventory"'));
-  assert.ok(homeHtml.includes('data-nav="reserve/reserve-smur"'));
+  assert.ok(homeHtml.includes('data-nav="reserve/reserve-1"'));
   assert.ok(homeHtml.includes('data-nav="emergency-carts"'));
 
   for (const container of SMUR_CONTAINERS) {

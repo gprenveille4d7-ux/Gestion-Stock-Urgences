@@ -1,0 +1,1701 @@
+{
+  "stats": {
+    "occurrenceCount": 323,
+    "uniqueVisualAssetCount": 152,
+    "reuseRule": "Une variante désignation + référence partage un asset maître entre les caisses.",
+    "generatedFrom": "12 masters visuels détourés, générés pour ce module."
+  },
+  "assets": [
+    {
+      "id": "1-rouleau-elasto-3cm-77bc6d73",
+      "name": "1 rouleau Elasto 3cm",
+      "reference": null,
+      "category": "tape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/1-rouleau-elasto-3cm-77bc6d73.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "absorbex-e6e3161a",
+      "name": "absorbex",
+      "reference": null,
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/absorbex-e6e3161a.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "aiguille-de-huber-15mm-97bb9a90",
+      "name": "aiguille de Huber 15mm",
+      "reference": "721507",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguille-de-huber-15mm-97bb9a90.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "aiguille-de-huber-20mm-25d9c19f",
+      "name": "aiguille de Huber 20mm",
+      "reference": "722011",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguille-de-huber-20mm-25d9c19f.png",
+      "usedInKits": [
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "aiguille-de-huber-25mm-fc8a16f8",
+      "name": "aiguille de Huber 25mm",
+      "reference": "722507",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguille-de-huber-25mm-fc8a16f8.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1"
+      ]
+    },
+    {
+      "id": "aiguille-im-noire-02574e3e",
+      "name": "aiguille IM noire",
+      "reference": "301000",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguille-im-noire-02574e3e.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "aiguille-longue-verte-ddb01b77",
+      "name": "aiguille longue verte",
+      "reference": "101314",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguille-longue-verte-ddb01b77.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "aiguille-longue-verte-85b07212",
+      "name": "aiguille longue verte",
+      "reference": "4665503",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguille-longue-verte-85b07212.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "aiguille-orange-s-cut-723ac5cc",
+      "name": "aiguille orange s/cut",
+      "reference": null,
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguille-orange-s-cut-723ac5cc.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "aiguille-ponction-d-ascite-a0dc0bf7",
+      "name": "aiguille ponction d'ascite",
+      "reference": "6837.10",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguille-ponction-d-ascite-a0dc0bf7.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "aiguille-s-cut-aed55fc0",
+      "name": "aiguille s/cut",
+      "reference": "25G x5/8",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguille-s-cut-aed55fc0.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "aiguille-verte-ed87f55e",
+      "name": "aiguille verte",
+      "reference": null,
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguille-verte-ed87f55e.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "aiguilles-longues-vertes-076d68a6",
+      "name": "aiguilles longues vertes",
+      "reference": null,
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguilles-longues-vertes-076d68a6.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "aiguilles-roses-c466be8d",
+      "name": "aiguilles roses",
+      "reference": null,
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/aiguilles-roses-c466be8d.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "betadine-dermique-96ab8b44",
+      "name": "BETADINE dermique",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/betadine-dermique-96ab8b44.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "betadine-oh-pipettes-9c3caf1c",
+      "name": "BETADINE OH pipettes",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/betadine-oh-pipettes-9c3caf1c.png",
+      "usedInKits": [
+        "kit-ktpa",
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "betadine-scrub-0bc0e09e",
+      "name": "BETADINE scrub",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/betadine-scrub-0bc0e09e.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "bistouri-d9dda100",
+      "name": "bistouri",
+      "reference": "503",
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/bistouri-d9dda100.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "bistouri-a643122a",
+      "name": "bistouri",
+      "reference": "ref 0503",
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/bistouri-a643122a.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-ktpa",
+        "kit-ponction-pericardique",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "brosse-chirurgicale-3a18a29b",
+      "name": "brosse chirurgicale",
+      "reference": "201971",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/brosse-chirurgicale-3a18a29b.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-ktpa",
+        "kit-ponction-pericardique",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "cable-ktpa-pour-relier-au-scope-1a33a17a",
+      "name": "câble KTPA pour relier au scope",
+      "reference": null,
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/cable-ktpa-pour-relier-au-scope-1a33a17a.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "casaque-sterile-de-bloc-l-45107e8c",
+      "name": "casaque stérile de bloc L",
+      "reference": "E3506CEA",
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/casaque-sterile-de-bloc-l-45107e8c.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1"
+      ]
+    },
+    {
+      "id": "casaque-sterile-de-bloc-xl-824daa6f",
+      "name": "casaque stérile de bloc XL",
+      "reference": "E3506CEA",
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/casaque-sterile-de-bloc-xl-824daa6f.png",
+      "usedInKits": [
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "casaque-sterile-xl-ba731083",
+      "name": "casaque stérile XL",
+      "reference": "E3516CEA",
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/casaque-sterile-xl-ba731083.png",
+      "usedInKits": [
+        "kit-sous-claviere-1"
+      ]
+    },
+    {
+      "id": "casaque-sterile-xl-6c9f1b68",
+      "name": "casaque stérile XL",
+      "reference": "S3516CEC",
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/casaque-sterile-xl-6c9f1b68.png",
+      "usedInKits": [
+        "kit-sous-claviere-2",
+        "kit-ktpa",
+        "kit-ponction-pericardique",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "catheter-1-voie-b0a97738",
+      "name": "cathéter  1 voie",
+      "reference": "CV-04301",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/catheter-1-voie-b0a97738.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "catheter-3-voies-9f672bce",
+      "name": "cathéter 3 voies",
+      "reference": "CV-15703",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/catheter-3-voies-9f672bce.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "catheter-arteriel-femoral-type-seldicath-1-2mm-4647c79d",
+      "name": "cathéter artériel fémoral type SELDICATH 1,2mm",
+      "reference": "SAC00520",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/catheter-arteriel-femoral-type-seldicath-1-2mm-4647c79d.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "catheter-arteriel-radial-type-seldicath-0-9mm-a3c03b09",
+      "name": "cathéter artériel radial type SELDICATH 0,9mm",
+      "reference": "3843.09",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/catheter-arteriel-radial-type-seldicath-0-9mm-a3c03b09.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "catheter-electrode-pour-stimulation-2d72e743",
+      "name": "cathéter électrode pour stimulation",
+      "reference": "006241P",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/catheter-electrode-pour-stimulation-2d72e743.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "champ-fenetre-collant-sterile-1607a0aa",
+      "name": "champ fenêtré collant stérile",
+      "reference": null,
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/champ-fenetre-collant-sterile-1607a0aa.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "champ-sterile-fenetre-f298b156",
+      "name": "champ stérile fenêtré",
+      "reference": "2775112",
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/champ-sterile-fenetre-f298b156.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "champ-sterile-fenetre-dc5ecdfe",
+      "name": "Champ stérile fenêtré",
+      "reference": "ES152184CE",
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/champ-sterile-fenetre-dc5ecdfe.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "champ-sterile-non-troue-7716fe7a",
+      "name": "Champ stérile non troué",
+      "reference": "277516",
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/champ-sterile-non-troue-7716fe7a.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "champ-troue-fenetre-b425d3f5",
+      "name": "champ troué fenêtré",
+      "reference": "ES15209CE",
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/champ-troue-fenetre-b425d3f5.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "charlotte-947e1570",
+      "name": "Charlotte",
+      "reference": null,
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/charlotte-947e1570.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2",
+        "kit-ktpa",
+        "kit-ponction-pericardique",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "charlottes-cbd1baaf",
+      "name": "charlottes",
+      "reference": null,
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/charlottes-cbd1baaf.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "cicaplaie-20x10-cm-fa8baaba",
+      "name": "cicaplaie 20x10 cm",
+      "reference": "900876",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/cicaplaie-20x10-cm-fa8baaba.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "ciseaux-steriles-520b9590",
+      "name": "ciseaux stériles",
+      "reference": "991083",
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/ciseaux-steriles-520b9590.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1"
+      ]
+    },
+    {
+      "id": "ciseaux-steriles-fa49d1de",
+      "name": "ciseaux stériles",
+      "reference": "CK-321",
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/ciseaux-steriles-fa49d1de.png",
+      "usedInKits": [
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "ciseaux-steriles-372d9642",
+      "name": "ciseaux stériles",
+      "reference": "MTS-03121",
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/ciseaux-steriles-372d9642.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "clamps-x2-steriles-6f2df03d",
+      "name": "clamps x2 stériles",
+      "reference": null,
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/clamps-x2-steriles-6f2df03d.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "compresses-brandebourgs-tracheo-1f8071e2",
+      "name": "Compresses Brandebourgs (trachéo)",
+      "reference": "23094",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/compresses-brandebourgs-tracheo-1f8071e2.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "compresses-steriles-x-5-f9753d5e",
+      "name": "compresses stériles x 5",
+      "reference": null,
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/compresses-steriles-x-5-f9753d5e.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "compresses-steriles-x5-b2a4d004",
+      "name": "compresses stériles x5",
+      "reference": "113S05-50 et 1110",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/compresses-steriles-x5-b2a4d004.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "compresses-steriles-x5-a163f95e",
+      "name": "compresses stériles x5",
+      "reference": "22023KL2",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/compresses-steriles-x5-a163f95e.png",
+      "usedInKits": [
+        "kit-ktpa",
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "compresses-steriles-x5-0ad015e0",
+      "name": "compresses stériles x5",
+      "reference": "22023KL2 et 113S05-50",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/compresses-steriles-x5-0ad015e0.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "compresses-steriles-x5-111a1b2b",
+      "name": "compresses stériles x5",
+      "reference": null,
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/compresses-steriles-x5-111a1b2b.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "compresses-tracheo-type-brandebourg-30d0a6aa",
+      "name": "compresses trachéo type Brandebourg",
+      "reference": "23094",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/compresses-tracheo-type-brandebourg-30d0a6aa.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "cosmopore-20x10-851fd4ea",
+      "name": "Cosmopore 20x10",
+      "reference": "900876",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/cosmopore-20x10-851fd4ea.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "cosmopore-7-2-x-5cm-131cd348",
+      "name": "Cosmopore 7,2 x 5cm",
+      "reference": "900870",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/cosmopore-7-2-x-5cm-131cd348.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "dispositif-de-surveillance-des-pressions-6816b97c",
+      "name": "dispositif de surveillance des pressions",
+      "reference": "PX260",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/dispositif-de-surveillance-des-pressions-6816b97c.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "dosettes-betadine-dermique-0df088bc",
+      "name": "dosettes BETADINE dermique",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/dosettes-betadine-dermique-0df088bc.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "dosettes-betadine-oh-604e52d4",
+      "name": "dosettes BETADINE OH",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/dosettes-betadine-oh-604e52d4.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "drain-de-joly-ch14-diam-4-5mm-l28cm-2d6c81ac",
+      "name": "drain de Joly ch14 diam 4,5mm L28cm",
+      "reference": "636.14",
+      "category": "drainage",
+      "asset": "./reserve-01-kits/item-assets-v2/items/drain-de-joly-ch14-diam-4-5mm-l28cm-2d6c81ac.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "drain-de-joly-ch18-diam-6-0mm-l28cm-2a0b6bca",
+      "name": "drain de Joly ch18 diam 6,0mm L28cm",
+      "reference": "636.18",
+      "category": "drainage",
+      "asset": "./reserve-01-kits/item-assets-v2/items/drain-de-joly-ch18-diam-6-0mm-l28cm-2a0b6bca.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "drain-de-joly-ch24-diam-8-0mm-l28cm-d245edb4",
+      "name": "drain de Joly ch24 diam 8,0mm L28cm",
+      "reference": "636.24",
+      "category": "drainage",
+      "asset": "./reserve-01-kits/item-assets-v2/items/drain-de-joly-ch24-diam-8-0mm-l28cm-d245edb4.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "drain-de-joly-ch30-diam-10mm-l28cm-2c1de33d",
+      "name": "drain de Joly ch30 diam 10mm L28cm",
+      "reference": "636.30",
+      "category": "drainage",
+      "asset": "./reserve-01-kits/item-assets-v2/items/drain-de-joly-ch30-diam-10mm-l28cm-2c1de33d.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "drainopack-pleurevac-efd1d6c6",
+      "name": "drainopack / pleurévac",
+      "reference": "A-6000-08LF",
+      "category": "drainage",
+      "asset": "./reserve-01-kits/item-assets-v2/items/drainopack-pleurevac-efd1d6c6.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "eau-sterile-1l-9c741a70",
+      "name": "eau stérile 1L",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/eau-sterile-1l-9c741a70.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-ktpa",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "eau-sterile-500ml-2d7d63d7",
+      "name": "eau stérile 500ml",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/eau-sterile-500ml-2d7d63d7.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "fil-suture-4-0-aiguille-courbe-dd63a374",
+      "name": "fil suture 4.0 aiguille courbe",
+      "reference": "EH7167",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/fil-suture-4-0-aiguille-courbe-dd63a374.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "fil-suture-aiguille-courbe-3-0-fd04afa5",
+      "name": "fil suture aiguille courbe 3,0",
+      "reference": null,
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/fil-suture-aiguille-courbe-3-0-fd04afa5.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "fil-suture-aiguille-droite-8f4dd5a7",
+      "name": "fil suture aiguille droite",
+      "reference": "PE6624",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/fil-suture-aiguille-droite-8f4dd5a7.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "fil-suture-aiguille-droite-4e1dabfe",
+      "name": "fil suture aiguille droite",
+      "reference": "SKMBTB",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/fil-suture-aiguille-droite-4e1dabfe.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "fils-suture-aiguille-droite-c4b789db",
+      "name": "fils suture aiguille droite",
+      "reference": "PE6624",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/fils-suture-aiguille-droite-c4b789db.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "flacon-beta-dermique-jaune-8904c116",
+      "name": "flacon béta dermique jaune",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/flacon-beta-dermique-jaune-8904c116.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "flacon-beta-scrub-rouge-f1b6bd14",
+      "name": "flacon béta scrub rouge",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/flacon-beta-scrub-rouge-f1b6bd14.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "flacon-xylocaine-200mg-20ml-d8760c00",
+      "name": "flacon Xylocaïne  200mg/20ml",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/flacon-xylocaine-200mg-20ml-d8760c00.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "flacons-xylocaine-1-d9213e2e",
+      "name": "flacons XYLOCAÏNE 1%",
+      "reference": "200mg/20ml",
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/flacons-xylocaine-1-d9213e2e.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "foliodrap-5d11f3ff",
+      "name": "foliodrap",
+      "reference": "277-5112",
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/foliodrap-5d11f3ff.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "gants-steriles-t6-2a66a6f3",
+      "name": "gants stériles T6",
+      "reference": "MSG7260",
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t6-2a66a6f3.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2",
+        "kit-ktpa",
+        "kit-ponction-ascite",
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "gants-steriles-t6-8326a696",
+      "name": "gants stériles T6",
+      "reference": null,
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t6-8326a696.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "gants-steriles-t6-5-5248bffe",
+      "name": "gants stériles T6,5",
+      "reference": "MSG7265",
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t6-5-5248bffe.png",
+      "usedInKits": [
+        "kit-chambre-implantable-2",
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "gants-steriles-t6-5-ebaffa2c",
+      "name": "gants stériles T6,5",
+      "reference": null,
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t6-5-ebaffa2c.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-ktpa",
+        "kit-ponction-pericardique",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "gants-steriles-t7-c9f0e26b",
+      "name": "gants stériles T7",
+      "reference": "MSG7270",
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t7-c9f0e26b.png",
+      "usedInKits": [
+        "kit-chambre-implantable-2",
+        "kit-ponction-ascite",
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "gants-steriles-t7-0d48dfc1",
+      "name": "gants stériles T7",
+      "reference": null,
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t7-0d48dfc1.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-ktpa",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "gants-steriles-t7-5-28fb5cb1",
+      "name": "gants stériles T7,5",
+      "reference": null,
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t7-5-28fb5cb1.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2",
+        "kit-ktpa",
+        "kit-ponction-ascite",
+        "kit-ponction-pericardique",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "gants-steriles-t8-2a8d77f7",
+      "name": "gants stériles T8",
+      "reference": "MSG7280",
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t8-2a8d77f7.png",
+      "usedInKits": [
+        "kit-chambre-implantable-2",
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "gants-steriles-t8-eb454c29",
+      "name": "gants stériles T8",
+      "reference": null,
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t8-eb454c29.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-ktpa",
+        "kit-ponction-pericardique",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "gants-steriles-t8-5-6c90f572",
+      "name": "gants stériles T8,5",
+      "reference": "MSG7285",
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t8-5-6c90f572.png",
+      "usedInKits": [
+        "kit-chambre-implantable-2",
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "gants-steriles-t8-5-bbba1ba6",
+      "name": "gants stériles T8,5",
+      "reference": null,
+      "category": "gloves",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gants-steriles-t8-5-bbba1ba6.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-ktpa",
+        "kit-ponction-pericardique",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "gel-ultrasons-0ad5d879",
+      "name": "gel ultrasons",
+      "reference": "251007",
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/gel-ultrasons-0ad5d879.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "grand-champs-sterile-fenetre-8389fd91",
+      "name": "grand champs stérile fenêtré",
+      "reference": "ES152184CE",
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/grand-champs-sterile-fenetre-8389fd91.png",
+      "usedInKits": [
+        "kit-sous-claviere-1"
+      ]
+    },
+    {
+      "id": "grand-champs-sterile-fenetre-8efa6b75",
+      "name": "grand champs stérile fenêtré",
+      "reference": null,
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/grand-champs-sterile-fenetre-8efa6b75.png",
+      "usedInKits": [
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "lidocaine-1-c2660932",
+      "name": "lidocaine 1%",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/lidocaine-1-c2660932.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "lidocaine-200mg-20ml-722c69c6",
+      "name": "Lidocaïne 200mg/20ml",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/lidocaine-200mg-20ml-722c69c6.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "manometre-d-aspiration-d57edc52",
+      "name": "manomètre d'aspiration",
+      "reference": null,
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/manometre-d-aspiration-d57edc52.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "masque-chirurgical-01ab5893",
+      "name": "masque chirurgical",
+      "reference": null,
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/masque-chirurgical-01ab5893.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2",
+        "kit-ktpa",
+        "kit-ponction-pericardique",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "mefix-1651c226",
+      "name": "mefix",
+      "reference": null,
+      "category": "tape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/mefix-1651c226.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "nacl-0-9-250ml-pochon-f0046dc7",
+      "name": "NacL 0,9% 250ml pochon",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/nacl-0-9-250ml-pochon-f0046dc7.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "paire-de-contentions-souples-ms-f4b5bd82",
+      "name": "paire de contentions souples MS",
+      "reference": null,
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/paire-de-contentions-souples-ms-f4b5bd82.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "perfuseur-3-voies-d682a320",
+      "name": "perfuseur 3 voies",
+      "reference": "INFU -1",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/perfuseur-3-voies-d682a320.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "pericardiocentesis-kit-8-3f-2-77mm-high-flow-pigtail-catheter-ce779573",
+      "name": "Pericardiocentesis Kit 8.3F (2,77mm) High Flow Pigtail catheter",
+      "reference": "PC803EU",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pericardiocentesis-kit-8-3f-2-77mm-high-flow-pigtail-catheter-ce779573.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "pince-a-traire-4ad95d08",
+      "name": "pince à traire",
+      "reference": null,
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pince-a-traire-4ad95d08.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "pinces-kocher-c36f0f48",
+      "name": "pinces Kocher",
+      "reference": "174683",
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pinces-kocher-c36f0f48.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "pipette-nacl-injectable-0-9-20ml-c7c9f4ab",
+      "name": "pipette NacL injectable 0,9% 20ml",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pipette-nacl-injectable-0-9-20ml-c7c9f4ab.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "pipette-serum-phy-45-ml-9f55fc5e",
+      "name": "pipette serum phy 45 ml",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pipette-serum-phy-45-ml-9f55fc5e.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "pipettes-betadine-dermique-2dde0f8c",
+      "name": "pipettes BETADINE dermique",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pipettes-betadine-dermique-2dde0f8c.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "pipettes-betadine-oh-5738a1e8",
+      "name": "pipettes BETADINE OH",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pipettes-betadine-oh-5738a1e8.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2",
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "pipettes-betadine-scrub-ff054808",
+      "name": "pipettes BETADINE scrub",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pipettes-betadine-scrub-ff054808.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2",
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "plaque-hydrocolloide-type-duoderm-13x13cm-603dc743",
+      "name": "plaque hydrocolloïde type Duoderm 13x13cm",
+      "reference": null,
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/plaque-hydrocolloide-type-duoderm-13x13cm-603dc743.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "pleurocath-fd5be06f",
+      "name": "pleurocath",
+      "reference": "10824",
+      "category": "drainage",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pleurocath-fd5be06f.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1"
+      ]
+    },
+    {
+      "id": "pleurocath-pneumothorax-set-9f271ed9",
+      "name": "pleurocath / pneumothorax set",
+      "reference": "10824",
+      "category": "drainage",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pleurocath-pneumothorax-set-9f271ed9.png",
+      "usedInKits": [
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "poche-a-ponction-d-ascite-e08938b9",
+      "name": "poche à ponction d'ascite",
+      "reference": "PB 3500 335 1T20C PV 082",
+      "category": "needle",
+      "asset": "./reserve-01-kits/item-assets-v2/items/poche-a-ponction-d-ascite-e08938b9.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "poche-de-pression-a802c95a",
+      "name": "poche de pression",
+      "reference": null,
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/poche-de-pression-a802c95a.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "pochon-serum-phy-100ml-581861da",
+      "name": "pochon serum phy 100ml",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pochon-serum-phy-100ml-581861da.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "pot-steriles-a-bouchon-rouge-pour-analyse-35876c0b",
+      "name": "pot stériles à bouchon rouge pour analyse",
+      "reference": null,
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pot-steriles-a-bouchon-rouge-pour-analyse-35876c0b.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "pots-a-prelevement-bacterio-bouchon-rouge-1a3e40bd",
+      "name": "pots à prélèvement bactério (bouchon rouge)",
+      "reference": null,
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/pots-a-prelevement-bacterio-bouchon-rouge-1a3e40bd.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "prolongateur-3-voies-a1b53c47",
+      "name": "prolongateur 3 voies",
+      "reference": "DH-50-3V",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/prolongateur-3-voies-a1b53c47.png",
+      "usedInKits": [
+        "kit-sous-claviere-1"
+      ]
+    },
+    {
+      "id": "prolongateur-3-voies-cd4ca253",
+      "name": "prolongateur 3 voies",
+      "reference": "XTEN-R50",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/prolongateur-3-voies-cd4ca253.png",
+      "usedInKits": [
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "protection-mousse-pour-robinet-ad247727",
+      "name": "protection mousse pour robinet",
+      "reference": null,
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/protection-mousse-pour-robinet-ad247727.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "protection-mousse-pour-robinets-613e1d44",
+      "name": "protection mousse pour robinets",
+      "reference": null,
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/protection-mousse-pour-robinets-613e1d44.png",
+      "usedInKits": [
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "protections-mousse-pour-robinets-044238ee",
+      "name": "protections mousse pour robinets",
+      "reference": null,
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/protections-mousse-pour-robinets-044238ee.png",
+      "usedInKits": [
+        "kit-sous-claviere-1"
+      ]
+    },
+    {
+      "id": "raccord-biconique-droit-3994b024",
+      "name": "raccord biconique droit",
+      "reference": "881.77",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/raccord-biconique-droit-3994b024.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "raccord-drain-sterile-dadeca11",
+      "name": "raccord drain stérile",
+      "reference": null,
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/raccord-drain-sterile-dadeca11.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "raccord-sim-9a457120",
+      "name": "raccord SIM",
+      "reference": "8888270207",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/raccord-sim-9a457120.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "rampe-4-voies-41b279ef",
+      "name": "rampe 4 voies",
+      "reference": "RPB4315A",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/rampe-4-voies-41b279ef.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "rampe-6-voies-1d587d86",
+      "name": "rampe 6 voies",
+      "reference": "RPB6315A",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/rampe-6-voies-1d587d86.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "robinet-3-voies-b3163d98",
+      "name": "Robinet 3 voies",
+      "reference": "1400044039",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/robinet-3-voies-b3163d98.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2",
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "rouleau-d-elastoplast-b074439a",
+      "name": "rouleau d'Elastoplast",
+      "reference": null,
+      "category": "tape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/rouleau-d-elastoplast-b074439a.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "rouleau-leukoplast-6b2b9a86",
+      "name": "rouleau leukoplast",
+      "reference": null,
+      "category": "tape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/rouleau-leukoplast-6b2b9a86.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "sac-collecteur-poubelle-37db5f0e",
+      "name": "sac collecteur (poubelle)",
+      "reference": null,
+      "category": "drainage",
+      "asset": "./reserve-01-kits/item-assets-v2/items/sac-collecteur-poubelle-37db5f0e.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "seringue-10-ml-e84895e8",
+      "name": "seringue 10 ml",
+      "reference": null,
+      "category": "syringe",
+      "asset": "./reserve-01-kits/item-assets-v2/items/seringue-10-ml-e84895e8.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "seringue-10ml-29769b22",
+      "name": "seringue 10ml",
+      "reference": "309110",
+      "category": "syringe",
+      "asset": "./reserve-01-kits/item-assets-v2/items/seringue-10ml-29769b22.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "seringue-10ml-41b64ede",
+      "name": "seringue 10ml",
+      "reference": "4606108V",
+      "category": "syringe",
+      "asset": "./reserve-01-kits/item-assets-v2/items/seringue-10ml-41b64ede.png",
+      "usedInKits": [
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "seringue-20ml-c7c0addb",
+      "name": "seringue 20ml",
+      "reference": "300296",
+      "category": "syringe",
+      "asset": "./reserve-01-kits/item-assets-v2/items/seringue-20ml-c7c0addb.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-2",
+        "kit-ponction-ascite",
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "seringue-20ml-d53e990a",
+      "name": "seringue 20ml",
+      "reference": "4606205V",
+      "category": "syringe",
+      "asset": "./reserve-01-kits/item-assets-v2/items/seringue-20ml-d53e990a.png",
+      "usedInKits": [
+        "kit-sous-claviere-1"
+      ]
+    },
+    {
+      "id": "seringue-20ml-61a4dd79",
+      "name": "seringue 20ml",
+      "reference": null,
+      "category": "syringe",
+      "asset": "./reserve-01-kits/item-assets-v2/items/seringue-20ml-61a4dd79.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "seringue-luerlock-50ml-ac934f11",
+      "name": "seringue LuerLock 50ml",
+      "reference": "4617509F",
+      "category": "syringe",
+      "asset": "./reserve-01-kits/item-assets-v2/items/seringue-luerlock-50ml-ac934f11.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "seringue-pre-remplie-10ml-nacl-3207aee6",
+      "name": "seringue pré-remplie 10ml NacL",
+      "reference": "306572",
+      "category": "syringe",
+      "asset": "./reserve-01-kits/item-assets-v2/items/seringue-pre-remplie-10ml-nacl-3207aee6.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "serum-phy-0-9-pipette-50ml-7fafd0f0",
+      "name": "serum phy 0,9% pipette 50ml",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/serum-phy-0-9-pipette-50ml-7fafd0f0.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "serum-physiologique-0-9-5ml-a9252689",
+      "name": "serum physiologique 0,9% 5ml",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/serum-physiologique-0-9-5ml-a9252689.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "serum-physiologique-500ml-pochon-souple-c0a358a9",
+      "name": "serum physiologique 500ml pochon souple",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/serum-physiologique-500ml-pochon-souple-c0a358a9.png",
+      "usedInKits": [
+        "kit-ktpa"
+      ]
+    },
+    {
+      "id": "serum-physiologique-50ml-a2bb8d8c",
+      "name": "serum physiologique 50ml",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/serum-physiologique-50ml-a2bb8d8c.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "set-anesthesie-3405cdc9",
+      "name": "Set anesthésie",
+      "reference": "479471",
+      "category": "kitcase",
+      "asset": "./reserve-01-kits/item-assets-v2/items/set-anesthesie-3405cdc9.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "set-d-anesthesie-d1eb3cc0",
+      "name": "set d'anesthésie",
+      "reference": "479471",
+      "category": "kitcase",
+      "asset": "./reserve-01-kits/item-assets-v2/items/set-d-anesthesie-d1eb3cc0.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2",
+        "kit-ktpa",
+        "kit-ponction-pericardique",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "set-de-suture-92b3715f",
+      "name": "set de suture",
+      "reference": "174668",
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/set-de-suture-92b3715f.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "set-suture-39c5f11f",
+      "name": "set suture",
+      "reference": "174667",
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/set-suture-39c5f11f.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "set-suture-1d758bc0",
+      "name": "set suture",
+      "reference": "174668",
+      "category": "instrument",
+      "asset": "./reserve-01-kits/item-assets-v2/items/set-suture-1d758bc0.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "sparadrap-type-leucoplast-54494799",
+      "name": "sparadrap type Leucoplast",
+      "reference": null,
+      "category": "tape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/sparadrap-type-leucoplast-54494799.png",
+      "usedInKits": [
+        "kit-ponction-ascite"
+      ]
+    },
+    {
+      "id": "surblouse-non-sterile-635b5c11",
+      "name": "surblouse non stérile",
+      "reference": null,
+      "category": "drape",
+      "asset": "./reserve-01-kits/item-assets-v2/items/surblouse-non-sterile-635b5c11.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "tegaderm-10-x-12cm-1967e963",
+      "name": "Tegaderm 10 x 12cm",
+      "reference": "1626W",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/tegaderm-10-x-12cm-1967e963.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    },
+    {
+      "id": "tegaderm-10x12cm-cee46abe",
+      "name": "Tegaderm 10x12cm",
+      "reference": "1626W",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/tegaderm-10x12cm-cee46abe.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2",
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2",
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "tegaderm-12-x-10cm-c433f3b1",
+      "name": "Tégaderm 12 x 10cm",
+      "reference": "1626W",
+      "category": "dressing",
+      "asset": "./reserve-01-kits/item-assets-v2/items/tegaderm-12-x-10cm-c433f3b1.png",
+      "usedInKits": [
+        "kit-ktpa",
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "transducteur-civ-flex-pour-echo-en-sterile-997cbff9",
+      "name": "transducteur CIV-Flex pour écho en stérile",
+      "reference": "610-575",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/transducteur-civ-flex-pour-echo-en-sterile-997cbff9.png",
+      "usedInKits": [
+        "kit-sous-claviere-1",
+        "kit-sous-claviere-2"
+      ]
+    },
+    {
+      "id": "tubulure-a-perfusion-9a7c80b2",
+      "name": "tubulure à perfusion",
+      "reference": "INFU-R3",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/tubulure-a-perfusion-9a7c80b2.png",
+      "usedInKits": [
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "tubulure-simple-a-perfusion-848ffbb4",
+      "name": "tubulure SIMPLE à perfusion",
+      "reference": "PER1YFL25",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/tubulure-simple-a-perfusion-848ffbb4.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1"
+      ]
+    },
+    {
+      "id": "tuyau-d-argile-80f97016",
+      "name": "tuyau d'argile",
+      "reference": null,
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/tuyau-d-argile-80f97016.png",
+      "usedInKits": [
+        "kit-drain-thoracique-1",
+        "kit-drain-thoracique-2"
+      ]
+    },
+    {
+      "id": "valise-shardack-efed63ed",
+      "name": "valise shardack",
+      "reference": null,
+      "category": "kitcase",
+      "asset": "./reserve-01-kits/item-assets-v2/items/valise-shardack-efed63ed.png",
+      "usedInKits": [
+        "kit-sonde-endocavitaire"
+      ]
+    },
+    {
+      "id": "valves-bi-directionnelles-bionecteur-19386f70",
+      "name": "valves bi-directionnelles (bionecteur)",
+      "reference": "011-MC100",
+      "category": "catheter",
+      "asset": "./reserve-01-kits/item-assets-v2/items/valves-bi-directionnelles-bionecteur-19386f70.png",
+      "usedInKits": [
+        "kit-chambre-implantable-1",
+        "kit-chambre-implantable-2"
+      ]
+    },
+    {
+      "id": "xylocaine-200mg-20ml-e3c20da4",
+      "name": "Xylocaïne 200mg/20ml",
+      "reference": null,
+      "category": "solution",
+      "asset": "./reserve-01-kits/item-assets-v2/items/xylocaine-200mg-20ml-e3c20da4.png",
+      "usedInKits": [
+        "kit-ponction-pericardique"
+      ]
+    }
+  ]
+}
